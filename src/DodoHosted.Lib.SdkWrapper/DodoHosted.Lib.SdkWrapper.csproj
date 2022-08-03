@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\DodoHosted.Base.Core\DodoHosted.Base.Core.csproj" />
+    </ItemGroup>
+
 </Project>

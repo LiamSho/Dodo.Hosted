@@ -32,6 +32,13 @@ public static class HostEnvs
     public static string PluginDirectory => ReadEnvironmentVariable(
             "DODO_HOSTED_PLUGIN_DIRECTORY",
             Path.Combine(AssemblyDirectory, "Plugin"));
+
+    /// <summary>
+    /// Dodo SDK API 终结点
+    /// </summary>
+    public static string DodoSdkApiEndpoint => ReadEnvironmentVariable(
+        "DODO_SDK_API_ENDPOINT",
+        "https://botopen.imdodo.com");
     
     /// <summary>
     /// 入口 Assembly 目录
