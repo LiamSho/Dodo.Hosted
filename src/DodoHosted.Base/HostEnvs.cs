@@ -41,20 +41,6 @@ public static class HostEnvs
         "https://botopen.imdodo.com");
 
     /// <summary>
-    /// Dodo 机器人 Client ID
-    /// </summary>
-    public static string DodoBotClientId => ReadEnvironmentVariable(
-        "DODO_SDK_BOT_CLIENT_ID",
-        string.Empty);
-
-    /// <summary>
-    /// Dodo 机器人 Token
-    /// </summary>
-    public static string DodoBotToken => ReadEnvironmentVariable(
-        "DODO_SDK_BOT_TOKEN",
-        string.Empty);
-    
-    /// <summary>
     /// 入口 Assembly 目录
     /// </summary>
     public static string AssemblyDirectory => new FileInfo(Assembly.GetExecutingAssembly().Location).Directory!.FullName;

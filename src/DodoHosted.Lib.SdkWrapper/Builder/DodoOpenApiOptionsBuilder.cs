@@ -77,34 +77,13 @@ public class DodoOpenApiOptionsBuilder
     }
 
     /// <summary>
-    /// 设置日志等级为 <see cref="LogLevel.Trace"/> 并开启日志记录
+    /// 设置日志等级并开启日志记录
     /// </summary>
+    /// <param name="logLevel">日志记录等级，默认为 <see cref="LogLevel.Information"/></param>
     /// <returns></returns>
-    public DodoOpenApiOptionsBuilder UseTraceLogger()
+    public DodoOpenApiOptionsBuilder UseLogger(LogLevel logLevel = LogLevel.Information)
     {
-        _logLevel = LogLevel.Trace;
-        _useLogger = true;
-        return this;
-    }
-    
-    /// <summary>
-    /// 设置日志等级为 <see cref="LogLevel.Debug"/> 并开启日志记录
-    /// </summary>
-    /// <returns></returns>
-    public DodoOpenApiOptionsBuilder UseDebugLogger()
-    {
-        _logLevel = LogLevel.Debug;
-        _useLogger = true;
-        return this;
-    }
-    
-    /// <summary>
-    /// 设置日志等级为 <see cref="LogLevel.Information"/> (默认) 并开启日志记录
-    /// </summary>
-    /// <returns></returns>
-    public DodoOpenApiOptionsBuilder UseInformationLogger()
-    {
-        _logLevel = LogLevel.Information;
+        _logLevel = logLevel;
         _useLogger = true;
         return this;
     }

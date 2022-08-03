@@ -10,7 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base;
+using DodoHosted.App;
 using DodoHosted.Lib.Plugin;
 using DodoHosted.Lib.SdkWrapper;
 using Microsoft.Extensions.Hosting;
@@ -20,13 +20,18 @@ var builder = Host.CreateDefaultBuilder();
 builder.ConfigureServices((_, services) =>
 {
     services.AddDodoServices(
-        b =>
+        openApiOptionsBuilder =>
         {
-            b.UseBotId(HostEnvs.DodoBotClientId).UseBotToken(HostEnvs.DodoBotToken).UseInformationLogger();
+            openApiOptionsBuilder
+                .UseBotId(AppEnvs.DodoBotClientId)
+                .UseBotToken(AppEnvs.DodoBotToken)
+                .UseLogger(AppEnvs.DodoHostedOpenApiLogLevel);
         },
-        b =>
+        openEventOptionsBuilder =>
         {
-            b.UseAsync().UseReconnect();
+            openEventOptionsBuilder
+                .UseAsync()
+                .UseReconnect();
         },
         AppDomain.CurrentDomain.GetAssemblies());
 
