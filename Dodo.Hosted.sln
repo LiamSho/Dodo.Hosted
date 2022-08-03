@@ -1,8 +1,34 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DodoHosted.Lib.SdkWrapper", "src\DodoHosted.Lib.SdkWrapper\DodoHosted.Lib.SdkWrapper.csproj", "{7F53B100-7187-4052-9A3D-A14C6D2E174F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DodoHosted.Open.Plugin", "src\DodoHosted.Open.Plugin\DodoHosted.Open.Plugin.csproj", "{D5953FF1-7738-4842-AC35-7103F8C78B5B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DodoHosted.Base", "src\DodoHosted.Base\DodoHosted.Base.csproj", "{93C2E116-38C0-4D07-A468-92612310A766}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DodoHosted.Lib.Plugin", "src\DodoHosted.Lib.Plugin\DodoHosted.Lib.Plugin.csproj", "{69EC9A76-EE9F-4A61-8E58-08E7CB34CCD6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7F53B100-7187-4052-9A3D-A14C6D2E174F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F53B100-7187-4052-9A3D-A14C6D2E174F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F53B100-7187-4052-9A3D-A14C6D2E174F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F53B100-7187-4052-9A3D-A14C6D2E174F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5953FF1-7738-4842-AC35-7103F8C78B5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5953FF1-7738-4842-AC35-7103F8C78B5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5953FF1-7738-4842-AC35-7103F8C78B5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5953FF1-7738-4842-AC35-7103F8C78B5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93C2E116-38C0-4D07-A468-92612310A766}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93C2E116-38C0-4D07-A468-92612310A766}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93C2E116-38C0-4D07-A468-92612310A766}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93C2E116-38C0-4D07-A468-92612310A766}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69EC9A76-EE9F-4A61-8E58-08E7CB34CCD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69EC9A76-EE9F-4A61-8E58-08E7CB34CCD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69EC9A76-EE9F-4A61-8E58-08E7CB34CCD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69EC9A76-EE9F-4A61-8E58-08E7CB34CCD6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
