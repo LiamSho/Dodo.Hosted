@@ -11,6 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using DodoHosted.App;
+using DodoHosted.Data;
 using DodoHosted.Lib.Plugin;
 using DodoHosted.Lib.SdkWrapper;
 using Microsoft.Extensions.Hosting;
@@ -36,6 +37,7 @@ builder.ConfigureServices((_, services) =>
         AppDomain.CurrentDomain.GetAssemblies());
 
     services.AddPluginManager();
+    services.AddDataServices();
 });
 
 var app = builder.Build();

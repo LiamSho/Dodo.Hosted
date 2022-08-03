@@ -32,7 +32,36 @@ public static class HostEnvs
     public static string PluginDirectory => ReadEnvironmentVariable(
             "DODO_HOSTED_PLUGIN_DIRECTORY",
             Path.Combine(AssemblyDirectory, "Plugin"));
+    
+    /// <summary>
+    /// MongoDb 连接字符串
+    /// </summary>
+    public static string MongoDbConnectionString => ReadEnvironmentVariable(
+        "DODO_HOSTED_MONGO_CONNECTION_STRING",
+        string.Empty);
 
+    /// <summary>
+    /// MongoDb 数据库名称
+    /// </summary>
+    public static string MongoDbDatabaseName => ReadEnvironmentVariable(
+        "DODO_HOSTED_MONGO_DATABASE_NAME",
+        "dodo-hosted");
+    
+    /// <summary>
+    /// Redis 连接配置字符串
+    /// </summary>
+    public static string RedisConnectionConfiguration => ReadEnvironmentVariable(
+        "DODO_HOSTED_REDIS_CONNECTION_CONFIGURATION",
+        string.Empty);
+
+    /// <summary>
+    /// Redis 数据库
+    /// </summary>
+    public static int RedisDatabaseId =>
+        int.TryParse(ReadEnvironmentVariable("DODO_HOSTED_REDIS_DATABASE_ID", "-1"), out var index)
+            ? index
+            : -1;
+    
     /// <summary>
     /// Dodo SDK API 终结点
     /// </summary>
