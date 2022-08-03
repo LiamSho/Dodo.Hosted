@@ -13,8 +13,10 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Reflection;
 using System.Text.Json;
 using DodoHosted.Base;
+using DodoHosted.Lib.Plugin.Builtin;
 using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
 using DodoHosted.Open.Plugin;
@@ -32,6 +34,8 @@ public class PluginManager : IPluginManager
     private readonly DirectoryInfo _pluginCacheDirectory;
     private readonly DirectoryInfo _pluginDirectory;
 
+    private readonly CommandManifest[] _builtinCommands;
+
     public PluginManager(ILogger<PluginManager> logger)
     {
         _logger = logger;
@@ -39,12 +43,36 @@ public class PluginManager : IPluginManager
         _pluginCacheDirectory = new DirectoryInfo(HostEnvs.PluginCacheDirectory);
         _pluginDirectory = new DirectoryInfo(HostEnvs.PluginDirectory);
         _plugins = new ConcurrentDictionary<string, PluginManifest>();
+
+        _builtinCommands = FetchCommandExecutors(new List<Type> { typeof(HelpCommand) }).ToArray();
     }
 
     /// <inheritdoc />
-    public IEnumerable<PluginInfo> GetLoadedPluginInfos()
+    public PluginInfo[] GetLoadedPluginInfos()
     {
-        return _plugins.Select(x => x.Value.PluginInfo);
+        return _plugins.Select(x => x.Value.PluginInfo).ToArray();
+    }
+
+    /// <inheritdoc />
+    public CommandInfo[] GetCommandInfos()
+    {
+        return GetCommandManifests()
+            .Select(x => x as CommandInfo)
+            .ToArray();
+    }
+
+    /// <inheritdoc />
+    public CommandManifest[] GetCommandManifests()
+    {
+        var manifests = _plugins
+            .Select(x => x.Value.CommandManifests)
+            .ToArray();
+        return manifests.Length == 0
+            ? _builtinCommands
+            : manifests
+                .Aggregate((x, y) => x.Concat(y).ToArray())
+                .Concat(_builtinCommands)
+                .ToArray();
     }
     
     /// <inheritdoc />
@@ -121,13 +149,17 @@ public class PluginManager : IPluginManager
 
             var eventHandlers = FetchEventHandlers(pluginAssemblyTypes);
             
+            // 载入指令处理器
+            var commandExecutors = FetchCommandExecutors(pluginAssemblyTypes);
+            
             // 添加插件
             var pluginManifest = new PluginManifest
             {
                 PluginEntryAssembly = assembly,
                 Context = context,
                 PluginInfo = pluginInfo,
-                EventHandlers = eventHandlers.ToArray()
+                EventHandlers = eventHandlers.ToArray(),
+                CommandManifests = commandExecutors.ToArray()
             };
             var success = _plugins.TryAdd(pluginInfo.Identifier, pluginManifest);
             Debug.Assert(success);
@@ -227,5 +259,62 @@ public class PluginManager : IPluginManager
 
         return manifests;
     }
+
+    /// <summary>
+    /// 从 Plugin Assembly 中载入所有的指令处理器
+    /// </summary>
+    /// <param name="types">Plugin Assembly 中所有的类型</param>
+    /// <returns><see cref="CommandManifest"/> 清单</returns>
+    /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
+    private static IEnumerable<CommandManifest> FetchCommandExecutors(IEnumerable<Type> types)
+    {
+        var commandExecutorTypes = types
+            .Where(x => x != typeof(ICommandExecutor))
+            .Where(x => x.IsAssignableTo(typeof(ICommandExecutor)))
+            .Where(x => x.ContainsGenericParameters is false)
+            .ToList();
+        
+        var manifests = new List<CommandManifest>();
+        foreach (var type in commandExecutorTypes)
+        {
+            var attribute = type.GetCustomAttribute<CommandExecutorAttribute>();
+            if (attribute is null)
+            {
+                throw new PluginAssemblyLoadException($"找不到 {type.FullName} 的 {nameof(CommandExecutorAttribute)}");
+            }
+
+            var instance = Activator.CreateInstance(type);
+            if (instance is null)
+            {
+                throw new PluginAssemblyLoadException($"无法创建指令处理器 {type.FullName} 的实例");
+            }
+            
+            manifests.Add(new CommandManifest
+            {
+                Name = attribute.CommandName,
+                Description = attribute.Description,
+                HelpText = FormatCommandHelpText(attribute.HelpText),
+                CommandExecutor = (ICommandExecutor)instance
+            });
+        }
+
+        return manifests;
+    }
+    
+    private static string FormatCommandHelpText(string message)
+    {
+        var msg = message.Replace("{{PREFIX}}", HostEnvs.CommandPrefix);
+
+        while (msg.StartsWith("\"") || msg.StartsWith("\n"))
+        {
+            msg = msg[1..];
+        }
+
+        while (msg.EndsWith("\"") || msg.EndsWith("\n"))
+        {
+            msg = msg[..^1];
+        }
+
+        return msg;
+    }
 }
- 

@@ -70,6 +70,24 @@ public static class HostEnvs
         "https://botopen.imdodo.com");
 
     /// <summary>
+    /// 是否开启 Channel Logger
+    /// </summary>
+    public static readonly bool DodoHostedChannelLogEnabled = ReadEnvironmentVariable(
+        "DODO_HOSTED_CHANNEL_LOG_ENABLED", "false") is "true" or "yes";
+
+    /// <summary>
+    /// Channel Logger 频道 ID
+    /// </summary>
+    public static readonly string DodoHostedChannelLogChannelId = ReadEnvironmentVariable(
+        "DODO_HOSTED_CHANNEL_LOG_CHANNEL_ID", string.Empty);
+
+    /// <summary>
+    /// 指令前缀
+    /// </summary>
+    public static readonly string CommandPrefix = ReadEnvironmentVariable(
+        "DODO_HOSTED_COMMAND_PREFIX", "!");
+    
+    /// <summary>
     /// 入口 Assembly 目录
     /// </summary>
     public static string AssemblyDirectory => new FileInfo(Assembly.GetExecutingAssembly().Location).Directory!.FullName;

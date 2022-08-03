@@ -23,8 +23,22 @@ public interface IPluginManager
     /// 获取已载入插件的信息
     /// </summary>
     /// <returns>已载入插件的 <see cref="PluginInfo"/></returns>
-    IEnumerable<PluginInfo> GetLoadedPluginInfos();
+    PluginInfo[] GetLoadedPluginInfos();
+
+    /// <summary>
+    /// 获取已载入的指令信息
+    /// </summary>
+    /// <returns>已载入插件的 <see cref="CommandInfo"/></returns>
+    // ReSharper disable once ReturnTypeCanBeEnumerable.Global
+    CommandInfo[] GetCommandInfos();
     
+    /// <summary>
+    /// 获取已载入的指令清单
+    /// </summary>
+    /// <returns>已载入插件的 <see cref="CommandManifest"/></returns>
+    // ReSharper disable once ReturnTypeCanBeEnumerable.Global
+    CommandManifest[] GetCommandManifests();
+
     /// <summary>
     /// 载入插件包
     /// </summary>

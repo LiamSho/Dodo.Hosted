@@ -11,6 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using DodoHosted.App;
+using DodoHosted.Base;
 using DodoHosted.Data;
 using DodoHosted.Lib.Plugin;
 using DodoHosted.Lib.SdkWrapper;
@@ -38,6 +39,7 @@ builder.ConfigureServices((_, services) =>
 
     services.AddPluginManager();
     services.AddDataServices();
+    services.AddBaseServices();
 });
 
 var app = builder.Build();

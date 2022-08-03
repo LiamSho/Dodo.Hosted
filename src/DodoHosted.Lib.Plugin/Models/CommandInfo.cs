@@ -10,37 +10,25 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Reflection;
-
 namespace DodoHosted.Lib.Plugin.Models;
 
 /// <summary>
-/// 插件属性清单
+/// 指令基本信息
 /// </summary>
-public record PluginManifest
+public record CommandInfo
 {
     /// <summary>
-    /// 插件入口 Assembly
+    /// 名称
     /// </summary>
-    public required Assembly PluginEntryAssembly { get; init; }
+    public required string Name { get; set; }
     
     /// <summary>
-    /// 插件 Assembly 加载上下文
+    /// 简介
     /// </summary>
-    public required PluginAssemblyLoadContext Context { get; init; }
-
-    /// <summary>
-    /// 插件信息
-    /// </summary>
-    public required PluginInfo PluginInfo { get; init; }
+    public required string Description { get; set; }
     
     /// <summary>
-    /// 插件所含 Event Handler
+    /// 帮助文本
     /// </summary>
-    public required EventHandlerManifest[] EventHandlers { get; init; }
-    
-    /// <summary>
-    /// 插件所含指令
-    /// </summary>
-    public required CommandManifest[] CommandManifests { get; init; }
+    public required string HelpText { get; set; }
 }
