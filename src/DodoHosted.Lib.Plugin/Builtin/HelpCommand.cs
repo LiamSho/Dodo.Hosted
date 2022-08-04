@@ -3,9 +3,6 @@
 // Licensed under the AGPL-3.0 license.
 
 using System.Text;
-using DoDo.Open.Sdk.Models.Channels;
-using DoDo.Open.Sdk.Models.Messages;
-using DoDo.Open.Sdk.Services;
 using DodoHosted.Base;
 using DodoHosted.Base.Models;
 using DodoHosted.Open.Plugin;
@@ -24,9 +21,9 @@ public class HelpCommand : ICommandExecutor
 {
     public async Task<CommandExecutionResult> Execute(
         string[] args,
-        DodoMemberInfo sender,
-        DodoMessageInfo message,
+        CommandMessage cmdMessage,
         IServiceProvider provider,
+        Func<string, Task<string>> reply,
         bool shouldAllow = false)
     {
         if (shouldAllow is false)
@@ -34,7 +31,6 @@ public class HelpCommand : ICommandExecutor
             return CommandExecutionResult.Unauthorized;
         }
 
-        var openApiService = provider.GetRequiredService<OpenApiService>();
         var pluginManager = provider.GetRequiredService<IPluginManager>();
         
         var messageBuilder = new StringBuilder();
@@ -42,9 +38,10 @@ public class HelpCommand : ICommandExecutor
         
         switch (args.Length)
         {
-            case 0:
+            case 1:
                 {
                     messageBuilder.AppendLine("可用指令:");
+                    messageBuilder.AppendLine();
                     foreach (var info in commands)
                     {
                         messageBuilder.AppendLine($"- `{HostEnvs.CommandPrefix}{info.Name}`  {info.Description}");
@@ -52,13 +49,13 @@ public class HelpCommand : ICommandExecutor
 
                     break;
                 }
-            case 1:
+            case 2:
                 {
-                    var cmd = args[0];
+                    var cmd = args[1];
                     var info = commands.FirstOrDefault(x => x.Name == cmd);
                     if (info is null)
                     {
-                        messageBuilder.AppendLine($"指令 `{HostEnvs.CommandPrefix}{cmd}` 不存在");
+                        messageBuilder.AppendLine($"指令 `{HostEnvs.CommandPrefix}{cmd}` 不存在，执行 `{HostEnvs.CommandPrefix}help` 查看所有指令");
                     }
                     else
                     {
@@ -72,17 +69,12 @@ public class HelpCommand : ICommandExecutor
                     break;
                 }
             default:
-                return CommandExecutionResult.Failed;
+                return CommandExecutionResult.Unknown;
         }
 
         var msg = messageBuilder.ToString();
 
-        await openApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
-        {
-            ChannelId = message.ChannelId,
-            MessageBody = new MessageBodyText { Content = msg },
-            ReferencedMessageId = message.MessageId
-        });
+        await reply.Invoke(msg);
 
         return CommandExecutionResult.Success;
     }

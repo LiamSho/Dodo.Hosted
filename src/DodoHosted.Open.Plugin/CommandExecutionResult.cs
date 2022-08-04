@@ -14,7 +14,23 @@ namespace DodoHosted.Open.Plugin;
 
 public enum CommandExecutionResult
 {
+    /// <summary>
+    /// 执行成功
+    /// </summary>
     Success,
+    
+    /// <summary>
+    /// 执行失败，发送此项会向用户发送指令执行失败的消息
+    /// </summary>
     Failed,
+    
+    /// <summary>
+    /// 未知的指令，返回此项会向用户发送当前指令的帮助文档
+    /// </summary>
+    Unknown,
+    
+    /// <summary>
+    /// 权限不足，发送此项将会在日志频道记录消息
+    /// </summary>
     Unauthorized,
 }

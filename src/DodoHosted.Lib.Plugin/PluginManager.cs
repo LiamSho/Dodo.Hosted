@@ -15,12 +15,18 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
+using DoDo.Open.Sdk.Models.Channels;
+using DoDo.Open.Sdk.Models.Members;
+using DoDo.Open.Sdk.Models.Messages;
+using DoDo.Open.Sdk.Services;
 using DodoHosted.Base;
-using DodoHosted.Lib.Plugin.Builtin;
+using DodoHosted.Base.Interfaces;
+using DodoHosted.Base.Models;
 using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 namespace DodoHosted.Lib.Plugin;
 
@@ -28,7 +34,11 @@ namespace DodoHosted.Lib.Plugin;
 public class PluginManager : IPluginManager
 {
     private readonly ILogger<PluginManager> _logger;
-    
+    private readonly IChannelLogger _channelLogger;
+    private readonly IServiceProvider _provider;
+    private readonly IDatabase _redis;
+    private readonly OpenApiService _openApiService;
+
     private readonly ConcurrentDictionary<string, PluginManifest> _plugins;
     
     private readonly DirectoryInfo _pluginCacheDirectory;
@@ -36,15 +46,32 @@ public class PluginManager : IPluginManager
 
     private readonly CommandManifest[] _builtinCommands;
 
-    public PluginManager(ILogger<PluginManager> logger)
+    private IEnumerable<CommandManifest> AllCommands => _plugins.IsEmpty
+        ? _builtinCommands
+        : _plugins.Values
+            .Select(x => x.CommandManifests)
+            .Aggregate((x, y) => x.Concat(y).ToArray())
+            .Concat(_builtinCommands)
+            .ToArray();
+
+    public PluginManager(
+        ILogger<PluginManager> logger,
+        IChannelLogger channelLogger,
+        IServiceProvider provider,
+        IDatabase redis,
+        OpenApiService openApiService)
     {
         _logger = logger;
-        
+        _channelLogger = channelLogger;
+        _provider = provider;
+        _redis = redis;
+        _openApiService = openApiService;
+
         _pluginCacheDirectory = new DirectoryInfo(HostEnvs.PluginCacheDirectory);
         _pluginDirectory = new DirectoryInfo(HostEnvs.PluginDirectory);
         _plugins = new ConcurrentDictionary<string, PluginManifest>();
 
-        _builtinCommands = FetchCommandExecutors(new List<Type> { typeof(HelpCommand) }).ToArray();
+        _builtinCommands = FetchCommandExecutors(this.GetType().Assembly.GetTypes()).ToArray();
     }
 
     /// <inheritdoc />
@@ -56,23 +83,16 @@ public class PluginManager : IPluginManager
     /// <inheritdoc />
     public CommandInfo[] GetCommandInfos()
     {
-        return GetCommandManifests()
-            .Select(x => x as CommandInfo)
-            .ToArray();
-    }
-
-    /// <inheritdoc />
-    public CommandManifest[] GetCommandManifests()
-    {
         var manifests = _plugins
             .Select(x => x.Value.CommandManifests)
             .ToArray();
-        return manifests.Length == 0
+        return (manifests.Length == 0
             ? _builtinCommands
             : manifests
                 .Aggregate((x, y) => x.Concat(y).ToArray())
-                .Concat(_builtinCommands)
-                .ToArray();
+                .Concat(_builtinCommands))
+            .Select(x => x as CommandInfo)
+            .ToArray();
     }
     
     /// <inheritdoc />
@@ -208,6 +228,80 @@ public class PluginManager : IPluginManager
         GC.Collect();
     }
 
+    /// <inheritdoc />
+    public async Task RunCommand(CommandMessage cmdMessage)
+    {
+        var args = GetCommandArgs(cmdMessage.OriginalText).ToArray();
+        if (args.Length == 0)
+        {
+            return;
+        }
+
+        var command = args[0];
+        var cmdInfo = AllCommands.FirstOrDefault(x => x.Name == command);
+        var reply = async Task<string>(string s) =>
+        {
+            var output = await _openApiService.SetChannelMessageSendAsync(
+                new SetChannelMessageSendInput<MessageBodyText>
+                {
+                    ChannelId = cmdMessage.ChannelId,
+                    MessageBody = new MessageBodyText { Content = s, },
+                    ReferencedMessageId = cmdMessage.MessageId
+                });
+
+            return output.MessageId;
+        };
+        
+        if (cmdInfo is null)
+        {
+            _channelLogger.LogWarning($"指令不存在：`{cmdMessage.OriginalText}`，" +
+                                      $"发送者：<@!{cmdMessage.MemberId}>，" +
+                                      $"频道：<#{cmdMessage.ChannelId}>，" +
+                                      $"消息 ID：`{cmdMessage.MessageId}`");
+            await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 不存在，执行 `{HostEnvs.CommandPrefix}help` 查看所有可用指令");
+            return;
+        }
+
+        var senderRoles = await GetMemberRole(cmdMessage.MemberId, cmdMessage.IslandId);
+
+        cmdMessage.Roles = senderRoles
+            .Select(x =>
+                new MemberRole
+                {
+                    Id = x.RoleId,
+                    Name = x.RoleName,
+                    Color = x.RoleColor,
+                    Position = x.Position,
+                    Permission = Convert.ToInt32(x.Permission, 16)
+                })
+            .ToList();
+        
+        var result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, _provider, reply,IsSuperAdmin(cmdMessage.Roles));
+
+        switch (result)
+        {
+            case CommandExecutionResult.Success:
+                break;
+            case CommandExecutionResult.Failed:
+                await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 执行失败");
+                break;
+            case CommandExecutionResult.Unknown:
+                await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 不存在或存在格式错误\n\n" +
+                                   $"指令 `{HostEnvs.CommandPrefix}{args[0]}` 的帮助描述：\n\n" +
+                                   cmdInfo.HelpText);
+                break;
+            case CommandExecutionResult.Unauthorized:
+                _channelLogger.LogWarning($"无权访问：`{cmdMessage.OriginalText}`，" +
+                                          $"发送者：<@!{cmdMessage.MemberId}>，" +
+                                          $"频道：<#{cmdMessage.ChannelId}>，" +
+                                          $"消息 ID：`{cmdMessage.MessageId}`");
+                break;
+            default:
+                _channelLogger.LogError($"未知的指令执行结果：`{result}`");
+                break;
+        }
+    }
+
     /// <summary>
     /// 从 Plugin Assembly 中载入所有的事件处理器
     /// </summary>
@@ -301,6 +395,11 @@ public class PluginManager : IPluginManager
         return manifests;
     }
     
+    /// <summary>
+    /// 格式化指令帮助文档输出
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
     private static string FormatCommandHelpText(string message)
     {
         var msg = message.Replace("{{PREFIX}}", HostEnvs.CommandPrefix);
@@ -316,5 +415,99 @@ public class PluginManager : IPluginManager
         }
 
         return msg;
+    }
+
+    /// <summary>
+    /// 解析获取指令参数
+    /// </summary>
+    /// <param name="commandMessage"></param>
+    /// <returns></returns>
+    private static IEnumerable<string> GetCommandArgs(string commandMessage)
+    {
+        if (string.IsNullOrEmpty(commandMessage) || commandMessage.Length < 2)
+        {
+            return Array.Empty<string>();
+        }
+        
+        var args = new List<string>();
+        var command = commandMessage[1..].TrimEnd().AsSpan();
+        var startPointer = 0;
+    
+        var inQuote = false;
+            
+        // /cmd "some thing \"in\" quote" value
+        // cmd | some thing "in" quote | value
+            
+        for (var movePointer = 0; movePointer < command.Length; movePointer++)
+        {
+            if (command[movePointer] == '"')
+            {
+                if (movePointer == 0)
+                {
+                    return new[] { commandMessage[1..] };
+                }
+                    
+                if (command[movePointer - 1] == '\\')
+                {
+                    continue;
+                }
+                    
+                inQuote = !inQuote;
+            }
+                
+            if (command[movePointer] != ' ')
+            {
+                continue;
+            }
+    
+            if (inQuote)
+            {
+                continue;
+            }
+    
+            if (command[movePointer - 1] == '"')
+            {
+                args.Add(command.Slice(startPointer + 1, movePointer - startPointer - 2)
+                    .ToString()
+                    .Replace("\\", string.Empty));
+            }
+            else
+            {
+                args.Add(command.Slice(startPointer, movePointer - startPointer).ToString());
+            }
+            startPointer = movePointer + 1;
+        }
+            
+        args.Add(command[startPointer..].ToString());
+
+        return args;
+    }
+    
+    private async Task<List<GetMemberRoleListOutput>> GetMemberRole(string dodoId, string islandId)
+    {
+        var cached = await _redis.StringGetAsync(new RedisKey($"member.role.list.{islandId}.{dodoId}"));
+        if (cached.HasValue)
+        {
+            return JsonSerializer.Deserialize<List<GetMemberRoleListOutput>>(cached.ToString())!;
+        }
+
+        var senderRoles = await _openApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
+        {
+            DodoId = dodoId, IslandId = islandId
+        });
+
+        var str = JsonSerializer.Serialize(senderRoles);
+        
+        await _redis.StringSetAsync(
+            new RedisKey($"member.role.list.{islandId}.{dodoId}"),
+            new RedisValue(str),
+            TimeSpan.FromMinutes(10));
+
+        return senderRoles;
+    }
+
+    private static bool IsSuperAdmin(IEnumerable<MemberRole> roles)
+    {
+        return roles.Any(x => (x.Permission >> 3) % 2 == 1);
     }
 }

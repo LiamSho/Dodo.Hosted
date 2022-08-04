@@ -7,7 +7,7 @@ namespace DodoHosted.Base.Models;
 /// <summary>
 /// 用户身份组
 /// </summary>
-public record DodoMemberRole
+public record MemberRole
 {
     /// <summary>
     /// 身份组名称

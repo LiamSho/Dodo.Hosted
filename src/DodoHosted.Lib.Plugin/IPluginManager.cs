@@ -10,6 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.Models;
 using DodoHosted.Lib.Plugin.Models;
 
 namespace DodoHosted.Lib.Plugin;
@@ -32,13 +33,6 @@ public interface IPluginManager
     // ReSharper disable once ReturnTypeCanBeEnumerable.Global
     CommandInfo[] GetCommandInfos();
     
-    /// <summary>
-    /// 获取已载入的指令清单
-    /// </summary>
-    /// <returns>已载入插件的 <see cref="CommandManifest"/></returns>
-    // ReSharper disable once ReturnTypeCanBeEnumerable.Global
-    CommandManifest[] GetCommandManifests();
-
     /// <summary>
     /// 载入插件包
     /// </summary>
@@ -64,4 +58,11 @@ public interface IPluginManager
     /// </summary>
     /// <returns></returns>
     void UnloadPlugins();
+
+    /// <summary>
+    /// 执行指令
+    /// </summary>
+    /// <param name="cmdMessage">指令消息</param>
+    /// <returns></returns>
+    Task RunCommand(CommandMessage cmdMessage);
 }
