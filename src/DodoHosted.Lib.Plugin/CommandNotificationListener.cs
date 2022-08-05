@@ -15,16 +15,19 @@ using DodoHosted.Base;
 using DodoHosted.Base.Core.Notifications;
 using DodoHosted.Base.Models;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.Plugin;
 
 public class CommandNotificationListener : INotificationHandler<DodoChannelMessageNotification<MessageBodyText>>
 {
     private readonly IPluginManager _pluginManager;
+    private readonly ILogger<CommandNotificationListener> _logger;
 
-    public CommandNotificationListener(IPluginManager pluginManager)
+    public CommandNotificationListener(IPluginManager pluginManager, ILogger<CommandNotificationListener> logger)
     {
         _pluginManager = pluginManager;
+        _logger = logger;
     }
     
     public async Task Handle(DodoChannelMessageNotification<MessageBodyText> notification, CancellationToken cancellationToken)
@@ -35,7 +38,7 @@ public class CommandNotificationListener : INotificationHandler<DodoChannelMessa
         {
             return;
         }
-
+        
         var eventBody = notification.Message.Data.EventBody;
         var cmdMessage = new CommandMessage
         {
@@ -50,6 +53,7 @@ public class CommandNotificationListener : INotificationHandler<DodoChannelMessa
             MemberNickname = eventBody.Member.NickName,
             OriginalText = eventBody.MessageBody.Content,
         };
+        _logger.LogTrace("接收到指令：{TraceCommandMessageReceived}，发送者：{TraceCommandSender}", message, cmdMessage.PersonalNickname);
 
         await _pluginManager.RunCommand(cmdMessage);
     }

@@ -184,7 +184,8 @@ public class PluginManager : IPluginManager
             var success = _plugins.TryAdd(pluginInfo.Identifier, pluginManifest);
             Debug.Assert(success);
             
-            _logger.LogInformation("已载入插件 {PluginInfo}，事件处理器 {EventHandlerCount} 个", pluginInfo, pluginManifest.EventHandlers.Length);
+            _logger.LogInformation("已载入插件 {PluginInfo}，事件处理器 {EventHandlerCount} 个，指令 {CommandCount} 个",
+                pluginInfo, pluginManifest.EventHandlers.Length, pluginManifest.CommandManifests.Length);
         }
         catch (Exception ex)
         {
@@ -206,32 +207,44 @@ public class PluginManager : IPluginManager
     /// <inheritdoc />
     public bool UnloadPlugin(string pluginIdentifier)
     {
+        _logger.LogInformation("执行卸载插件 {PluginUnloadIdentifier} 任务", pluginIdentifier);
         var _ = _plugins.TryRemove(pluginIdentifier, out var pluginManifest);
         pluginManifest?.Context.Unload();
         
         GC.Collect();
+        
+        var status = _plugins.ContainsKey(pluginIdentifier) is false;
+        
+        _logger.Log(status ? LogLevel.Information : LogLevel.Warning,
+            "插件 {PluginUnloadIdentifier} 卸载任务完成，{PluginUnloadStatus}",
+            pluginIdentifier, status ? "成功" : "失败");
 
-        return _plugins.ContainsKey(pluginIdentifier) is false;
+        return status;
     }
 
     /// <inheritdoc />
     public void UnloadPlugins()
     {
+        _logger.LogInformation("执行卸载所有插件任务");
+        
         var pluginManifests = _plugins.Values.ToList();
         _plugins.Clear();
-        
+
         foreach (var pluginManifest in pluginManifests)
         {
             pluginManifest.Context.Unload();
         }
         
         GC.Collect();
+        
+        _logger.LogInformation("卸载所有插件任务已完成，当前插件数量：{PluginsCount}", _plugins.Count);
     }
 
     /// <inheritdoc />
     public async Task RunCommand(CommandMessage cmdMessage)
     {
         var args = GetCommandArgs(cmdMessage.OriginalText).ToArray();
+        _logger.LogTrace("已解析接收到的指令：{TraceReceivedCommandParsed}", $"[{string.Join(", ", args)}]");
         if (args.Length == 0)
         {
             return;
@@ -241,6 +254,7 @@ public class PluginManager : IPluginManager
         var cmdInfo = AllCommands.FirstOrDefault(x => x.Name == command);
         var reply = async Task<string>(string s) =>
         {
+            _logger.LogTrace("回复消息 {TraceReplyTargetId}", s);
             var output = await _openApiService.SetChannelMessageSendAsync(
                 new SetChannelMessageSendInput<MessageBodyText>
                 {
@@ -248,12 +262,15 @@ public class PluginManager : IPluginManager
                     MessageBody = new MessageBodyText { Content = s, },
                     ReferencedMessageId = cmdMessage.MessageId
                 });
-
+            _logger.LogTrace("已回复消息, 消息 ID 为 {TraceReplyMessageId}", output.MessageId);
+            
             return output.MessageId;
         };
         
         if (cmdInfo is null)
         {
+            _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
+                cmdMessage.OriginalText, CommandExecutionResult.Unknown, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
             _channelLogger.LogWarning($"指令不存在：`{cmdMessage.OriginalText}`，" +
                                       $"发送者：<@!{cmdMessage.MemberId}>，" +
                                       $"频道：<#{cmdMessage.ChannelId}>，" +
@@ -277,6 +294,7 @@ public class PluginManager : IPluginManager
             .ToList();
         
         var result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, _provider, reply,IsSuperAdmin(cmdMessage.Roles));
+        _logger.LogTrace("指令执行结果：{TraceCommandExecutionResult}", result);
 
         switch (result)
         {
@@ -300,6 +318,9 @@ public class PluginManager : IPluginManager
                 _channelLogger.LogError($"未知的指令执行结果：`{result}`");
                 break;
         }
+        
+        _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
+            cmdMessage.OriginalText, result, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
     }
 
     /// <summary>
@@ -308,7 +329,7 @@ public class PluginManager : IPluginManager
     /// <param name="types">Plugin Assembly 中所有的类型</param>
     /// <returns><see cref="EventHandlerManifest"/> 清单</returns>
     /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    private static IEnumerable<EventHandlerManifest> FetchEventHandlers(IEnumerable<Type> types)
+    private IEnumerable<EventHandlerManifest> FetchEventHandlers(IEnumerable<Type> types)
     {
         var eventHandlerTypes = types
             .Where(x => x != typeof(IDodoHostedPluginEventHandler<>))
@@ -342,6 +363,8 @@ public class PluginManager : IPluginManager
                 throw new PluginAssemblyLoadException($"找不到到插件事件处理器 {type.FullName} 的事件类型");
             }
             
+            _logger.LogTrace("已载入事件处理器 {TraceLoadedEventHandler}", type.FullName);
+            
             manifests.Add(new EventHandlerManifest
             {
                 EventHandler = handler,
@@ -360,7 +383,7 @@ public class PluginManager : IPluginManager
     /// <param name="types">Plugin Assembly 中所有的类型</param>
     /// <returns><see cref="CommandManifest"/> 清单</returns>
     /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    private static IEnumerable<CommandManifest> FetchCommandExecutors(IEnumerable<Type> types)
+    private IEnumerable<CommandManifest> FetchCommandExecutors(IEnumerable<Type> types)
     {
         var commandExecutorTypes = types
             .Where(x => x != typeof(ICommandExecutor))
@@ -382,6 +405,8 @@ public class PluginManager : IPluginManager
             {
                 throw new PluginAssemblyLoadException($"无法创建指令处理器 {type.FullName} 的实例");
             }
+            
+            _logger.LogTrace("已载入指令处理器 {TraceLoadedCommandHandler}", type.FullName);
             
             manifests.Add(new CommandManifest
             {
