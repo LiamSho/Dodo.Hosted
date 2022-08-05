@@ -13,6 +13,8 @@
 using DodoHosted.Base.Interfaces;
 using DodoHosted.Base.Services;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
+using StackExchange.Redis;
 
 namespace DodoHosted.Base;
 
@@ -22,6 +24,18 @@ public static class BaseServiceExtension
     {
         serviceCollection.AddScoped<IChannelLogger, ChannelLogger>();
 
+        serviceCollection.AddSingleton<IMongoDatabase>(_ =>
+        {
+            var mongoClient = new MongoClient(HostEnvs.MongoDbConnectionString);
+            return mongoClient.GetDatabase(HostEnvs.MongoDbDatabaseName);
+        });
+
+        serviceCollection.AddSingleton(_ =>
+        {
+            var multiplexer = ConnectionMultiplexer.Connect(HostEnvs.RedisConnectionConfiguration);
+            return multiplexer.GetDatabase(HostEnvs.RedisDatabaseId);
+        });
+        
         return serviceCollection;
     }
 }
