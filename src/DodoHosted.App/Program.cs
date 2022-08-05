@@ -16,8 +16,21 @@ using DodoHosted.Data;
 using DodoHosted.Lib.Plugin;
 using DodoHosted.Lib.SdkWrapper;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
+
+Log.Logger = Helpers
+    .GetLoggerConfiguration()
+    .CreateLogger();
 
 var builder = Host.CreateDefaultBuilder();
+
+builder.ConfigureLogging(loggingBuilder =>
+{
+    loggingBuilder.ClearProviders();
+});
+
+builder.UseSerilog();
 
 builder.ConfigureServices((_, services) =>
 {

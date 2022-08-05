@@ -11,6 +11,8 @@
 // but WITHOUT ANY WARRANTY
 
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
 
 namespace DodoHosted.App;
 
@@ -29,7 +31,35 @@ public static class AppEnvs
     public static string DodoBotToken => ReadEnvironmentVariable(
         "DODO_SDK_BOT_TOKEN",
         string.Empty);
+    
+    /// <summary>
+    /// Serilog 最低记录等级，默认为 Information
+    /// </summary>
+    public static LogEventLevel SerilogMinimumLevel => Enum.TryParse<LogLevel>(ReadEnvironmentVariable(
+        "DODO_HOSTED_APP_LOGGER_MINIMUM_LEVEL", "Information"), out var level)
+        ? level.ToLogEventLevel()
+        : LogEventLevel.Information;
+    
+    /// <summary>
+    /// Serilog 文件记录器保存路径，为空表示不使用
+    /// </summary>
+    public static string SerilogSinkToFile => ReadEnvironmentVariable(
+        "DODO_HOSTED_APP_LOGGER_SINK_TO_FILE", string.Empty);
 
+    /// <summary>
+    /// Serilog 文件记录器滚动周期，默认为 Day
+    /// </summary>
+    /// <remarks>
+    /// Minute, Hour, Day, Month, Year, Infinite
+    /// </remarks>
+    public static RollingInterval SerilogSinkToFileRollingInterval => Enum.TryParse<RollingInterval>(ReadEnvironmentVariable(
+        "DODO_HOSTED_APP_LOGGER_SINK_TO_FILE_ROLLING_INTERVAL", "Day"), out var interval)
+        ? interval
+        : RollingInterval.Day;
+
+    /// <summary>
+    /// Dodo OpenApi 消息日志记录等级，默认为 Debug
+    /// </summary>
     public static LogLevel DodoHostedOpenApiLogLevel =>
         ReadEnvironmentVariable("DODO_HOSTED_OPENAPI_LOG_LEVEL", "Debug") switch
         {
@@ -46,4 +76,16 @@ public static class AppEnvs
         string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key))
             ? defaultValue
             : Environment.GetEnvironmentVariable(key)!;
+
+    private static LogEventLevel ToLogEventLevel(this LogLevel level) => level switch
+    {
+        LogLevel.Trace => LogEventLevel.Verbose,
+        LogLevel.Debug => LogEventLevel.Debug,
+        LogLevel.Information => LogEventLevel.Information,
+        LogLevel.Warning => LogEventLevel.Warning,
+        LogLevel.Error => LogEventLevel.Error,
+        LogLevel.Critical => LogEventLevel.Fatal,
+        LogLevel.None => LogEventLevel.Information,
+        _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
+    };
 }
