@@ -86,6 +86,18 @@ public static class HostEnvs
     /// </summary>
     public static readonly string CommandPrefix = ReadEnvironmentVariable(
         "DODO_HOSTED_COMMAND_PREFIX", "!");
+
+    /// <summary>
+    /// 版本号
+    /// </summary>
+    public static readonly string DodoHostedVersion = ReadEnvironmentVariable(
+        "DODO_HOSTED_VERSION", "0.0.0-DEBUG-BUILD");
+
+    /// <summary>
+    /// 是否在容器中运行
+    /// </summary>
+    public static readonly bool DodoHostedInContainer = ReadEnvironmentVariable(
+        "DODO_HOSTED_RUNTIME_CONTAINER", "false") is "true";
     
     /// <summary>
     /// 入口 Assembly 目录
