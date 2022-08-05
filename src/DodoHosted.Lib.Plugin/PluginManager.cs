@@ -26,7 +26,6 @@ using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
 
 namespace DodoHosted.Lib.Plugin;
 
@@ -36,7 +35,6 @@ public class PluginManager : IPluginManager
     private readonly ILogger<PluginManager> _logger;
     private readonly IChannelLogger _channelLogger;
     private readonly IServiceProvider _provider;
-    private readonly IDatabase _redis;
     private readonly OpenApiService _openApiService;
 
     private readonly ConcurrentDictionary<string, PluginManifest> _plugins;
@@ -58,13 +56,11 @@ public class PluginManager : IPluginManager
         ILogger<PluginManager> logger,
         IChannelLogger channelLogger,
         IServiceProvider provider,
-        IDatabase redis,
         OpenApiService openApiService)
     {
         _logger = logger;
         _channelLogger = channelLogger;
         _provider = provider;
-        _redis = redis;
         _openApiService = openApiService;
 
         _pluginCacheDirectory = new DirectoryInfo(HostEnvs.PluginCacheDirectory);
@@ -299,9 +295,7 @@ public class PluginManager : IPluginManager
         switch (result)
         {
             case CommandExecutionResult.Success:
-                break;
             case CommandExecutionResult.Failed:
-                await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 执行失败");
                 break;
             case CommandExecutionResult.Unknown:
                 await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 不存在或存在格式错误\n\n" +
@@ -510,24 +504,10 @@ public class PluginManager : IPluginManager
     
     private async Task<List<GetMemberRoleListOutput>> GetMemberRole(string dodoId, string islandId)
     {
-        var cached = await _redis.StringGetAsync(new RedisKey($"member.role.list.{islandId}.{dodoId}"));
-        if (cached.HasValue)
-        {
-            return JsonSerializer.Deserialize<List<GetMemberRoleListOutput>>(cached.ToString())!;
-        }
-
         var senderRoles = await _openApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
         {
             DodoId = dodoId, IslandId = islandId
         });
-
-        var str = JsonSerializer.Serialize(senderRoles);
-        
-        await _redis.StringSetAsync(
-            new RedisKey($"member.role.list.{islandId}.{dodoId}"),
-            new RedisValue(str),
-            TimeSpan.FromMinutes(10));
-
         return senderRoles;
     }
 
