@@ -10,6 +10,9 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base;
+using DodoHosted.Base.Events;
 using DodoHosted.Base.Models;
 using DodoHosted.Lib.Plugin.Models;
 
@@ -62,7 +65,15 @@ public interface IPluginManager
     /// <summary>
     /// 执行指令
     /// </summary>
-    /// <param name="cmdMessage">指令消息</param>
+    /// <param name="messageEvent">消息事件</param>
     /// <returns></returns>
-    Task RunCommand(CommandMessage cmdMessage);
+    Task RunCommand(DodoChannelMessageEvent<MessageBodyText> messageEvent);
+
+    /// <summary>
+    /// 运行事件处理器
+    /// </summary>
+    /// <param name="event">事件消息</param>
+    /// <param name="typeString">类型字符串</param>
+    /// <returns></returns>
+    Task RunEvent(IDodoHostedEvent @event, string typeString);
 }

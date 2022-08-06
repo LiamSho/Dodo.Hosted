@@ -46,8 +46,7 @@ builder.ConfigureServices((_, services) =>
             openEventOptionsBuilder
                 .UseAsync()
                 .UseReconnect();
-        },
-        AppDomain.CurrentDomain.GetAssemblies());
+        });
 
     services.AddPluginManager();
     services.AddBaseServices();

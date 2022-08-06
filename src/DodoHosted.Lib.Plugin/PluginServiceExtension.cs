@@ -20,6 +20,8 @@ public static class PluginServiceExtension
     {
         serviceCollection.AddSingleton<IPluginManager, PluginManager>();
 
+        serviceCollection.AddHostedService<PluginSystemHosted>();
+
         return serviceCollection;
     }
 }

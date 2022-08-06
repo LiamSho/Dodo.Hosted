@@ -10,10 +10,11 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using System.Text.Json;
 using DoDo.Open.Sdk.Models.Events;
 using DoDo.Open.Sdk.Services;
-using DodoHosted.Base.Core.Notifications;
-using MediatR;
+using DodoHosted.Base;
+using DodoHosted.Base.Events;
 using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.SdkWrapper;
@@ -21,12 +22,13 @@ namespace DodoHosted.Lib.SdkWrapper;
 public class DodoEventProcessor : EventProcessService
 {
     private readonly ILogger<DodoEventProcessor> _logger;
-    private readonly IMediator _mediator;
 
-    public DodoEventProcessor(ILogger<DodoEventProcessor> logger, IMediator mediator)
+    public delegate void ProcessEventDelegate(IDodoHostedEvent @event, string typeString);
+    public static event ProcessEventDelegate? DodoEvent; 
+    
+    public DodoEventProcessor(ILogger<DodoEventProcessor> logger)
     {
         _logger = logger;
-        _mediator = mediator;
     }
     
     public override void Connected(string message)
@@ -51,26 +53,36 @@ public class DodoEventProcessor : EventProcessService
 
     public override void ChannelMessageEvent<T>(EventSubjectOutput<EventSubjectDataBusiness<EventBodyChannelMessage<T>>> input)
     {
-        _mediator.Publish(new DodoChannelMessageNotification<T>(input)).GetAwaiter().GetResult();
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoChannelMessageEvent<T>(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
     }
 
     public override void MemberJoinEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyMemberJoin>> input)
     {
-        _mediator.Publish(new DodoMemberJoinNotification(input)).GetAwaiter().GetResult();
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoMemberJoinEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
     }
 
     public override void MemberLeaveEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyMemberLeave>> input)
     {
-        _mediator.Publish(new DodoMemberLeaveNotification(input)).GetAwaiter().GetResult();
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoMemberLeaveEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
     }
 
     public override void MessageReactionEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyMessageReaction>> input)
     {
-        _mediator.Publish(new DodoMessageReactionNotification(input)).GetAwaiter().GetResult();
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoMessageReactionEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
     }
 
     public override void PersonalMessageEvent<T>(EventSubjectOutput<EventSubjectDataBusiness<EventBodyPersonalMessage<T>>> input)
     {
-        _mediator.Publish(new DodoPersonalMessageNotification<T>(input)).GetAwaiter().GetResult();
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoPersonalMessageEvent<T>(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
     }
 }

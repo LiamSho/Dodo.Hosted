@@ -10,14 +10,24 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DoDo.Open.Sdk.Models.Events;
-using MediatR;
+using Microsoft.Extensions.Hosting;
 
-namespace DodoHosted.Base.Core.Notifications;
+namespace DodoHosted.Lib.Plugin;
 
-/// <summary>
-/// 消息反应 Notification
-/// </summary>
-/// <param name="Message">Event 消息体</param>
-public record DodoMessageReactionNotification(EventSubjectOutput<EventSubjectDataBusiness<EventBodyMessageReaction>> Message)
-    : INotification;
+public class PluginSystemHosted : IHostedService
+{
+    public PluginSystemHosted(IPluginManager pluginManager)
+    {
+        pluginManager.LoadPlugins();
+    }
+    
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+}

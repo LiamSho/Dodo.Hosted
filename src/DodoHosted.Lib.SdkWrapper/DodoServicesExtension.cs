@@ -10,11 +10,9 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Reflection;
 using DoDo.Open.Sdk.Models;
 using DoDo.Open.Sdk.Services;
 using DodoHosted.Lib.SdkWrapper.Builder;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -29,13 +27,11 @@ public static class DodoServicesExtension
     /// <param name="serviceCollection">Service Collection</param>
     /// <param name="dodoOpenApiOptionsBuilder">Dodo <see cref="OpenApiOptions"/> 构建器委托</param>
     /// <param name="dodoOpenEventOptionsBuilder">Dodo <see cref="OpenEventOptions"/> 构建器委托</param>
-    /// <param name="mediatorAssemblies">Mediator 查找 Assemblies, 一般为 <c>Assembly.GetExecutingAssembly()</c> 即可</param>
     /// <returns></returns>
     public static IServiceCollection AddDodoServices(
         this IServiceCollection serviceCollection,
         Action<DodoOpenApiOptionsBuilder> dodoOpenApiOptionsBuilder,
-        Action<DodoOpenEventOptionsBuilder> dodoOpenEventOptionsBuilder,
-        params Assembly[] mediatorAssemblies)
+        Action<DodoOpenEventOptionsBuilder> dodoOpenEventOptionsBuilder)
     {
         var openApiOptionsBuilder = new DodoOpenApiOptionsBuilder();
         var openEventOptionsBuilder = new DodoOpenEventOptionsBuilder();
@@ -65,8 +61,6 @@ public static class DodoServicesExtension
         serviceCollection.AddSingleton<EventProcessService, DodoEventProcessor>();
         
         serviceCollection.AddHostedService<DodoHosted>();
-        
-        serviceCollection.AddMediatR(mediatorAssemblies);
 
         return serviceCollection;
     }

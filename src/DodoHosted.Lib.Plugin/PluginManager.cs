@@ -15,22 +15,21 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
-using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
-using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Services;
 using DodoHosted.Base;
 using DodoHosted.Base.Interfaces;
 using DodoHosted.Base.Models;
 using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
+using DodoHosted.Lib.SdkWrapper;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.Plugin;
 
 /// <inheritdoc />
-public class PluginManager : IPluginManager
+public partial class PluginManager : IPluginManager
 {
     private readonly ILogger<PluginManager> _logger;
     private readonly IChannelLogger _channelLogger;
@@ -68,6 +67,8 @@ public class PluginManager : IPluginManager
         _plugins = new ConcurrentDictionary<string, PluginManifest>();
 
         _builtinCommands = FetchCommandExecutors(this.GetType().Assembly.GetTypes()).ToArray();
+
+        DodoEventProcessor.DodoEvent += EventListener;
     }
 
     /// <inheritdoc />
@@ -248,86 +249,18 @@ public class PluginManager : IPluginManager
         
         _logger.LogInformation("卸载所有插件任务已完成，当前插件数量：{PluginsCount}", _plugins.Count);
     }
-
+    
     /// <inheritdoc />
-    public async Task RunCommand(CommandMessage cmdMessage)
+    public Task RunEvent(IDodoHostedEvent @event, string typeString)
     {
-        var args = GetCommandArgs(cmdMessage.OriginalText).ToArray();
-        _logger.LogTrace("已解析接收到的指令：{TraceReceivedCommandParsed}", $"[{string.Join(", ", args)}]");
-        if (args.Length == 0)
-        {
-            return;
-        }
-
-        var command = args[0];
-        var cmdInfo = AllCommands.FirstOrDefault(x => x.Name == command);
-        var reply = async Task<string>(string s) =>
-        {
-            _logger.LogTrace("回复消息 {TraceReplyTargetId}", s);
-            var output = await _openApiService.SetChannelMessageSendAsync(
-                new SetChannelMessageSendInput<MessageBodyText>
-                {
-                    ChannelId = cmdMessage.ChannelId,
-                    MessageBody = new MessageBodyText { Content = s, },
-                    ReferencedMessageId = cmdMessage.MessageId
-                });
-            _logger.LogTrace("已回复消息, 消息 ID 为 {TraceReplyMessageId}", output.MessageId);
-            
-            return output.MessageId;
-        };
+        // TODO : WIP
         
-        if (cmdInfo is null)
-        {
-            _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
-                cmdMessage.OriginalText, CommandExecutionResult.Unknown, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
-            _channelLogger.LogWarning($"指令不存在：`{cmdMessage.OriginalText}`，" +
-                                      $"发送者：<@!{cmdMessage.MemberId}>，" +
-                                      $"频道：<#{cmdMessage.ChannelId}>，" +
-                                      $"消息 ID：`{cmdMessage.MessageId}`");
-            await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 不存在，执行 `{HostEnvs.CommandPrefix}help` 查看所有可用指令");
-            return;
-        }
+        var type = @event.GetType().FullName;
 
-        var senderRoles = await GetMemberRole(cmdMessage.MemberId, cmdMessage.IslandId);
+        _logger.LogTrace("{T}", type);
+        _logger.LogTrace("{T}", typeString);
 
-        cmdMessage.Roles = senderRoles
-            .Select(x =>
-                new MemberRole
-                {
-                    Id = x.RoleId,
-                    Name = x.RoleName,
-                    Color = x.RoleColor,
-                    Position = x.Position,
-                    Permission = Convert.ToInt32(x.Permission, 16)
-                })
-            .ToList();
-        
-        var result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, _provider, reply,IsSuperAdmin(cmdMessage.Roles));
-        _logger.LogTrace("指令执行结果：{TraceCommandExecutionResult}", result);
-
-        switch (result)
-        {
-            case CommandExecutionResult.Success:
-            case CommandExecutionResult.Failed:
-                break;
-            case CommandExecutionResult.Unknown:
-                await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 不存在或存在格式错误\n\n" +
-                                   $"指令 `{HostEnvs.CommandPrefix}{args[0]}` 的帮助描述：\n\n" +
-                                   cmdInfo.HelpText);
-                break;
-            case CommandExecutionResult.Unauthorized:
-                _channelLogger.LogWarning($"无权访问：`{cmdMessage.OriginalText}`，" +
-                                          $"发送者：<@!{cmdMessage.MemberId}>，" +
-                                          $"频道：<#{cmdMessage.ChannelId}>，" +
-                                          $"消息 ID：`{cmdMessage.MessageId}`");
-                break;
-            default:
-                _channelLogger.LogError($"未知的指令执行结果：`{result}`");
-                break;
-        }
-        
-        _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
-            cmdMessage.OriginalText, result, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
+        return Task.CompletedTask;
     }
 
     /// <summary>

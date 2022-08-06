@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DodoHosted.Base.Core\DodoHosted.Base.Core.csproj" />
+      <ProjectReference Include="..\DodoHosted.Lib.SdkWrapper\DodoHosted.Lib.SdkWrapper.csproj" />
       <ProjectReference Include="..\DodoHosted.Open.Plugin\DodoHosted.Open.Plugin.csproj" />
     </ItemGroup>
 
