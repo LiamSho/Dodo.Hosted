@@ -51,7 +51,7 @@ public class SystemCommand : ICommandExecutor
             case "gc":
                 var gcInfo = GC.GetGCMemoryInfo();
                 messageBuilder.AppendLine($"Max Generation: `{GC.MaxGeneration}`");
-                messageBuilder.AppendLine($"Finalization Pending Count: `{ToMegabytes(gcInfo.FinalizationPendingCount)}`");
+                messageBuilder.AppendLine($"Finalization Pending Count: `{gcInfo.FinalizationPendingCount}`");
                 messageBuilder.AppendLine($"Total Heap Size: `{ToMegabytes(gcInfo.HeapSizeBytes)} MB`");
                 messageBuilder.AppendLine($"Committed Heap Size: `{ToMegabytes(gcInfo.TotalCommittedBytes)} MB`");
                 messageBuilder.AppendLine($"Total Allocated Memory: `{ToMegabytes(GC.GetTotalMemory(false))} MB`");
@@ -74,6 +74,6 @@ public class SystemCommand : ICommandExecutor
 
     private static string ToMegabytes(long size)
     {
-        return (size / 1024 / 1024).ToString("F");
+        return ((double)size / 1024 / 1024).ToString("F");
     }
 }
