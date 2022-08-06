@@ -11,6 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Reflection;
+using DodoHosted.Open.Plugin;
 
 namespace DodoHosted.Lib.Plugin.Models;
 
@@ -33,6 +34,11 @@ public record PluginManifest
     /// 插件信息
     /// </summary>
     public required PluginInfo PluginInfo { get; init; }
+    
+    /// <summary>
+    /// 插件生命周期
+    /// </summary>
+    public required IPluginLifetime? PluginLifetime { get; init; }
     
     /// <summary>
     /// 插件所含 Event Handler

@@ -160,13 +160,21 @@ public class PluginManager : IPluginManager
             var assembly = context.LoadFromAssemblyPath(entryAssembly.FullName);
             _logger.LogTrace("已载入插件程序集 {TracePluginAssemblyName}", assembly.FullName);
 
-            // 载入事件处理器
             var pluginAssemblyTypes = assembly.GetTypes();
 
+            // 载入事件处理器
             var eventHandlers = FetchEventHandlers(pluginAssemblyTypes);
             
             // 载入指令处理器
             var commandExecutors = FetchCommandExecutors(pluginAssemblyTypes);
+            
+            // 载入插件生命周期类
+            var pluginLifetime = FetchPluginLifetime(pluginAssemblyTypes);
+
+            if (pluginLifetime is not null)
+            {
+                await pluginLifetime.Load();
+            }
             
             // 添加插件
             var pluginManifest = new PluginManifest
@@ -174,6 +182,7 @@ public class PluginManager : IPluginManager
                 PluginEntryAssembly = assembly,
                 Context = context,
                 PluginInfo = pluginInfo,
+                PluginLifetime = pluginLifetime,
                 EventHandlers = eventHandlers.ToArray(),
                 CommandManifests = commandExecutors.ToArray()
             };
@@ -205,6 +214,9 @@ public class PluginManager : IPluginManager
     {
         _logger.LogInformation("执行卸载插件 {PluginUnloadIdentifier} 任务", pluginIdentifier);
         var _ = _plugins.TryRemove(pluginIdentifier, out var pluginManifest);
+        
+        pluginManifest?.PluginLifetime?.Unload().GetAwaiter().GetResult();
+        
         pluginManifest?.Context.Unload();
         
         GC.Collect();
@@ -228,6 +240,7 @@ public class PluginManager : IPluginManager
 
         foreach (var pluginManifest in pluginManifests)
         {
+            pluginManifest.PluginLifetime?.Unload().GetAwaiter().GetResult();
             pluginManifest.Context.Unload();
         }
         
@@ -413,6 +426,23 @@ public class PluginManager : IPluginManager
 
         return manifests;
     }
+
+    /// <summary>
+    /// 从 Plugin Assembly 中载入插件生命周期类
+    /// </summary>
+    /// <param name="types">Plugin Assembly 中所有的类型</param>
+    /// <returns></returns>
+    private static IPluginLifetime? FetchPluginLifetime(IEnumerable<Type> types)
+    {
+        var type = types.FirstOrDefault(x => x.IsAssignableTo(typeof(IPluginLifetime)));
+        if (type is null)
+        {
+            return null;
+        }
+
+        return Activator.CreateInstance(type) as IPluginLifetime;
+    }
+
     
     /// <summary>
     /// 格式化指令帮助文档输出
