@@ -13,9 +13,9 @@
 using System.Text;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Services;
-using DodoHosted.Base.Helpers;
-using DodoHosted.Base.Interfaces;
-using DodoHosted.Base.Models;
+using DodoHosted.Base.App.Helpers;
+using DodoHosted.Base.App.Interfaces;
+using DodoHosted.Base.App.Models;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 

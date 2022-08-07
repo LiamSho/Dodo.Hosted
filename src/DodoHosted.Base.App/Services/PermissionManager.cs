@@ -11,14 +11,14 @@
 // but WITHOUT ANY WARRANTY
 
 using DoDo.Open.Sdk.Models.Members;
-using DodoHosted.Base.Interfaces;
-using DodoHosted.Base.Models;
+using DodoHosted.Base.App.Interfaces;
+using DodoHosted.Base.App.Models;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
 // ReSharper disable ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
 
-namespace DodoHosted.Base.Services;
+namespace DodoHosted.Base.App.Services;
 
 public class PermissionManager : IPermissionManager
 {

@@ -11,98 +11,116 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 
-namespace DodoHosted.Base;
+namespace DodoHosted.Base.App;
 
 /// <summary>
 /// Host 变量
 /// </summary>
 public static class HostEnvs
 {
+    public static HostConfiguration Configuration { get; set; } = new();
+    
     /// <summary>
     /// 插件载入缓存目录
     /// </summary>
-    public static string PluginCacheDirectory => ReadEnvironmentVariable(
+    public static string PluginCacheDirectory => Configuration.PluginCacheDirectory ?? ReadEnvironmentVariable(
         "DODO_HOSTED_PLUGIN_CACHE_DIRECTORY",
         Path.Combine(AssemblyDirectory, "PluginCache"));
 
     /// <summary>
     /// 插件目录
     /// </summary>
-    public static string PluginDirectory => ReadEnvironmentVariable(
+    public static string PluginDirectory => Configuration.PluginDirectory ?? ReadEnvironmentVariable(
             "DODO_HOSTED_PLUGIN_DIRECTORY",
             Path.Combine(AssemblyDirectory, "Plugin"));
     
     /// <summary>
     /// MongoDb 连接字符串
     /// </summary>
-    public static string MongoDbConnectionString => ReadEnvironmentVariable(
+    public static string MongoDbConnectionString => Configuration.MongoDbConnectionString ?? ReadEnvironmentVariable(
         "DODO_HOSTED_MONGO_CONNECTION_STRING",
         string.Empty);
 
     /// <summary>
     /// MongoDb 数据库名称
     /// </summary>
-    public static string MongoDbDatabaseName => ReadEnvironmentVariable(
+    public static string MongoDbDatabaseName => Configuration.MongoDbDatabaseName ?? ReadEnvironmentVariable(
         "DODO_HOSTED_MONGO_DATABASE_NAME",
         "dodo-hosted");
     
     /// <summary>
-    /// Redis 连接配置字符串
+    /// Dodo 机器人 Client ID
     /// </summary>
-    public static string RedisConnectionConfiguration => ReadEnvironmentVariable(
-        "DODO_HOSTED_REDIS_CONNECTION_CONFIGURATION",
+    public static string DodoSdkBotClientId => ReadEnvironmentVariable(
+        "DODO_SDK_BOT_CLIENT_ID",
         string.Empty);
 
     /// <summary>
-    /// Redis 数据库
+    /// Dodo 机器人 Token
     /// </summary>
-    public static int RedisDatabaseId =>
-        int.TryParse(ReadEnvironmentVariable("DODO_HOSTED_REDIS_DATABASE_ID", "-1"), out var index)
-            ? index
-            : -1;
+    public static string DodoSdkBotToken => ReadEnvironmentVariable(
+        "DODO_SDK_BOT_TOKEN",
+        string.Empty);
     
     /// <summary>
     /// Dodo SDK API 终结点
     /// </summary>
-    public static string DodoSdkApiEndpoint => ReadEnvironmentVariable(
+    public static string DodoSdkApiEndpoint => Configuration.DodoSdkApiEndpoint ?? ReadEnvironmentVariable(
         "DODO_SDK_API_ENDPOINT",
         "https://botopen.imdodo.com");
 
     /// <summary>
     /// 是否开启 Channel Logger
     /// </summary>
-    public static readonly bool DodoHostedChannelLogEnabled = ReadEnvironmentVariable(
+    public static bool DodoHostedChannelLogEnabled => Configuration.DodoHostedChannelLogEnabled ?? ReadEnvironmentVariable(
         "DODO_HOSTED_CHANNEL_LOG_ENABLED", "false") is "true" or "yes";
 
     /// <summary>
     /// Channel Logger 频道 ID
     /// </summary>
-    public static readonly string DodoHostedChannelLogChannelId = ReadEnvironmentVariable(
+    public static string DodoHostedChannelLogChannelId => Configuration.DodoHostedChannelLogChannelId ?? ReadEnvironmentVariable(
         "DODO_HOSTED_CHANNEL_LOG_CHANNEL_ID", string.Empty);
 
     /// <summary>
     /// 指令前缀
     /// </summary>
-    public static readonly string CommandPrefix = ReadEnvironmentVariable(
+    public static string CommandPrefix => Configuration.CommandPrefix ?? ReadEnvironmentVariable(
         "DODO_HOSTED_COMMAND_PREFIX", "!");
 
     /// <summary>
     /// 版本号
     /// </summary>
-    public static readonly string DodoHostedVersion = ReadEnvironmentVariable(
+    public static string DodoHostedVersion => ReadEnvironmentVariable(
         "DODO_HOSTED_VERSION", "0.0.0-DEBUG-BUILD");
 
     /// <summary>
     /// 是否在容器中运行
     /// </summary>
-    public static readonly bool DodoHostedInContainer = ReadEnvironmentVariable(
+    public static bool DodoHostedInContainer => ReadEnvironmentVariable(
         "DODO_HOSTED_RUNTIME_CONTAINER", "false") is "true";
+    
+    /// <summary>
+    /// Dodo OpenApi 消息日志记录等级，默认为 Debug
+    /// </summary>
+    public static LogLevel DodoHostedOpenApiLogLevel =>
+        ReadEnvironmentVariable("DODO_HOSTED_OPENAPI_LOG_LEVEL", "Debug") switch
+        {
+            "Trace" => LogLevel.Trace,
+            "Debug" => LogLevel.Debug,
+            "Information" => LogLevel.Information,
+            "Warning" => LogLevel.Warning,
+            "Error" => LogLevel.Error,
+            "Critical" => LogLevel.Critical,
+            _ => LogLevel.Debug
+        };
+
     
     /// <summary>
     /// 入口 Assembly 目录
     /// </summary>
-    public static string AssemblyDirectory => new FileInfo(Assembly.GetExecutingAssembly().Location).Directory!.FullName;
+    private static string AssemblyDirectory => new FileInfo(Assembly.GetExecutingAssembly().Location).Directory!.FullName;
 
     private static string ReadEnvironmentVariable(string key, string defaultValue) =>
         string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key))

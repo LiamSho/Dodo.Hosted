@@ -11,9 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using DodoHosted.App;
-using DodoHosted.Base;
-using DodoHosted.Lib.Plugin;
-using DodoHosted.Lib.SdkWrapper;
+using DodoHosted.App.Core;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -33,23 +31,7 @@ builder.UseSerilog();
 
 builder.ConfigureServices((_, services) =>
 {
-    services.AddDodoServices(
-        openApiOptionsBuilder =>
-        {
-            openApiOptionsBuilder
-                .UseBotId(AppEnvs.DodoBotClientId)
-                .UseBotToken(AppEnvs.DodoBotToken)
-                .UseLogger(AppEnvs.DodoHostedOpenApiLogLevel);
-        },
-        openEventOptionsBuilder =>
-        {
-            openEventOptionsBuilder
-                .UseAsync()
-                .UseReconnect();
-        });
-
-    services.AddPluginManager();
-    services.AddBaseServices();
+    services.AddDodoHostedServices();
 });
 
 var app = builder.Build();

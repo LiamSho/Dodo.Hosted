@@ -10,12 +10,12 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.Interfaces;
-using DodoHosted.Base.Services;
+using DodoHosted.Base.App.Interfaces;
+using DodoHosted.Base.App.Services;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 
-namespace DodoHosted.Base;
+namespace DodoHosted.Base.App;
 
 public static class BaseServiceExtension
 {

@@ -16,8 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DodoHosted.Lib.Plugin\DodoHosted.Lib.Plugin.csproj" />
-      <ProjectReference Include="..\DodoHosted.Lib.SdkWrapper\DodoHosted.Lib.SdkWrapper.csproj" />
+      <ProjectReference Include="..\DodoHosted.App.Core\DodoHosted.App.Core.csproj" />
     </ItemGroup>
 
 </Project>

@@ -10,7 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.Models;
+using DodoHosted.Base.App.Models;
 
 namespace DodoHosted.Open.Plugin;
 

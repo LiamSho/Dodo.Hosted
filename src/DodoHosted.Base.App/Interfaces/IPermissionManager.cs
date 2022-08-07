@@ -11,9 +11,9 @@
 // but WITHOUT ANY WARRANTY
 
 using DoDo.Open.Sdk.Models.Members;
-using DodoHosted.Base.Models;
+using DodoHosted.Base.App.Models;
 
-namespace DodoHosted.Base.Interfaces;
+namespace DodoHosted.Base.App.Interfaces;
 
 public interface IPermissionManager
 {

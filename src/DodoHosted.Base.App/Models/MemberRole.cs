@@ -2,7 +2,7 @@
 // EeroBot belongs to the NibiruResearchCenter.
 // Licensed under the AGPL-3.0 license.
 
-namespace DodoHosted.Base.Models;
+namespace DodoHosted.Base.App.Models;
 
 /// <summary>
 /// 用户身份组

@@ -13,7 +13,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace DodoHosted.Base.Models;
+namespace DodoHosted.Base.App.Models;
 
 /// <summary>
 /// 权限组

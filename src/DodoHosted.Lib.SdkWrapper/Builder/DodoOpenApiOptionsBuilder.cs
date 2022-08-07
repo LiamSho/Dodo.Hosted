@@ -12,7 +12,6 @@
 
 using DoDo.Open.Sdk.Models;
 using DoDo.Open.Sdk.Services;
-using DodoHosted.Base;
 using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.SdkWrapper.Builder;
@@ -44,16 +43,6 @@ public class DodoOpenApiOptionsBuilder
         return this;
     }
 
-    /// <summary>
-    /// 使用默认值设置 <see cref="OpenApiOptions.BaseApi"/>
-    /// </summary>
-    /// <returns></returns>
-    public DodoOpenApiOptionsBuilder UseBaseApi()
-    {
-        _options.BaseApi = HostEnvs.DodoSdkApiEndpoint;
-        return this;
-    }
-    
     /// <summary>
     /// 设置 <see cref="OpenApiOptions.ClientId"/>
     /// </summary>
@@ -118,14 +107,11 @@ public class DodoOpenApiOptionsBuilder
     /// </exception>
     internal OpenApiOptions Build()
     {
-        if (string.IsNullOrEmpty(_options.BaseApi))
+        if (string.IsNullOrEmpty(_options.ClientId) ||
+            string.IsNullOrEmpty(_options.Token) ||
+            string.IsNullOrEmpty(_options.BaseApi)) 
         {
-            this.UseBaseApi();
-        }
-
-        if (string.IsNullOrEmpty(_options.ClientId) || string.IsNullOrEmpty(_options.Token))
-        {
-            throw new ArgumentException("ClientId 与 Token 不可为空");
+            throw new ArgumentException("ClientId 或 Token 或 BaseApi 不可为空");
         }
         
         return _options;

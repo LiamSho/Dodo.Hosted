@@ -12,8 +12,8 @@
 
 using System.Runtime.InteropServices;
 using System.Text;
-using DodoHosted.Base;
-using DodoHosted.Base.Models;
+using DodoHosted.Base.App;
+using DodoHosted.Base.App.Models;
 using DodoHosted.Open.Plugin;
 
 namespace DodoHosted.Lib.Plugin.Builtin;

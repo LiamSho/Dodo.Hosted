@@ -10,7 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Base.Interfaces;
+namespace DodoHosted.Base.App.Interfaces;
 
 public interface IChannelLogger
 {

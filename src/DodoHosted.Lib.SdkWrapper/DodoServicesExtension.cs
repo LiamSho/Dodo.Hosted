@@ -22,7 +22,7 @@ namespace DodoHosted.Lib.SdkWrapper;
 public static class DodoServicesExtension
 {
     /// <summary>
-    /// 注册 Dodo 机器人服务. 包含 Dodo 组件以及 <see cref="IMediator"/>
+    /// 注册 Dodo 机器人服务. 包含 Dodo 组件
     /// </summary>
     /// <param name="serviceCollection">Service Collection</param>
     /// <param name="dodoOpenApiOptionsBuilder">Dodo <see cref="OpenApiOptions"/> 构建器委托</param>

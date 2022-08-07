@@ -19,20 +19,6 @@ namespace DodoHosted.App;
 public static class AppEnvs
 {
     /// <summary>
-    /// Dodo 机器人 Client ID
-    /// </summary>
-    public static string DodoBotClientId => ReadEnvironmentVariable(
-        "DODO_SDK_BOT_CLIENT_ID",
-        string.Empty);
-
-    /// <summary>
-    /// Dodo 机器人 Token
-    /// </summary>
-    public static string DodoBotToken => ReadEnvironmentVariable(
-        "DODO_SDK_BOT_TOKEN",
-        string.Empty);
-    
-    /// <summary>
     /// Serilog 最低记录等级，默认为 Information
     /// </summary>
     public static LogEventLevel SerilogMinimumLevel => Enum.TryParse<LogLevel>(ReadEnvironmentVariable(
@@ -56,22 +42,7 @@ public static class AppEnvs
         "DODO_HOSTED_APP_LOGGER_SINK_TO_FILE_ROLLING_INTERVAL", "Day"), out var interval)
         ? interval
         : RollingInterval.Day;
-
-    /// <summary>
-    /// Dodo OpenApi 消息日志记录等级，默认为 Debug
-    /// </summary>
-    public static LogLevel DodoHostedOpenApiLogLevel =>
-        ReadEnvironmentVariable("DODO_HOSTED_OPENAPI_LOG_LEVEL", "Debug") switch
-        {
-            "Trace" => LogLevel.Trace,
-            "Debug" => LogLevel.Debug,
-            "Information" => LogLevel.Information,
-            "Warning" => LogLevel.Warning,
-            "Error" => LogLevel.Error,
-            "Critical" => LogLevel.Critical,
-            _ => LogLevel.Debug
-        };
-
+    
     private static string ReadEnvironmentVariable(string key, string defaultValue) =>
         string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key))
             ? defaultValue

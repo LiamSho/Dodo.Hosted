@@ -13,7 +13,6 @@
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base;
 using DodoHosted.Base.Events;
-using DodoHosted.Base.Models;
 using DodoHosted.Lib.Plugin.Models;
 
 namespace DodoHosted.Lib.Plugin;

@@ -3,8 +3,8 @@
 // Licensed under the AGPL-3.0 license.
 
 using System.Text;
-using DodoHosted.Base;
-using DodoHosted.Base.Models;
+using DodoHosted.Base.App;
+using DodoHosted.Base.App.Models;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 

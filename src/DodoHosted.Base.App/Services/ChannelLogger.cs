@@ -13,10 +13,10 @@
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Services;
-using DodoHosted.Base.Interfaces;
+using DodoHosted.Base.App.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace DodoHosted.Base.Services;
+namespace DodoHosted.Base.App.Services;
 
 public class ChannelLogger : IChannelLogger
 {

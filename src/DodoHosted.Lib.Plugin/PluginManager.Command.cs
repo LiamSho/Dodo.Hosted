@@ -14,9 +14,9 @@ using System.Diagnostics;
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
-using DodoHosted.Base;
+using DodoHosted.Base.App;
+using DodoHosted.Base.App.Models;
 using DodoHosted.Base.Events;
-using DodoHosted.Base.Models;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.Logging;
 

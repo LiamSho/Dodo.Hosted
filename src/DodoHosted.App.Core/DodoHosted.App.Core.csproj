@@ -6,8 +6,10 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\DodoHosted.Base.App\DodoHosted.Base.App.csproj" />
-    </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\DodoHosted.Lib.Plugin\DodoHosted.Lib.Plugin.csproj" />
+      <ProjectReference Include="..\DodoHosted.Lib.SdkWrapper\DodoHosted.Lib.SdkWrapper.csproj" />
+    </ItemGroup>
+  
 </Project>
