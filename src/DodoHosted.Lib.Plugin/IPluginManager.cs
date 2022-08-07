@@ -75,5 +75,5 @@ public interface IPluginManager
     /// <param name="event">事件消息</param>
     /// <param name="typeString">类型字符串</param>
     /// <returns></returns>
-    Task RunEvent(IDodoHostedEvent @event, string typeString);
+    Task<bool> RunEvent(IDodoHostedEvent @event, string typeString);
 }

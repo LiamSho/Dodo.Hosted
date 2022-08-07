@@ -10,8 +10,9 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DnsClient.Internal;
+using System.Diagnostics;
 using DoDo.Open.Sdk.Models.Channels;
+using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base;
 using DodoHosted.Base.Events;
@@ -32,6 +33,8 @@ public partial class PluginManager
         {
             return;
         }
+
+        var sw = Stopwatch.StartNew();
         
         var eventBody = messageEvent.Message.Data.EventBody;
         var cmdMessage = new CommandMessage
@@ -60,6 +63,7 @@ public partial class PluginManager
         var cmdInfo = AllCommands.FirstOrDefault(x => x.Name == command);
         var reply = async Task<string>(string s) =>
         {
+            var replySw = Stopwatch.StartNew();
             _logger.LogTrace("回复消息 {TraceReplyTargetId}", s);
             var output = await _openApiService.SetChannelMessageSendAsync(
                 new SetChannelMessageSendInput<MessageBodyText>
@@ -68,7 +72,8 @@ public partial class PluginManager
                     MessageBody = new MessageBodyText { Content = s, },
                     ReferencedMessageId = cmdMessage.MessageId
                 });
-            _logger.LogTrace("已回复消息, 消息 ID 为 {TraceReplyMessageId}", output.MessageId);
+            replySw.Stop();
+            _logger.LogTrace("已回复消息，耗时 {TraceReplyTime} MS，消息 ID 为 {TraceReplyMessageId}", replySw.ElapsedMilliseconds, output.MessageId);
             
             return output.MessageId;
         };
@@ -123,8 +128,104 @@ public partial class PluginManager
                 break;
         }
         
-        _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
-            cmdMessage.OriginalText, result, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
+        sw.Stop();
+        
+        _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，耗时：{CommandExecutionTime} MS，发送者：{CommandSender}，频道：{CommandSendChannel}，消息：{CommandMessage}",
+            cmdMessage.OriginalText, result, sw.ElapsedMilliseconds, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
+    }
+    
+    /// <summary>
+    /// 解析获取指令参数
+    /// </summary>
+    /// <param name="commandMessage"></param>
+    /// <returns></returns>
+    private static IEnumerable<string> GetCommandArgs(string commandMessage)
+    {
+        if (string.IsNullOrEmpty(commandMessage) || commandMessage.Length < 2)
+        {
+            return Array.Empty<string>();
+        }
+        
+        var args = new List<string>();
+        var command = commandMessage[1..].TrimEnd().AsSpan();
+        var startPointer = 0;
+    
+        var inQuote = false;
+            
+        // /cmd "some thing \"in\" quote" value
+        // cmd | some thing "in" quote | value
+            
+        for (var movePointer = 0; movePointer < command.Length; movePointer++)
+        {
+            if (command[movePointer] == '"')
+            {
+                if (movePointer == 0)
+                {
+                    return new[] { commandMessage[1..] };
+                }
+                    
+                if (command[movePointer - 1] == '\\')
+                {
+                    continue;
+                }
+                    
+                inQuote = !inQuote;
+            }
+                
+            if (command[movePointer] != ' ')
+            {
+                continue;
+            }
+    
+            if (inQuote)
+            {
+                continue;
+            }
+    
+            if (command[movePointer - 1] == '"')
+            {
+                args.Add(command.Slice(startPointer + 1, movePointer - startPointer - 2)
+                    .ToString()
+                    .Replace("\\", string.Empty));
+            }
+            else
+            {
+                args.Add(command.Slice(startPointer, movePointer - startPointer).ToString());
+            }
+            startPointer = movePointer + 1;
+        }
+            
+        args.Add(command[startPointer..].ToString());
+
+        return args;
+    }
+    
+    /// <summary>
+    /// 获取用户身份组列表
+    /// </summary>
+    /// <param name="dodoId">用户 ID</param>
+    /// <param name="islandId">群组 ID</param>
+    /// <returns></returns>
+    private async Task<List<GetMemberRoleListOutput>> GetMemberRole(string dodoId, string islandId)
+    {
+        var sw = Stopwatch.StartNew();
+        var senderRoles = await _openApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
+        {
+            DodoId = dodoId, IslandId = islandId
+        });
+        sw.Stop();
+        _logger.LogTrace("请求 DodoApi 获取身份组耗时：{TraceFetchMemberRoles} MS", sw.ElapsedMilliseconds);
+        
+        return senderRoles;
     }
 
+    /// <summary>
+    /// 是否用哟超级管理员权限组
+    /// </summary>
+    /// <param name="roles">权限组列表</param>
+    /// <returns></returns>
+    private static bool IsSuperAdmin(IEnumerable<MemberRole> roles)
+    {
+        return roles.Any(x => (x.Permission >> 3) % 2 == 1);
+    }
 }

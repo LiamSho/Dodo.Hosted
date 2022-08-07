@@ -51,7 +51,6 @@ public interface ICommandExecutor
     /// 执行指令
     /// </summary>
     /// <param name="args">指令参数，为用户输入内容使用空格进行分离，然后去除第一项指令名称的余下部分</param>
-    /// <param name="sender">指令发送者</param>
     /// <param name="message">指令消息</param>
     /// <param name="provider">用于访问 DI 容器的 ServiceProvider，对于每次请求，都会使用一个新的 Scope</param>
     /// <param name="reply">回复发送者的消息</param>

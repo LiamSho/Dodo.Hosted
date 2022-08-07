@@ -31,6 +31,11 @@ public record EventHandlerManifest
     public required Type EventType { get; init; }
     
     /// <summary>
+    /// <see cref="EventType"/> 的字符串描述
+    /// </summary>
+    public required string EventTypeString { get; init; }
+    
+    /// <summary>
     /// <see cref="EventHandlerType"/> 实例
     /// </summary>
     public required object EventHandler { get; init; }

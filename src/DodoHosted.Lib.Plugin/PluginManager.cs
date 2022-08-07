@@ -68,6 +68,15 @@ public partial class PluginManager : IPluginManager
 
         _builtinCommands = FetchCommandExecutors(this.GetType().Assembly.GetTypes()).ToArray();
 
+        if (_pluginDirectory.Exists is false)
+        {
+            _pluginDirectory.Create();
+        }
+        if (_pluginCacheDirectory.Exists is false)
+        {
+            _pluginCacheDirectory.Create();
+        }
+
         DodoEventProcessor.DodoEvent += EventListener;
     }
 
@@ -249,19 +258,6 @@ public partial class PluginManager : IPluginManager
         
         _logger.LogInformation("卸载所有插件任务已完成，当前插件数量：{PluginsCount}", _plugins.Count);
     }
-    
-    /// <inheritdoc />
-    public Task RunEvent(IDodoHostedEvent @event, string typeString)
-    {
-        // TODO : WIP
-        
-        var type = @event.GetType().FullName;
-
-        _logger.LogTrace("{T}", type);
-        _logger.LogTrace("{T}", typeString);
-
-        return Task.CompletedTask;
-    }
 
     /// <summary>
     /// 从 Plugin Assembly 中载入所有的事件处理器
@@ -309,6 +305,7 @@ public partial class PluginManager : IPluginManager
             {
                 EventHandler = handler,
                 EventType = eventType,
+                EventTypeString = eventType.FullName!,
                 EventHandlerType = type,
                 HandlerMethod = method
             });
@@ -376,7 +373,6 @@ public partial class PluginManager : IPluginManager
         return Activator.CreateInstance(type) as IPluginLifetime;
     }
 
-    
     /// <summary>
     /// 格式化指令帮助文档输出
     /// </summary>
@@ -397,85 +393,5 @@ public partial class PluginManager : IPluginManager
         }
 
         return msg;
-    }
-
-    /// <summary>
-    /// 解析获取指令参数
-    /// </summary>
-    /// <param name="commandMessage"></param>
-    /// <returns></returns>
-    private static IEnumerable<string> GetCommandArgs(string commandMessage)
-    {
-        if (string.IsNullOrEmpty(commandMessage) || commandMessage.Length < 2)
-        {
-            return Array.Empty<string>();
-        }
-        
-        var args = new List<string>();
-        var command = commandMessage[1..].TrimEnd().AsSpan();
-        var startPointer = 0;
-    
-        var inQuote = false;
-            
-        // /cmd "some thing \"in\" quote" value
-        // cmd | some thing "in" quote | value
-            
-        for (var movePointer = 0; movePointer < command.Length; movePointer++)
-        {
-            if (command[movePointer] == '"')
-            {
-                if (movePointer == 0)
-                {
-                    return new[] { commandMessage[1..] };
-                }
-                    
-                if (command[movePointer - 1] == '\\')
-                {
-                    continue;
-                }
-                    
-                inQuote = !inQuote;
-            }
-                
-            if (command[movePointer] != ' ')
-            {
-                continue;
-            }
-    
-            if (inQuote)
-            {
-                continue;
-            }
-    
-            if (command[movePointer - 1] == '"')
-            {
-                args.Add(command.Slice(startPointer + 1, movePointer - startPointer - 2)
-                    .ToString()
-                    .Replace("\\", string.Empty));
-            }
-            else
-            {
-                args.Add(command.Slice(startPointer, movePointer - startPointer).ToString());
-            }
-            startPointer = movePointer + 1;
-        }
-            
-        args.Add(command[startPointer..].ToString());
-
-        return args;
-    }
-    
-    private async Task<List<GetMemberRoleListOutput>> GetMemberRole(string dodoId, string islandId)
-    {
-        var senderRoles = await _openApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
-        {
-            DodoId = dodoId, IslandId = islandId
-        });
-        return senderRoles;
-    }
-
-    private static bool IsSuperAdmin(IEnumerable<MemberRole> roles)
-    {
-        return roles.Any(x => (x.Permission >> 3) % 2 == 1);
     }
 }
