@@ -10,6 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
 
 namespace DodoHosted.Open.Plugin;
@@ -53,6 +54,7 @@ public interface ICommandExecutor
     /// <param name="args">指令参数，为用户输入内容使用空格进行分离，然后去除第一项指令名称的余下部分</param>
     /// <param name="message">指令消息</param>
     /// <param name="provider">用于访问 DI 容器的 ServiceProvider，对于每次请求，都会使用一个新的 Scope</param>
+    /// <param name="permissionManager">权限管理服务</param>
     /// <param name="reply">回复发送者的消息</param>
     /// <param name="shouldAllow">
     ///     是否应当允许执行，大多指令都应有对应的权限检查，此参数为 True 表示指令消息的发送者拥有超级管理员权限，
@@ -63,6 +65,7 @@ public interface ICommandExecutor
         string[] args,
         CommandMessage message,
         IServiceProvider provider,
+        IPermissionManager permissionManager,
         Func<string, Task<string>> reply,
         bool shouldAllow = false);
     

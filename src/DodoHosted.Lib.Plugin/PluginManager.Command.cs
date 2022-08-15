@@ -15,9 +15,11 @@ using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base.App;
+using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
 using DodoHosted.Base.Events;
 using DodoHosted.Open.Plugin;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.Plugin;
@@ -82,7 +84,7 @@ public partial class PluginManager
         {
             _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
                 cmdMessage.OriginalText, CommandExecutionResult.Unknown, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
-            _channelLogger.LogWarning($"指令不存在：`{cmdMessage.OriginalText}`，" +
+            await _channelLogger.LogWarning(cmdMessage.IslandId, $"指令不存在：`{cmdMessage.OriginalText}`，" +
                                       $"发送者：<@!{cmdMessage.MemberId}>，" +
                                       $"频道：<#{cmdMessage.ChannelId}>，" +
                                       $"消息 ID：`{cmdMessage.MessageId}`");
@@ -103,8 +105,9 @@ public partial class PluginManager
                     Permission = Convert.ToInt32(x.Permission, 16)
                 })
             .ToList();
-        
-        var result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, _provider, reply,IsSuperAdmin(cmdMessage.Roles));
+
+        var permissionManager = _provider.GetRequiredService<IPermissionManager>();
+        var result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, _provider, permissionManager, reply,IsSuperAdmin(cmdMessage.Roles));
         _logger.LogTrace("指令执行结果：{TraceCommandExecutionResult}", result);
 
         switch (result)
@@ -118,13 +121,13 @@ public partial class PluginManager
                                    cmdInfo.HelpText);
                 break;
             case CommandExecutionResult.Unauthorized:
-                _channelLogger.LogWarning($"无权访问：`{cmdMessage.OriginalText}`，" +
+                await _channelLogger.LogWarning(cmdMessage.IslandId, $"无权访问：`{cmdMessage.OriginalText}`，" +
                                           $"发送者：<@!{cmdMessage.MemberId}>，" +
                                           $"频道：<#{cmdMessage.ChannelId}>，" +
                                           $"消息 ID：`{cmdMessage.MessageId}`");
                 break;
             default:
-                _channelLogger.LogError($"未知的指令执行结果：`{result}`");
+                await _channelLogger.LogError(cmdMessage.IslandId, $"未知的指令执行结果：`{result}`");
                 break;
         }
         
@@ -194,8 +197,17 @@ public partial class PluginManager
             }
             startPointer = movePointer + 1;
         }
-            
-        args.Add(command[startPointer..].ToString());
+
+        if (command[^1] == '\"')
+        {
+            args.Add(command[(startPointer + 1)..^1]
+                .ToString()
+                .Replace("\\", string.Empty));
+        }
+        else
+        {
+            args.Add(command[startPointer..].ToString());
+        }
 
         return args;
     }

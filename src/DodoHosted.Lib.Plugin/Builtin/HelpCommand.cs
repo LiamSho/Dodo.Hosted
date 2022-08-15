@@ -4,6 +4,7 @@
 
 using System.Text;
 using DodoHosted.Base.App;
+using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,12 +17,16 @@ public class HelpCommand : ICommandExecutor
         string[] args,
         CommandMessage cmdMessage,
         IServiceProvider provider,
+        IPermissionManager permissionManager,
         Func<string, Task<string>> reply,
         bool shouldAllow = false)
     {
         if (shouldAllow is false)
         {
-            return CommandExecutionResult.Unauthorized;
+            if (await permissionManager.CheckPermission("system.command.help", cmdMessage) is false)
+            {
+                return CommandExecutionResult.Unauthorized;
+            }
         }
 
         var pluginManager = provider.GetRequiredService<IPluginManager>();

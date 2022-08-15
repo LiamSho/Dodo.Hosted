@@ -13,8 +13,10 @@
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Services;
+using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Interfaces;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 
 namespace DodoHosted.Base.App.Services;
 
@@ -22,11 +24,15 @@ public class ChannelLogger : IChannelLogger
 {
     private readonly ILogger<ChannelLogger> _logger;
     private readonly OpenApiService _apiService;
+    
+    private readonly IMongoCollection<IslandSettings> _collection;
 
-    public ChannelLogger(ILogger<ChannelLogger> logger, OpenApiService apiService)
+    public ChannelLogger(ILogger<ChannelLogger> logger, OpenApiService apiService, IMongoDatabase database)
     {
         _logger = logger;
         _apiService = apiService;
+
+        _collection = database.GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
     }
 
     private static string CurrentTime => DateTimeOffset.UtcNow.AddHours(8).ToString("yyyy-MM-dd hh:mm:ss");
@@ -43,55 +49,59 @@ public class ChannelLogger : IChannelLogger
         _ => throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null)
     };
 
-    private void SendChannelMessage(LogLevel logLevel, string message)
+    private async Task SendChannelMessage(LogLevel logLevel, string island, string message)
     {
-        if (HostEnvs.DodoHostedChannelLogEnabled is false)
+        var info = _collection
+            .AsQueryable()
+            .FirstOrDefault(x => x.IslandId == island);
+
+        if (info is null || info.EnableChannelLogger is false)
         {
             return;
         }
-        
-        _apiService.SetChannelMessageSend(new SetChannelMessageSendInput<MessageBodyText>
+
+        await _apiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
         {
-            ChannelId = HostEnvs.DodoHostedChannelLogChannelId, MessageBody = new MessageBodyText
+            ChannelId = info.LoggerChannelId, MessageBody = new MessageBodyText
             {
                 Content = $"[{CurrentTime}] `{GetLogLevelFormatted(logLevel)}` {message}"
             }
         });
     }
 
-    public void LogTrace(string message)
+    public async Task LogTrace(string islandId, string message)
     {
         _logger.LogTrace("Channel logger: {ChannelLoggingMessage}", message);
-        SendChannelMessage(LogLevel.Trace, message);
+        await SendChannelMessage(LogLevel.Trace, islandId, message);
     }
     
-    public void LogDebug(string message)
+    public async Task LogDebug(string islandId, string message)
     {
         _logger.LogDebug("Channel logger: {ChannelLoggingMessage}", message);
-        SendChannelMessage(LogLevel.Debug, message);
+        await SendChannelMessage(LogLevel.Debug, islandId, message);
     }
     
-    public void LogInformation(string message)
+    public async Task LogInformation(string islandId, string message)
     {
         _logger.LogInformation("Channel logger: {ChannelLoggingMessage}", message);
-        SendChannelMessage(LogLevel.Information, message);
+        await SendChannelMessage(LogLevel.Information, islandId, message);
     }
 
-    public void LogWarning(string message)
+    public async Task LogWarning(string islandId, string message)
     {
         _logger.LogWarning("Channel logger: {ChannelLoggingMessage}", message);
-        SendChannelMessage(LogLevel.Warning, message);
+        await SendChannelMessage(LogLevel.Warning, islandId, message);
     }
 
-    public void LogError(string message)
+    public async Task LogError(string islandId, string message)
     {
         _logger.LogError("Channel logger: {ChannelLoggingMessage}", message);
-        SendChannelMessage(LogLevel.Error, message);
+        await SendChannelMessage(LogLevel.Error, islandId, message);
     }
     
-    public void LogCritical(string message)
+    public async Task LogCritical(string islandId, string message)
     {
         _logger.LogCritical("Channel logger: {ChannelLoggingMessage}", message);
-        SendChannelMessage(LogLevel.Critical, message);
+        await SendChannelMessage(LogLevel.Critical, islandId, message);
     }
 }

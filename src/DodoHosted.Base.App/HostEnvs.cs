@@ -53,14 +53,14 @@ public static class HostEnvs
     /// <summary>
     /// Dodo 机器人 Client ID
     /// </summary>
-    public static string DodoSdkBotClientId => ReadEnvironmentVariable(
+    public static string DodoSdkBotClientId => Configuration.DodoSdkBotClientId ?? ReadEnvironmentVariable(
         "DODO_SDK_BOT_CLIENT_ID",
         string.Empty);
 
     /// <summary>
     /// Dodo 机器人 Token
     /// </summary>
-    public static string DodoSdkBotToken => ReadEnvironmentVariable(
+    public static string DodoSdkBotToken => Configuration.DodoSdkBotToken ?? ReadEnvironmentVariable(
         "DODO_SDK_BOT_TOKEN",
         string.Empty);
     
@@ -72,16 +72,10 @@ public static class HostEnvs
         "https://botopen.imdodo.com");
 
     /// <summary>
-    /// 是否开启 Channel Logger
+    /// Admin 群组 ID
     /// </summary>
-    public static bool DodoHostedChannelLogEnabled => Configuration.DodoHostedChannelLogEnabled ?? ReadEnvironmentVariable(
-        "DODO_HOSTED_CHANNEL_LOG_ENABLED", "false") is "true" or "yes";
-
-    /// <summary>
-    /// Channel Logger 频道 ID
-    /// </summary>
-    public static string DodoHostedChannelLogChannelId => Configuration.DodoHostedChannelLogChannelId ?? ReadEnvironmentVariable(
-        "DODO_HOSTED_CHANNEL_LOG_CHANNEL_ID", string.Empty);
+    public static string DodoHostedAdminIsland => Configuration.DodoHostedAdminIsland ?? ReadEnvironmentVariable(
+        "DODO_HOSTED_ADMIN_ISLAND", string.Empty);
 
     /// <summary>
     /// 指令前缀
@@ -104,8 +98,9 @@ public static class HostEnvs
     /// <summary>
     /// Dodo OpenApi 消息日志记录等级，默认为 Debug
     /// </summary>
-    public static LogLevel DodoHostedOpenApiLogLevel =>
-        ReadEnvironmentVariable("DODO_HOSTED_OPENAPI_LOG_LEVEL", "Debug") switch
+    public static LogLevel DodoHostedOpenApiLogLevel => Configuration.DodoHostedOpenApiLogLevel is not null
+        ? (LogLevel)Configuration.DodoHostedOpenApiLogLevel
+        : ReadEnvironmentVariable("DODO_HOSTED_OPENAPI_LOG_LEVEL", "Debug") switch
         {
             "Trace" => LogLevel.Trace,
             "Debug" => LogLevel.Debug,

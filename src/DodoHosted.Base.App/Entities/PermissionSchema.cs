@@ -13,7 +13,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace DodoHosted.Base.App.Models;
+namespace DodoHosted.Base.App.Entities;
 
 /// <summary>
 /// 权限组
@@ -53,7 +53,6 @@ namespace DodoHosted.Base.App.Models;
 public record PermissionSchema
 {
     [BsonId]
-    [BsonGuidRepresentation(GuidRepresentation.CSharpLegacy)]
     public Guid Id { get; init; } = Guid.NewGuid();
     
     /// <summary>

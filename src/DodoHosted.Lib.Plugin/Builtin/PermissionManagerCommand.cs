@@ -13,6 +13,7 @@
 using System.Text;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Services;
+using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Helpers;
 using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
@@ -27,14 +28,13 @@ public class PermissionManagerCommand : ICommandExecutor
         string[] args,
         CommandMessage message,
         IServiceProvider provider,
+        IPermissionManager permissionManager,
         Func<string, Task<string>> reply,
         bool shouldAllow = false)
     {
-        var permissionManager = provider.GetRequiredService<IPermissionManager>();
-        
         if (shouldAllow is false)
         {
-            if (await permissionManager.CheckPermission("pm", message) is false)
+            if (await permissionManager.CheckPermission("system.command.pm", message) is false)
             {
                 return CommandExecutionResult.Unauthorized;
             }

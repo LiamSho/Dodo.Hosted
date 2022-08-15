@@ -10,6 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DnsClient.Internal;
+
 namespace DodoHosted.Base.App;
 
 public record HostConfiguration
@@ -50,17 +52,17 @@ public record HostConfiguration
     public string? DodoSdkBotToken { get; set; }
     
     /// <summary>
-    /// <see cref="HostEnvs.DodoHostedChannelLogEnabled"/>
+    /// <see cref="HostEnvs.DodoHostedAdminIsland"/>
     /// </summary>
-    public bool? DodoHostedChannelLogEnabled { get; set; }
-    
-    /// <summary>
-    /// <see cref="HostEnvs.DodoHostedChannelLogChannelId"/>
-    /// </summary>
-    public string? DodoHostedChannelLogChannelId { get; set; }
-    
+    public string? DodoHostedAdminIsland { get; set; }
+
     /// <summary>
     /// <see cref="HostEnvs.CommandPrefix"/>
     /// </summary>
     public string? CommandPrefix { get; set; }
+    
+    /// <summary>
+    /// <see cref="HostEnvs.DodoHostedOpenApiLogLevel"/>
+    /// </summary>
+    public LogLevel? DodoHostedOpenApiLogLevel { get; set; }
 }

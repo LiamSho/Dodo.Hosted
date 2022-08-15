@@ -12,9 +12,13 @@
 
 using System.Runtime.InteropServices;
 using System.Text;
+using DoDo.Open.Sdk.Models.Islands;
+using DoDo.Open.Sdk.Services;
 using DodoHosted.Base.App;
+using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
 using DodoHosted.Open.Plugin;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
@@ -24,12 +28,19 @@ public class SystemCommand : ICommandExecutor
         string[] args,
         CommandMessage message,
         IServiceProvider provider,
+        IPermissionManager permissionManager,
         Func<string, Task<string>> reply,
         bool shouldAllow = false)
     {
         if (shouldAllow is false)
         {
             return CommandExecutionResult.Unauthorized;
+        }
+
+        if (message.IslandId != HostEnvs.DodoHostedAdminIsland)
+        {
+            await reply("该指令只允许在预配置的管理员群组使用");
+            return CommandExecutionResult.Failed;
         }
 
         if (args.Length > 2)
@@ -56,6 +67,22 @@ public class SystemCommand : ICommandExecutor
                 messageBuilder.AppendLine($".NET Runtime Framework: `{RuntimeInformation.FrameworkDescription}`");
                 messageBuilder.AppendLine($".NET Runtime Identifier: `{RuntimeInformation.RuntimeIdentifier}`");
                 break;
+            case "islands":
+                var openApi = provider.GetRequiredService<OpenApiService>();
+                var islands = await openApi.GetIslandListAsync(new GetIslandListInput());
+
+                if (islands is null)
+                {
+                    await reply.Invoke("获取群组列表失败");
+                    return CommandExecutionResult.Failed;
+                }
+
+                foreach (var island in islands)
+                {
+                    messageBuilder.AppendLine($"- {island.IslandName} `{island.IslandId}`");
+                }
+                
+                break;
             default:
                 return CommandExecutionResult.Unknown;
         }
@@ -71,6 +98,7 @@ public class SystemCommand : ICommandExecutor
         HelpText: @"""
 - {{PREFIX}}system gc    查看系统 GC 信息
 - {{PREFIX}}system info    查看系统信息
+- {{PREFIX}}system islands    查看 Bot 所在的所有群组
 """);
 
     private static string ToMegabytes(long size)

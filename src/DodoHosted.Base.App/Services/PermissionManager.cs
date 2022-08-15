@@ -11,6 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using DoDo.Open.Sdk.Models.Members;
+using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
 using MongoDB.Driver;
@@ -26,7 +27,7 @@ public class PermissionManager : IPermissionManager
 
     public PermissionManager(IMongoDatabase database)
     {
-        _collection = database.GetCollection<PermissionSchema>("system-permission-schema");
+        _collection = database.GetCollection<PermissionSchema>(HostConstants.MONGO_COLLECTION_PERMISSION_SCHEMA);
     }
 
     #region Describe Schema Check

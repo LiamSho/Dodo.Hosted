@@ -11,6 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using DoDo.Open.Sdk.Models.Members;
+using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Models;
 
 namespace DodoHosted.Base.App.Interfaces;

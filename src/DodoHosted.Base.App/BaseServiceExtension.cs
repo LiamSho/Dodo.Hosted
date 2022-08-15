@@ -21,6 +21,8 @@ public static class BaseServiceExtension
 {
     public static IServiceCollection AddBaseServices(this IServiceCollection serviceCollection)
     {
+        serviceCollection.AddHostedService<InitializationService>();
+        
         serviceCollection.AddScoped<IChannelLogger, ChannelLogger>();
         serviceCollection.AddScoped<IPermissionManager, PermissionManager>();
 

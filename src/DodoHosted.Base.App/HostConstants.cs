@@ -10,14 +10,11 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Base.App.Interfaces;
+// ReSharper disable InconsistentNaming
+namespace DodoHosted.Base.App;
 
-public interface IChannelLogger
+public static class HostConstants
 {
-    Task LogTrace(string islandId, string message);
-    Task LogDebug(string islandId, string message);
-    Task LogInformation(string islandId, string message);
-    Task LogWarning(string islandId, string message);
-    Task LogError(string islandId, string message);
-    Task LogCritical(string islandId, string message);
+    public const string MONGO_COLLECTION_ISLAND_SETTINGS = "system-island-settings";
+    public const string MONGO_COLLECTION_PERMISSION_SCHEMA = "system-permission-schema";
 }
