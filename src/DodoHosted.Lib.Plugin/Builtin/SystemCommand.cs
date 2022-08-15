@@ -18,13 +18,6 @@ using DodoHosted.Open.Plugin;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
-[CommandExecutor(
-    commandName: "system",
-    description: "获取系统信息",
-    helpText: @"""
-- {{PREFIX}}system gc    查看系统 GC 信息
-- {{PREFIX}}system info    查看系统信息
-""")]
 public class SystemCommand : ICommandExecutor
 {
     public async Task<CommandExecutionResult> Execute(
@@ -71,6 +64,14 @@ public class SystemCommand : ICommandExecutor
 
         return CommandExecutionResult.Success;
     }
+
+    public CommandMetadata GetMetadata() => new CommandMetadata(
+        CommandName: "system",
+        Description: "获取系统信息",
+        HelpText: @"""
+- {{PREFIX}}system gc    查看系统 GC 信息
+- {{PREFIX}}system info    查看系统信息
+""");
 
     private static string ToMegabytes(long size)
     {

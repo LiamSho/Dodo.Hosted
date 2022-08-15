@@ -10,13 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
-[CommandExecutor(
-    commandName: "help",
-    description: "查看指令帮助",
-    helpText: @"""
-- `{{PREFIX}}help`    查询所有已注册指令
-- `{{PREFIX}}help <command>`    查询 <command> 指令的帮助
-""")]
 public class HelpCommand : ICommandExecutor
 {
     public async Task<CommandExecutionResult> Execute(
@@ -78,4 +71,12 @@ public class HelpCommand : ICommandExecutor
 
         return CommandExecutionResult.Success;
     }
+
+    public CommandMetadata GetMetadata() => new CommandMetadata(
+        CommandName: "help",
+        Description: "查看指令帮助",
+        HelpText: @"""
+- `{{PREFIX}}help`    查询所有已注册指令
+- `{{PREFIX}}help <command>`    查询 <command> 指令的帮助
+""");
 }

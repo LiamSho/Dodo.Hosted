@@ -329,26 +329,28 @@ public partial class PluginManager : IPluginManager
         var manifests = new List<CommandManifest>();
         foreach (var type in commandExecutorTypes)
         {
-            var attribute = type.GetCustomAttribute<CommandExecutorAttribute>();
-            if (attribute is null)
-            {
-                throw new PluginAssemblyLoadException($"找不到 {type.FullName} 的 {nameof(CommandExecutorAttribute)}");
-            }
-
             var instance = Activator.CreateInstance(type);
             if (instance is null)
             {
                 throw new PluginAssemblyLoadException($"无法创建指令处理器 {type.FullName} 的实例");
+            }
+
+            var ins = (ICommandExecutor)instance;
+
+            var metadata = ins.GetMetadata();
+            if (metadata is null)
+            {
+                throw new PluginAssemblyLoadException($"无法获取指令处理器 {type.FullName} 的元数据");
             }
             
             _logger.LogTrace("已载入指令处理器 {TraceLoadedCommandHandler}", type.FullName);
             
             manifests.Add(new CommandManifest
             {
-                Name = attribute.CommandName,
-                Description = attribute.Description,
-                HelpText = FormatCommandHelpText(attribute.HelpText),
-                CommandExecutor = (ICommandExecutor)instance
+                Name = metadata.CommandName,
+                Description = metadata.Description,
+                HelpText = FormatCommandHelpText(metadata.HelpText),
+                CommandExecutor = ins
             });
         }
 

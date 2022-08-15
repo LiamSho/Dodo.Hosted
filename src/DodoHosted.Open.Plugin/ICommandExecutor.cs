@@ -48,15 +48,15 @@ namespace DodoHosted.Open.Plugin;
 public interface ICommandExecutor
 {
     /// <summary>
-    /// 执行指令
+    ///     执行指令
     /// </summary>
     /// <param name="args">指令参数，为用户输入内容使用空格进行分离，然后去除第一项指令名称的余下部分</param>
     /// <param name="message">指令消息</param>
     /// <param name="provider">用于访问 DI 容器的 ServiceProvider，对于每次请求，都会使用一个新的 Scope</param>
     /// <param name="reply">回复发送者的消息</param>
     /// <param name="shouldAllow">
-    /// 是否应当允许执行，大多指令都应有对应的权限检查，此参数为 True 表示指令消息的发送者拥有
-    /// 群主或超级管理员权限，应当直接跳过权限检查，不过你仍然可以忽略此参数
+    ///     是否应当允许执行，大多指令都应有对应的权限检查，此参数为 True 表示指令消息的发送者拥有超级管理员权限，
+    ///     应当直接跳过权限检查，不过你仍然可以忽略此参数
     /// </param>
     /// <returns></returns>
     Task<CommandExecutionResult> Execute(
@@ -65,4 +65,10 @@ public interface ICommandExecutor
         IServiceProvider provider,
         Func<string, Task<string>> reply,
         bool shouldAllow = false);
+    
+    /// <summary>
+    ///     获取指令元数据
+    /// </summary>
+    /// <returns></returns>
+    CommandMetadata GetMetadata();
 }

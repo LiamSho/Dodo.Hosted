@@ -21,18 +21,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
-[CommandExecutor(
-    commandName: "pm",
-    description: "权限管理器",
-    helpText: @"""
-- `{{PREFIX}}pm add <权限节点> <#频道名/频道 ID/*> <身份组 ID/*> <allow/deny>`  添加权限组
-- `{{PREFIX}}pm set <权限 ID> [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>] [value <allow/deny>]`  更新权限信息
-- `{{PREFIX}}pm check <权限节点> <#频道名/频道 ID> <@用户/用户 ID>`  检查用户权限
-- `{{PREFIX}}pm list [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>]`  列出权限表
-- `{{PREFIX}}pm remove single <权限 ID> [--dry-run]`  移除一个权限配置
-- `{{PREFIX}}pm remove nodes <权限节点> [--dry-run]`  按照权限节点匹配进行移除
-- `{{PREFIX}}pm remove search <#频道名/频道 ID/*> <身份组 ID/*> [--dry-run]`  按照频道与身份组检索进行移除
-""")]
 public class PermissionManagerCommand : ICommandExecutor
 {
     public async Task<CommandExecutionResult> Execute(
@@ -90,6 +78,19 @@ public class PermissionManagerCommand : ICommandExecutor
                 return CommandExecutionResult.Unknown;
         }
     }
+
+    public CommandMetadata GetMetadata() => new CommandMetadata(
+        CommandName: "pm",
+        Description: "权限管理器",
+        HelpText: @"""
+- `{{PREFIX}}pm add <权限节点> <#频道名/频道 ID/*> <身份组 ID/*> <allow/deny>`  添加权限组
+- `{{PREFIX}}pm set <权限 ID> [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>] [value <allow/deny>]`  更新权限信息
+- `{{PREFIX}}pm check <权限节点> <#频道名/频道 ID> <@用户/用户 ID>`  检查用户权限
+- `{{PREFIX}}pm list [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>]`  列出权限表
+- `{{PREFIX}}pm remove single <权限 ID> [--dry-run]`  移除一个权限配置
+- `{{PREFIX}}pm remove nodes <权限节点> [--dry-run]`  按照权限节点匹配进行移除
+- `{{PREFIX}}pm remove search <#频道名/频道 ID/*> <身份组 ID/*> [--dry-run]`  按照频道与身份组检索进行移除
+""");
 
     // pm add <node> <(#channel/\*)> <role(id/\*)> <allow/deny>
     private static async Task<CommandExecutionResult> RunAddPermission(
