@@ -6,6 +6,12 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <PackageId>DodoHosted.Lib.SdkWrapper</PackageId>
+      <Title>DodoHosted.Lib.SdkWrapper</Title>
+      <Description>DodoHosted 对官方 SDK 的封装，以支持 Host 运行</Description>
+    </PropertyGroup>
+  
     <ItemGroup>
       <ProjectReference Include="..\DodoHosted.Base\DodoHosted.Base.csproj" />
     </ItemGroup>

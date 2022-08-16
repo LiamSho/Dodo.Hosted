@@ -6,9 +6,15 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup>
+  <PropertyGroup>
+    <PackageId>DodoHosted.Lib.Plugin</PackageId>
+    <Title>DodoHosted.Lib.Plugin</Title>
+    <Description>DodoHosted 插件支持</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
       <ProjectReference Include="..\DodoHosted.Lib.SdkWrapper\DodoHosted.Lib.SdkWrapper.csproj" />
       <ProjectReference Include="..\DodoHosted.Open.Plugin\DodoHosted.Open.Plugin.csproj" />
-    </ItemGroup>
+  </ItemGroup>
 
 </Project>

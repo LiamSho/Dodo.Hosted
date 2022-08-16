@@ -6,6 +6,12 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <PackageId>DodoHosted.Base.App</PackageId>
+      <Title>DodoHosted.Base.App</Title>
+      <Description>DodoHosted 公用服务</Description>
+    </PropertyGroup>
+  
     <ItemGroup>
       <PackageReference Include="MongoDB.Driver" Version="2.17.1" />
     </ItemGroup>

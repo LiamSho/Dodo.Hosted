@@ -22,12 +22,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DodoHosted.Base.App", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DodoHosted.App.Core", "src\DodoHosted.App.Core\DodoHosted.App.Core.csproj", "{AD0C5E78-6069-479E-B0B8-BB780B0AD511}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DodoHosted.Builder", "build\DodoHosted.Builder.csproj", "{0CC88DE3-D5F9-4357-8C68-936F05574702}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{5A8CD4A8-57F9-4135-90A5-1DDBE6B1C9D0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0CC88DE3-D5F9-4357-8C68-936F05574702}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CC88DE3-D5F9-4357-8C68-936F05574702}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F53B100-7187-4052-9A3D-A14C6D2E174F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7F53B100-7187-4052-9A3D-A14C6D2E174F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F53B100-7187-4052-9A3D-A14C6D2E174F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -65,5 +71,6 @@ Global
 		{95A9A601-0319-414C-B9F1-1AD4973E53A0} = {17AFB03C-856E-42ED-892F-B299600679CD}
 		{3F893EF9-B842-4767-96BE-6FB743478323} = {7B6E4877-DFCA-432B-A542-35D78FDE1517}
 		{AD0C5E78-6069-479E-B0B8-BB780B0AD511} = {17AFB03C-856E-42ED-892F-B299600679CD}
+		{0CC88DE3-D5F9-4357-8C68-936F05574702} = {5A8CD4A8-57F9-4135-90A5-1DDBE6B1C9D0}
 	EndGlobalSection
 EndGlobal

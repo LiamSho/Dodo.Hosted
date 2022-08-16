@@ -6,6 +6,12 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <PackageId>DodoHosted.Base</PackageId>
+      <Title>DodoHosted.Base</Title>
+      <Description>DodoHosted 公用类</Description>
+    </PropertyGroup>
+  
     <ItemGroup>
       <PackageReference Include="DoDo.Open.Sdk" Version="1.3.7" />
       <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />

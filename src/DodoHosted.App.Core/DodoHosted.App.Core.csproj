@@ -6,10 +6,15 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <PackageId>DodoHosted.App.Core</PackageId>
+      <Title>DodoHosted.App.Core</Title>
+      <Description>DodoHosted 服务合集</Description>
+    </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\DodoHosted.Lib.Plugin\DodoHosted.Lib.Plugin.csproj" />
       <ProjectReference Include="..\DodoHosted.Lib.SdkWrapper\DodoHosted.Lib.SdkWrapper.csproj" />
     </ItemGroup>
-  
+
 </Project>
