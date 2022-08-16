@@ -22,7 +22,7 @@ public class PluginAssemblyLoadContext : AssemblyLoadContext
 {
     private readonly AssemblyDependencyResolver _dependencyResolver;
 
-    public PluginAssemblyLoadContext(string pluginPath)
+    public PluginAssemblyLoadContext(string pluginPath) : base(isCollectible: true)
     {
         _dependencyResolver = new AssemblyDependencyResolver(pluginPath);
     }
