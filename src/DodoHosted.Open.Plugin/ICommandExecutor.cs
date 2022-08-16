@@ -18,9 +18,6 @@ namespace DodoHosted.Open.Plugin;
 /// <summary>
 /// Command 执行器接口
 /// </summary>
-/// <remarks>
-/// 该接口实现类需要有 <see cref="CommandExecutorAttribute"/> 标签
-/// </remarks>
 /// <example>
 /// <code>
 /// // 此处使用了 C# 11 的新特性

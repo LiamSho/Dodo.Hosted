@@ -23,21 +23,10 @@ namespace DodoHosted.Open.Plugin;
 /// </remarks>
 /// <example>
 /// <code>
-/// // 这个实现将仅处理频道文字消息
+/// // 这个实现将处理频道文字消息
 /// public class SimpleEventHandler : IDodoHostedPluginEventHandler&lt;DodoChannelMessageEvent&lt;MessageBodyText&gt;&gt;
 /// {
 ///     public Task Handle(DodoChannelMessageEvent&lt;MessageBodyText&gt; @event, IServiceProvider provider)
-///     {
-///         // do something
-///         return Task.CompletedTask;
-///     }
-/// }
-/// </code>
-/// <code>
-/// // 这个实现将仅处理所有类型的频道消息
-/// public class SimpleEventHandler : IDodoHostedPluginEventHandler&lt;DodoChannelMessageEvent&lt;MessageBodyBase&gt;&gt;
-/// {
-///     public Task Handle(DodoChannelMessageEvent&lt;MessageBodyBase&gt; @event, IServiceProvider provider)
 ///     {
 ///         // do something
 ///         return Task.CompletedTask;
