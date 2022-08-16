@@ -84,7 +84,7 @@ public partial class Build : NukeBuild
             DotNetTasks.DotNetBuild(x => x
                 .SetProcessWorkingDirectory(RootDirectory)
                 .SetVersion(_minVer.PackageVersion)
-                .SetAssemblyVersion(_minVer.AssemblyVersion)
+                .SetAssemblyVersion("1.0.0.0")
                 .SetFileVersion(_minVer.FileVersion)
                 .SetInformationalVersion(_minVer.PackageVersion)
                 .SetConfiguration(BuilderConstants.BUILDER_CONFIGURATION));
