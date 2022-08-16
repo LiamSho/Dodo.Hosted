@@ -1,0 +1,33 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>preview</LangVersion>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>LiamSho</Authors>
+    <Owners>LiamSho</Owners>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+    <Copyright>Copyright ©  2022 LiamSho</Copyright>
+    <PackageProjectUrl>https://github.com/LiamSho/Dodo.Hosted</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/LiamSho/Dodo.Hosted</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>dodo;dodo-open;bot</PackageTags>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <NeutralLanguage>zh-Hans-CN</NeutralLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>CS1591;</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\icon.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
+</Project>

@@ -6,6 +6,12 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <PackageId>DodoHosted.Open.Plugin</PackageId>
+      <Title>DodoHosted.Open.Plugin</Title>
+      <Description>DodoHosted 插件接口</Description>
+    </PropertyGroup>
+  
     <ItemGroup>
       <ProjectReference Include="..\DodoHosted.Base.App\DodoHosted.Base.App.csproj" />
     </ItemGroup>
