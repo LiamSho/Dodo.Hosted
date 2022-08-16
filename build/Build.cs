@@ -21,6 +21,7 @@ using Nuke.Common.Tooling;
 using Nuke.Common.Tools.Docker;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.MinVer;
+using Serilog;
 
 namespace DodoHosted.Builder;
 
@@ -50,8 +51,17 @@ public partial class Build : NukeBuild
         {
             Assert.Fail("You should specify a target to run.");
         });
+
+    Target Version => _ => _
+        .Executes(() =>
+        {
+            Log.Logger.Information("Package Version: {PackageVersion}", _minVer.PackageVersion);
+            Log.Logger.Information("Assembly Version: {NuGetVersion}", _minVer.AssemblyVersion);
+            Log.Logger.Information("File Version: {NuGetVersion}", _minVer.FileVersion);
+        });
     
     Target Clean => _ => _
+        .DependsOn(Version)
         .Executes(() =>
         {
             DotNetTasks.DotNetClean(x => x
@@ -60,6 +70,7 @@ public partial class Build : NukeBuild
         });
 
     Target Restore => _ => _
+        .DependsOn(Clean)
         .Executes(() =>
         {
             DotNetTasks.DotNetRestore(x => x
@@ -89,6 +100,7 @@ public partial class Build : NukeBuild
             {
                 DotNetTasks.DotNetPack(x => x
                     .SetProject(project)
+                    .SetVersion(_minVer.PackageVersion)
                     .SetConfiguration(BuilderConstants.BUILDER_CONFIGURATION)
                     .SetOutputDirectory(ArtifactsDirectory));
             }
