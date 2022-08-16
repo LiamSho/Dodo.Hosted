@@ -16,18 +16,21 @@ namespace DodoHosted.Lib.Plugin;
 
 public class PluginSystemHosted : IHostedService
 {
+    private readonly IPluginManager _pluginManager;
+
     public PluginSystemHosted(IPluginManager pluginManager)
     {
-        pluginManager.LoadPlugins();
+        _pluginManager = pluginManager;
     }
     
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
+        await _pluginManager.LoadPlugins();
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
+        _pluginManager.UnloadPlugins();
         return Task.CompletedTask;
     }
 }
