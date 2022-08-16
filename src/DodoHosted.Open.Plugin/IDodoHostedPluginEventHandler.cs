@@ -11,6 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using DodoHosted.Base;
+using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Open.Plugin;
 
@@ -41,6 +42,7 @@ public interface IDodoHostedPluginEventHandler<in T> where T : IDodoHostedEvent
     /// </summary>
     /// <param name="event">Event 消息体</param>
     /// <param name="provider">用于访问 DI 容器的 ServiceProvider，对于每次请求，都会使用一个新的 Scope</param>
+    /// <param name="logger">日志记录器</param>
     /// <returns></returns>
-    Task Handle(T @event, IServiceProvider provider);
+    Task Handle(T @event, IServiceProvider provider, ILogger logger);
 }

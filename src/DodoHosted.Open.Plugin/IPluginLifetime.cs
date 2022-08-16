@@ -10,6 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using Microsoft.Extensions.Logging;
+
 namespace DodoHosted.Open.Plugin;
 
 public interface IPluginLifetime
@@ -18,11 +20,11 @@ public interface IPluginLifetime
     /// 将在插件载入后执行
     /// </summary>
     /// <returns></returns>
-    Task Load();
+    Task Load(ILogger logger);
     
     /// <summary>
     /// 将在插件即将卸载前执行
     /// </summary>
     /// <returns></returns>
-    Task Unload();
+    Task Unload(ILogger logger);
 }

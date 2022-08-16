@@ -30,6 +30,8 @@ namespace DodoHosted.Lib.Plugin;
 public partial class PluginManager : IPluginManager
 {
     private readonly ILogger<PluginManager> _logger;
+    private readonly ILogger _pluginLifetimeLogger;
+    private readonly ILogger _eventHandlerLogger;
     private readonly IChannelLogger _channelLogger;
     private readonly IServiceProvider _provider;
     private readonly OpenApiService _openApiService;
@@ -51,11 +53,14 @@ public partial class PluginManager : IPluginManager
 
     public PluginManager(
         ILogger<PluginManager> logger,
+        ILoggerFactory loggerFactory,
         IChannelLogger channelLogger,
         IServiceProvider provider,
         OpenApiService openApiService)
     {
         _logger = logger;
+        _pluginLifetimeLogger = loggerFactory.CreateLogger("PluginLifetime");
+        _eventHandlerLogger = loggerFactory.CreateLogger("EventHandler");
         _channelLogger = channelLogger;
         _provider = provider;
         _openApiService = openApiService;
@@ -201,7 +206,7 @@ public partial class PluginManager : IPluginManager
 
             if (pluginLifetime is not null)
             {
-                await pluginLifetime.Load();
+                await pluginLifetime.Load(_pluginLifetimeLogger);
             }
             
             // 添加插件
@@ -257,7 +262,7 @@ public partial class PluginManager : IPluginManager
         _logger.LogInformation("执行卸载插件 {PluginUnloadIdentifier} 任务", pluginIdentifier);
         var _ = _plugins.TryRemove(pluginIdentifier, out var pluginManifest);
         
-        pluginManifest?.PluginLifetime?.Unload().GetAwaiter().GetResult();
+        pluginManifest?.PluginLifetime?.Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
         
         pluginManifest?.Context.Unload();
         
@@ -282,7 +287,7 @@ public partial class PluginManager : IPluginManager
 
         foreach (var pluginManifest in pluginManifests)
         {
-            pluginManifest.PluginLifetime?.Unload().GetAwaiter().GetResult();
+            pluginManifest.PluginLifetime?.Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
             pluginManifest.Context.Unload();
         }
         
