@@ -58,10 +58,11 @@ public class HelpCommand : ICommandExecutor
                     else
                     {
                         messageBuilder.AppendLine($"指令 `{HostEnvs.CommandPrefix}{cmd}` 的帮助描述:");
-                        messageBuilder.AppendLine();
-                        messageBuilder.AppendLine($"简介：{info.Description}");
-                        messageBuilder.AppendLine();
+                        messageBuilder.AppendLine($"***简介***：{info.Description}");
+                        messageBuilder.AppendLine("***指令表***：");
                         messageBuilder.AppendLine(info.HelpText);
+                        messageBuilder.AppendLine("***权限表***：");
+                        messageBuilder.AppendLine(info.PermissionNodesText);
                     }
 
                     break;
@@ -83,5 +84,9 @@ public class HelpCommand : ICommandExecutor
         HelpText: @"""
 - `{{PREFIX}}help`    查询所有已注册指令
 - `{{PREFIX}}help <command>`    查询 <command> 指令的帮助
-""");
+""",
+        PermissionNodes: new Dictionary<string, string>
+        {
+            {"system.command.help", "允许使用 `help` 指令"}
+        });
 }

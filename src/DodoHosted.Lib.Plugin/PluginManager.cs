@@ -13,7 +13,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using DoDo.Open.Sdk.Services;
 using DodoHosted.Base.App;
@@ -350,6 +350,7 @@ public partial class PluginManager : IPluginManager
                 Name = metadata.CommandName,
                 Description = metadata.Description,
                 HelpText = FormatCommandHelpText(metadata.HelpText),
+                PermissionNodesText = FormatCommandPermissionNodesText(metadata.PermissionNodes),
                 CommandExecutor = ins
             });
         }
@@ -393,5 +394,26 @@ public partial class PluginManager : IPluginManager
         }
 
         return msg;
+    }
+    
+    /// <summary>
+    /// 格式化权限节点文本
+    /// </summary>
+    /// <returns></returns>
+    private static string FormatCommandPermissionNodesText(Dictionary<string, string> permissionNodes)
+    {
+        if (permissionNodes.Count == 0)
+        {
+            return "- ***该指令未配置权限节点表帮助文本***";
+        }
+        
+        var sb = new StringBuilder();
+
+        foreach (var (node, explain) in permissionNodes)
+        {
+            sb.AppendLine($"- `{node}`: {explain}");
+        }
+
+        return sb.ToString();
     }
 }

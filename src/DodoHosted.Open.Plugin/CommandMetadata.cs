@@ -15,7 +15,7 @@ namespace DodoHosted.Open.Plugin;
 /// <summary>
 ///     指令信息
 /// </summary>
-public sealed record CommandMetadata(string CommandName, string Description, string HelpText)
+public sealed record CommandMetadata(string CommandName, string Description, string HelpText, Dictionary<string, string>? PermissionNodes = null)
 {
     /// <summary>
     ///     指令名称，执行器将会匹配 `{PREFIX}CommandName` 来进行指令的执行。例如，该值为 <c>help</c>，
@@ -41,4 +41,10 @@ public sealed record CommandMetadata(string CommandName, string Description, str
     /// <para>{HelpText}</para>
     /// </remarks>
     public string HelpText { get; init; } = HelpText;
+
+    /// <summary>
+    ///     权限节点与说明列表，可以不定义，这个值只会用于用户查看所有权限时进行显示，对于指令的执行没有影响，
+    ///     字典的 Key 为权限节点，Value 为说明
+    /// </summary>
+    public Dictionary<string, string> PermissionNodes { get; init; } = PermissionNodes ?? new Dictionary<string, string>();
 }

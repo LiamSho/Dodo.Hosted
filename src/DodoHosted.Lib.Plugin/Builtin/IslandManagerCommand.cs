@@ -93,7 +93,11 @@ public class IslandManagerCommand : ICommandExecutor
 - `{{PREFIX}}island get settings`    获取群组配置信息
 - `{{PREFIX}}island get roles`    获取群组身份组信息
 - `{{PREFIX}}island send <#频道名/频道 ID> <消息体>`    在频道中发送消息
-""");
+""",
+        PermissionNodes: new Dictionary<string, string>
+        {
+            { "system.command.island", "允许使用 `island` 指令" }
+        });
 
     private static async Task<CommandExecutionResult> RunSetParams(
         string[] args,

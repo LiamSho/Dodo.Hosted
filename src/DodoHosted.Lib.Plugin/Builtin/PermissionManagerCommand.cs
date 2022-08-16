@@ -32,15 +32,35 @@ public class PermissionManagerCommand : ICommandExecutor
         Func<string, Task<string>> reply,
         bool shouldAllow = false)
     {
+        var arg = args.Skip(1).FirstOrDefault();
+
         if (shouldAllow is false)
         {
-            if (await permissionManager.CheckPermission("system.command.pm", message) is false)
+            switch (arg)
             {
-                return CommandExecutionResult.Unauthorized;
+                case "add" or "set" or "remove":
+                    if (await permissionManager.CheckPermission("system.command.pm.modify", message) is false)
+                    {
+                        return CommandExecutionResult.Unauthorized;
+                    }
+                    break;
+                case "list":
+                    if (await permissionManager.CheckPermission("system.command.pm.list", message) is false)
+                    {
+                        return CommandExecutionResult.Unauthorized;
+                    }
+                    break;
+                case "check":
+                    if (await permissionManager.CheckPermission("system.command.pm.check", message) is false)
+                    {
+                        return CommandExecutionResult.Unauthorized;
+                    }
+                    break;
+                default:
+                    return CommandExecutionResult.Unknown;
             }
         }
-
-        var arg = args.Skip(1).FirstOrDefault();
+        
         switch (arg)
         {
             case "add":
@@ -90,7 +110,13 @@ public class PermissionManagerCommand : ICommandExecutor
 - `{{PREFIX}}pm remove single <权限 ID> [--dry-run]`  移除一个权限配置
 - `{{PREFIX}}pm remove nodes <权限节点> [--dry-run]`  按照权限节点匹配进行移除
 - `{{PREFIX}}pm remove search <#频道名/频道 ID/*> <身份组 ID/*> [--dry-run]`  按照频道与身份组检索进行移除
-""");
+""",
+        PermissionNodes: new Dictionary<string, string>
+        {
+            { "system.command.pm.modify", "允许对权限进行新增(`add`)、修改(`set`)、删除操作(`remove`)" },
+            { "system.command.pm.list", "允许使用 `pm list` 查看权限表" },
+            { "system.command.pm.check", "允许使用 `pm check` 检查用户权限" }
+        });
 
     // pm add <node> <(#channel/\*)> <role(id/\*)> <allow/deny>
     private static async Task<CommandExecutionResult> RunAddPermission(

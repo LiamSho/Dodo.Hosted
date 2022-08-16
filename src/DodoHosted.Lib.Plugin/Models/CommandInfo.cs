@@ -31,4 +31,9 @@ public record CommandInfo
     /// 帮助文本
     /// </summary>
     public required string HelpText { get; set; }
+    
+    /// <summary>
+    /// 权限节点文本
+    /// </summary>
+    public required string PermissionNodesText { get; set; }
 }
