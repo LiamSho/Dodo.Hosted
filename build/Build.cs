@@ -163,6 +163,7 @@ public partial class Build : NukeBuild
                 .SetManifests(_dockerImages));
 
             DockerTasks.DockerManifestCreate(x => x
+                .SetProcessArgumentConfigurator(a => a.Add("--amend"))
                 .SetManifestList(latestVersionManifest)
                 .SetManifests(_dockerImages));
 
