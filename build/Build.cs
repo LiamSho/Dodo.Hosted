@@ -107,6 +107,7 @@ public partial class Build : NukeBuild
             foreach (var package in ArtifactsDirectory.GlobFiles("*.nupkg"))
             {
                 DotNetTasks.DotNetNuGetPush(x => x
+                    .SetSource("https://api.nuget.org/v3/index.json")
                     .SetApiKey(_nugetApiKey)
                     .SetTargetPath(package));
             }
