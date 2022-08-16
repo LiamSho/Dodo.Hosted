@@ -27,11 +27,13 @@ public static class DodoServicesExtension
     /// <param name="serviceCollection">Service Collection</param>
     /// <param name="dodoOpenApiOptionsBuilder">Dodo <see cref="OpenApiOptions"/> 构建器委托</param>
     /// <param name="dodoOpenEventOptionsBuilder">Dodo <see cref="OpenEventOptions"/> 构建器委托</param>
+    /// <param name="includeEventProcessor">是否包含 <see cref="EventProcessService"/> 的实现，默认为 <c>true</c></param>
     /// <returns></returns>
     public static IServiceCollection AddDodoServices(
         this IServiceCollection serviceCollection,
         Action<DodoOpenApiOptionsBuilder> dodoOpenApiOptionsBuilder,
-        Action<DodoOpenEventOptionsBuilder> dodoOpenEventOptionsBuilder)
+        Action<DodoOpenEventOptionsBuilder> dodoOpenEventOptionsBuilder,
+        bool includeEventProcessor = true)
     {
         var openApiOptionsBuilder = new DodoOpenApiOptionsBuilder();
         var openEventOptionsBuilder = new DodoOpenEventOptionsBuilder();
@@ -58,7 +60,10 @@ public static class DodoServicesExtension
             return new OpenApiService(option.Value);
         });
 
-        serviceCollection.AddSingleton<EventProcessService, DodoEventProcessor>();
+        if (includeEventProcessor)
+        {
+            serviceCollection.AddSingleton<EventProcessService, DodoEventProcessor>();
+        }
         
         serviceCollection.AddHostedService<DodoHosted>();
 

@@ -20,6 +20,13 @@ namespace DodoHosted.App.Core;
 
 public static class DodoHostedServiceExtension
 {
+    /// <summary>
+    /// 添加所有 DodoHosted 所需服务
+    /// </summary>
+    /// <param name="services">DI 容器</param>
+    /// <param name="openApiOptionsBuilder">DodoOpenApi 选项构建器</param>
+    /// <param name="openEventOptionsBuilder">DodoOpenEvent 选项构建器</param>
+    /// <returns></returns>
     public static IServiceCollection AddDodoHostedServices(this IServiceCollection services,
         Action<DodoOpenApiOptionsBuilder>? openApiOptionsBuilder = null,
         Action<DodoOpenEventOptionsBuilder>? openEventOptionsBuilder = null)
