@@ -23,10 +23,26 @@ namespace DodoHosted.Lib.Plugin;
 public interface IPluginManager
 {
     /// <summary>
+    /// 获取插件 Manifest
+    /// </summary>
+    /// <param name="pluginIdentifier">插件标识符</param>
+    /// <returns></returns>
+    PluginManifest? GetPluginManifest(string pluginIdentifier);
+    
+    /// <summary>
     /// 获取已载入插件的信息
     /// </summary>
     /// <returns>已载入插件的 <see cref="PluginInfo"/></returns>
     PluginInfo[] GetLoadedPluginInfos();
+
+    /// <summary>
+    /// 获取所有插件的信息
+    /// </summary>
+    /// <returns>
+    /// 插件信息 <see cref="PluginInfo"/> 与插件载入状态组成的字典，若值为空，表示启用，否则为插件包文件名，
+    /// 获取信息失败的插件为 Tuple 第二个值
+    /// </returns>
+    Task<(Dictionary<PluginInfo, string>, List<string>)> GetAllPluginInfos();
 
     /// <summary>
     /// 获取已载入的指令信息
@@ -41,6 +57,13 @@ public interface IPluginManager
     /// <param name="bundle">插件包</param>
     /// <returns></returns>
     Task LoadPlugin(FileInfo bundle);
+    
+    /// <summary>
+    /// 载入插件包
+    /// </summary>
+    /// <param name="bundle">插件包</param>
+    /// <returns></returns>
+    Task LoadPlugin(string bundle);
     
     /// <summary>
     /// 载入插件目录下的所有插件包

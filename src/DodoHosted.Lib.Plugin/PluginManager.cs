@@ -79,9 +79,41 @@ public partial class PluginManager : IPluginManager
     }
 
     /// <inheritdoc />
+    // ReSharper disable once ReturnTypeCanBeNotNullable
+    public PluginManifest? GetPluginManifest(string pluginIdentifier)
+    {
+        var kv = _plugins.FirstOrDefault(x => x.Key == pluginIdentifier);
+        return kv.Value;
+    }
+
+    /// <inheritdoc />
     public PluginInfo[] GetLoadedPluginInfos()
     {
         return _plugins.Select(x => x.Value.PluginInfo).ToArray();
+    }
+
+    /// <inheritdoc />
+    public async Task<(Dictionary<PluginInfo, string>, List<string>)> GetAllPluginInfos()
+    {
+        var result = new Dictionary<PluginInfo, string>();
+        var failed = new List<string>();
+        
+        var bundles = _pluginDirectory.GetFiles("*.zip", SearchOption.TopDirectoryOnly);
+        foreach (var fileInfo in bundles)
+        {
+            var pluginInfo = await ReadPluginInfo(fileInfo);
+
+            if (pluginInfo is null)
+            {
+                failed.Add(fileInfo.Name);
+                continue;
+            }
+
+            var enabled = _plugins.Any(x => x.Key == pluginInfo.Identifier);
+            result.Add(pluginInfo, enabled ? string.Empty : fileInfo.Name);
+        }
+
+        return (result, failed);
     }
 
     /// <inheritdoc />
@@ -111,19 +143,7 @@ public partial class PluginManager : IPluginManager
             }
 
             // 读取和解析 plugin.json 文件
-            await using var fs = bundle.OpenRead();
-            using var zipArchive = new ZipArchive(fs, ZipArchiveMode.Read);
-        
-            var pluginInfoFileEntry = zipArchive.Entries.FirstOrDefault(x => x.Name == "plugin.json");
-
-            if (pluginInfoFileEntry is null)
-            {
-                throw new InvalidPluginBundleException(bundle.Name, "找不到 plugin.json");
-            }
-
-            await using var pluginInfoReader = pluginInfoFileEntry.Open();
-
-            var pluginInfo = await JsonSerializer.DeserializeAsync<PluginInfo>(pluginInfoReader);
+            var pluginInfo = await ReadPluginInfo(bundle);
 
             if (pluginInfo is null)
             {
@@ -205,7 +225,21 @@ public partial class PluginManager : IPluginManager
             _logger.LogError(ex, "插件包 {PluginBundleName} 载入失败，{ExceptionMessage}", bundle.Name, ex.Message);
         }
     }
-    
+
+    /// <inheritdoc />
+    public async Task LoadPlugin(string bundle)
+    {
+        var fileInfo = _pluginDirectory
+            .GetFiles("*.zip", SearchOption.TopDirectoryOnly)
+            .FirstOrDefault(x => x.Name == bundle);
+        if (fileInfo is null)
+        {
+            return;
+        }
+
+        await LoadPlugin(fileInfo);
+    }
+
     /// <inheritdoc />
     public async Task LoadPlugins()
     {
@@ -415,5 +449,27 @@ public partial class PluginManager : IPluginManager
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// 读取插件包中的 <c>plugin.json</c>
+    /// </summary>
+    /// <param name="file">插件包文件</param>
+    /// <returns></returns>
+    private static async Task<PluginInfo?> ReadPluginInfo(FileInfo file)
+    {
+        await using var fs = file.OpenRead();
+        using var zipArchive = new ZipArchive(fs, ZipArchiveMode.Read);
+        
+        var pluginInfoFileEntry = zipArchive.Entries.FirstOrDefault(x => x.Name == "plugin.json");
+        if (pluginInfoFileEntry is null)
+        {
+            return null;
+        }
+            
+        await using var pluginInfoReader = pluginInfoFileEntry.Open();
+
+        var pluginInfo = await JsonSerializer.DeserializeAsync<PluginInfo>(pluginInfoReader);
+        return pluginInfo;
     }
 }
