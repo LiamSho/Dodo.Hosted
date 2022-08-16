@@ -101,6 +101,9 @@ public partial class Build : NukeBuild
                 DotNetTasks.DotNetPack(x => x
                     .SetProject(project)
                     .SetVersion(_minVer.PackageVersion)
+                    .SetAssemblyVersion("1.0.0.0")
+                    .SetFileVersion(_minVer.FileVersion)
+                    .SetInformationalVersion(_minVer.PackageVersion)
                     .SetConfiguration(BuilderConstants.BUILDER_CONFIGURATION)
                     .SetOutputDirectory(ArtifactsDirectory));
             }
