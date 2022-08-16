@@ -17,8 +17,7 @@ namespace DodoHosted.Builder;
 [GitHubActions(
     name: "dev-build",
     image: GitHubActionsImage.UbuntuLatest,
-    OnPushBranchesIgnore = new[] { "main" },
-    OnPullRequestBranches = new[] { "dev" },
+    OnPushBranches = new [] { "*" },
     OnWorkflowDispatchOptionalInputs = new []{ "reason" },
     InvokedTargets = new[] { nameof(PublishArtifact) },
     EnableGitHubToken = true,

@@ -18,11 +18,8 @@ name: dev-build
 
 on:
   push:
-    branches-ignore:
-      - main
-  pull_request:
     branches:
-      - dev
+      - *
   workflow_dispatch:
     inputs:
       reason:
