@@ -130,6 +130,7 @@ public partial class Build : NukeBuild
             {
                 var tag = $"{_dockerHubUsername}/{BuilderConstants.DOCKER_IMAGE_NAME}:{_minVer.PackageVersion}-{platform.Split("/")[1]}";
                 DockerTasks.DockerBuildxBuild(x => x
+                    .EnableLoad()
                     .SetPath(RootDirectory)
                     .SetPlatform(platform)
                     .SetTag(tag)
