@@ -11,6 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
@@ -187,9 +188,8 @@ public partial class PluginManager
     
             if (command[movePointer - 1] == '"')
             {
-                args.Add(command.Slice(startPointer + 1, movePointer - startPointer - 2)
-                    .ToString()
-                    .Replace("\\", string.Empty));
+                var str = command[(startPointer + 1)..^1].ToString();
+                args.Add(Regex.Unescape(str));
             }
             else
             {
@@ -200,9 +200,8 @@ public partial class PluginManager
 
         if (command[^1] == '\"')
         {
-            args.Add(command[(startPointer + 1)..^1]
-                .ToString()
-                .Replace("\\", string.Empty));
+            var str = command[(startPointer + 1)..^1].ToString();
+            args.Add(Regex.Unescape(str));
         }
         else
         {
