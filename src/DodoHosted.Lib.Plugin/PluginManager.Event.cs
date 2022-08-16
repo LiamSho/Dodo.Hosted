@@ -14,6 +14,7 @@ using System.Diagnostics;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base;
 using DodoHosted.Base.Events;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.Plugin;
@@ -51,8 +52,16 @@ public partial class PluginManager
                     continue;
                 }
 
+                var scope = _provider.CreateScope();
+                
                 await (Task)eventHandler.HandlerMethod
-                    .Invoke(eventHandler.EventHandler, new object?[] { @event, _provider })!;
+                    .Invoke(eventHandler.EventHandler, new object?[]
+                    {
+                        @event, scope.ServiceProvider, _eventHandlerLogger
+                    })!;
+                
+                scope.Dispose();
+                
                 return true;
             }
         }

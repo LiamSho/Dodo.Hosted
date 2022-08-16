@@ -107,8 +107,10 @@ public partial class PluginManager
                 })
             .ToList();
 
-        var permissionManager = _provider.GetRequiredService<IPermissionManager>();
-        var result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, _provider, permissionManager, reply,IsSuperAdmin(cmdMessage.Roles));
+        var scope = _provider.CreateScope();
+        
+        var permissionManager = scope.ServiceProvider.GetRequiredService<IPermissionManager>();
+        var result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, scope.ServiceProvider, permissionManager, reply,IsSuperAdmin(cmdMessage.Roles));
         _logger.LogTrace("指令执行结果：{TraceCommandExecutionResult}", result);
 
         switch (result)
@@ -131,6 +133,8 @@ public partial class PluginManager
                 await _channelLogger.LogError(cmdMessage.IslandId, $"未知的指令执行结果：`{result}`");
                 break;
         }
+        
+        scope.Dispose();
         
         sw.Stop();
         
