@@ -80,8 +80,8 @@ public static class HostEnvs
     /// <summary>
     /// 指令前缀
     /// </summary>
-    public static string CommandPrefix => Configuration.CommandPrefix ?? ReadEnvironmentVariable(
-        "DODO_HOSTED_COMMAND_PREFIX", "!");
+    public static string CommandPrefix => (Configuration.CommandPrefix ?? ReadEnvironmentVariable(
+        "DODO_HOSTED_COMMAND_PREFIX", "!").First()).ToString();
 
     /// <summary>
     /// 版本号

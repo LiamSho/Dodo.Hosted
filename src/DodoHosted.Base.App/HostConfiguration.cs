@@ -59,7 +59,7 @@ public record HostConfiguration
     /// <summary>
     /// <see cref="HostEnvs.CommandPrefix"/>
     /// </summary>
-    public string? CommandPrefix { get; set; }
+    public char? CommandPrefix { get; set; }
     
     /// <summary>
     /// <see cref="HostEnvs.DodoHostedOpenApiLogLevel"/>
