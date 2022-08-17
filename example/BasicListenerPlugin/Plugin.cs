@@ -11,18 +11,21 @@
 // but WITHOUT ANY WARRANTY
 
 using DodoHosted.Open.Plugin;
+using Microsoft.Extensions.Logging;
 
 namespace BasicListenerPlugin;
 
 public class Plugin : IPluginLifetime
 {
-    public Task Load()
+    public Task Load(ILogger logger)
     {
+        logger.LogInformation("Plugin BasicListenerPlugin loaded");
         return Task.CompletedTask;
     }
 
-    public Task Unload()
+    public Task Unload(ILogger logger)
     {
+        logger.LogInformation("Plugin BasicListenerPlugin unloaded");
         return Task.CompletedTask;
     }
 }

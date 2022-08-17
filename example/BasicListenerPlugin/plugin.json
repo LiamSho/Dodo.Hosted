@@ -1,5 +1,5 @@
 {
-  "$schema": "../../plugin-info-schema.json",
+  "$schema": "https://raw.githubusercontent.com/LiamSho/Dodo.Hosted/main/plugin-info-schema.json",
   "identifier": "basic-listener-plugin",
   "name": "Basic Listener Plugin",
   "version": "1.0.0",

@@ -13,7 +13,6 @@
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base.Events;
 using DodoHosted.Open.Plugin;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace BasicListenerPlugin;
@@ -22,14 +21,12 @@ public class TextMessageListener : IDodoHostedPluginEventHandler<DodoChannelMess
 {
     public static bool IsEnabled { get; set; } = true;
     
-    public Task Handle(DodoChannelMessageEvent<MessageBodyText> @event, IServiceProvider provider)
+    public Task Handle(DodoChannelMessageEvent<MessageBodyText> @event, IServiceProvider provider, ILogger logger)
     {
         if (IsEnabled is false)
         {
             return Task.CompletedTask;
         }
-        
-        var logger = provider.GetRequiredService<ILogger<TextMessageListener>>();
         
         logger.LogInformation("Received message: [{Channel}] {Sender}: {Message}",
             @event.Message.Data.EventBody.ChannelId,
