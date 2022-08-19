@@ -60,43 +60,18 @@ public class PermissionManagerCommand : ICommandExecutor
                     return CommandExecutionResult.Unknown;
             }
         }
-        
-        switch (arg)
+
+        var openApi = provider.GetRequiredService<OpenApiService>();
+
+        return args switch
         {
-            case "add":
-                if (args.Length != 6)
-                {
-                    return CommandExecutionResult.Unknown;
-                }
-                return await RunAddPermission(args, reply, message, permissionManager);
-            case "check":
-                if (args.Length != 5)
-                {
-                    return CommandExecutionResult.Unknown;
-                }
-                var openApiServices = provider.GetRequiredService<OpenApiService>();
-                return await RunCheckPermission(args, reply, message, openApiServices, permissionManager);
-            case "set":
-                if (args.Length < 5)
-                {
-                    return CommandExecutionResult.Unknown;
-                }
-                return await RunSetPermission(args, reply, message, permissionManager);
-            case "list":
-                if (args.Length is not (2 or 4 or 6))
-                {
-                    return CommandExecutionResult.Unknown;
-                }
-                return await RunListPermission(args, reply, message, permissionManager);
-            case "remove":
-                if (args.Length < 4)
-                {
-                    return CommandExecutionResult.Unknown;
-                }
-                return await RunRemovePermission(args, reply, message, permissionManager);
-            default:
-                return CommandExecutionResult.Unknown;
-        }
+            [_, "add", var node, var channel, var role, var value] => await RunAddPermission(node, channel, role, value, reply, message, permissionManager),
+            [_, "set", var id, ..var param] => await RunSetPermission(id, param, reply, message, permissionManager),
+            [_, "check", var node, var channel, var user] => await RunCheckPermission(node, channel, user, reply, message, openApi, permissionManager),
+            [_, "list", ..var param] => await RunListPermission(param, reply, message, permissionManager),
+            [_, "remove", var type, ..var param] => await RunRemovePermission(type, param, reply, message, permissionManager),
+            _ => CommandExecutionResult.Unknown
+        };
     }
 
     public CommandMetadata GetMetadata() => new CommandMetadata(
@@ -120,21 +95,14 @@ public class PermissionManagerCommand : ICommandExecutor
 
     // pm add <node> <(#channel/\*)> <role(id/\*)> <allow/deny>
     private static async Task<CommandExecutionResult> RunAddPermission(
-        string[] args,
+        string node,
+        string channel,
+        string role,
+        string value,
         Func<string, Task<string>> reply,
         CommandMessage message,
         IPermissionManager permissionManager)
     {
-        var node = args.Skip(2).FirstOrDefault();
-        var channel = args.Skip(3).FirstOrDefault();
-        var role = args.Skip(4).FirstOrDefault();
-        var value = args.Skip(5).FirstOrDefault();
-
-        if (node is null || channel is null || role is null || value is null)
-        {
-            return CommandExecutionResult.Failed;
-        }
-
         // 若节点有 *，则只能是最后一位为 *
         if (node.Contains('*'))
         {
@@ -146,8 +114,8 @@ public class PermissionManagerCommand : ICommandExecutor
         }
         
         // 解析 Channel
-        channel = channel.ExtractChannelId(true);
-        if (channel is null)
+        var channelId = channel.ExtractChannelId(true);
+        if (channelId is null)
         {
             await reply.Invoke("Channel 不合法");
             return CommandExecutionResult.Failed;
@@ -167,7 +135,7 @@ public class PermissionManagerCommand : ICommandExecutor
             return CommandExecutionResult.Failed;
         }
 
-        var result = await permissionManager.AddPermission(node, message.IslandId, channel, role, value);
+        var result = await permissionManager.AddPermission(node, message.IslandId, channelId, role, value);
 
         if (result is null)
         {
@@ -181,12 +149,12 @@ public class PermissionManagerCommand : ICommandExecutor
     
     // pm set <权限 ID> [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>] [value <allow/deny>]
     private static async Task<CommandExecutionResult> RunSetPermission(
-        string[] args,
+        string id,
+        IEnumerable<string> param,
         Func<string, Task<string>> reply,
         CommandMessage message,
         IPermissionManager permissionManager)
     {
-        var id = args.Skip(2).FirstOrDefault();
         var guidParsed = Guid.TryParse(id, out var parsedGuid);
         if (guidParsed is false)
         {
@@ -194,12 +162,11 @@ public class PermissionManagerCommand : ICommandExecutor
             return CommandExecutionResult.Failed;
         }
         
-        var skippedArgs = args.Skip(3).ToList();
-
         string? channel = null;
         string? role = null;
         string? value = null;
-        
+
+        var skippedArgs = param.ToList();
         while (skippedArgs.Count != 0)
         {
             switch (skippedArgs.FirstOrDefault())
@@ -280,21 +247,14 @@ public class PermissionManagerCommand : ICommandExecutor
 
     // pm check <node> <#channel> <(@member/id)>
     private static async Task<CommandExecutionResult> RunCheckPermission(
-        string[] args,
+        string node,
+        string channel,
+        string user,
         Func<string, Task<string>> reply,
         CommandMessage message,
         OpenApiService openApiService,
         IPermissionManager permissionManager)
     {
-        var node = args.Skip(2).FirstOrDefault();
-        var channel = args.Skip(3).FirstOrDefault();
-        var member = args.Skip(4).FirstOrDefault();
-        
-        if (node is null || channel is null || member is null)
-        {
-            return CommandExecutionResult.Failed;
-        }
-
         // 检查 Node
         if (node.Contains('*'))
         {
@@ -303,16 +263,16 @@ public class PermissionManagerCommand : ICommandExecutor
         }
         
         // 解析 Channel
-        channel = channel.ExtractChannelId(true);
-        if (channel is null)
+        var channelId = channel.ExtractChannelId(true);
+        if (channelId is null)
         {
             await reply.Invoke("Channel 不合法");
             return CommandExecutionResult.Failed;
         }
         
         // 解析 Member
-        member = member.ExtractMemberId();
-        if (member is null)
+        var userId = user.ExtractMemberId();
+        if (userId is null)
         {
             await reply.Invoke("用户 ID 不合法");
             return CommandExecutionResult.Failed;
@@ -320,7 +280,7 @@ public class PermissionManagerCommand : ICommandExecutor
 
         var memberRoles = await openApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
         {
-            IslandId = message.IslandId, DodoId = member
+            IslandId = message.IslandId, DodoId = userId
         });
 
         if (memberRoles is null)
@@ -329,7 +289,7 @@ public class PermissionManagerCommand : ICommandExecutor
             return CommandExecutionResult.Failed;
         }
 
-        var result = await permissionManager.DescribeSchemaCheck(node, memberRoles, message.IslandId, channel);
+        var result = await permissionManager.DescribeSchemaCheck(node, memberRoles, message.IslandId, channelId);
 
         var resultString = result?.Value == "allow" ? "Allow" : "Deny";
 
@@ -347,7 +307,7 @@ public class PermissionManagerCommand : ICommandExecutor
         CommandMessage message,
         IPermissionManager permissionManager)
     {
-        var skippedArgs = args.Skip(2).ToList();
+        var skippedArgs = args.ToList();
         string? channel = null;
         string? role = null;
 
@@ -428,13 +388,13 @@ public class PermissionManagerCommand : ICommandExecutor
     // pm remove nodes <权限节点> [--dry-run]`  按照权限节点匹配进行移除
     // pm remove search <#频道名/频道 ID/*> <身份组 ID/*> [--dry-run]`  按照频道与身份组检索进行移除
     private static async Task<CommandExecutionResult> RunRemovePermission(
+        string type,
         IReadOnlyList<string> args,
         Func<string, Task<string>> reply,
         CommandMessage message,
         IPermissionManager permissionManager)
     {
         var dryRun = args.Contains("--dry-run");
-        var type = args[2];
 
         var messageBuilder = new StringBuilder();
         messageBuilder.AppendLine(dryRun ? "`DRY-RUN` 将删除以下权限记录：" : "以下权限记录已删除：");

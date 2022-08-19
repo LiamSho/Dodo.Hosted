@@ -57,31 +57,13 @@ public class IslandManagerCommand : ICommandExecutor
             .GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
         var openApi = provider.GetRequiredService<OpenApiService>();
 
-        switch (args[1])
+        return args switch
         {
-            case "set":
-                return await RunSetParams(args, islandInfoCollection, reply, message);
-            case "get":
-                return await RunGetInfos(args, islandInfoCollection, openApi, reply, message);
-            case "send":
-                var channelId = args.Skip(2).Take(1).FirstOrDefault()?.ExtractChannelId();
-                var sendMessage = args.Skip(3).Take(1).FirstOrDefault();
-                if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(sendMessage))
-                {
-                    return CommandExecutionResult.Unknown;
-                }
-
-                await openApi.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
-                {
-                    ChannelId = channelId, MessageBody = new MessageBodyText { Content = sendMessage }
-                });
-
-                await reply("已发送");
-                return CommandExecutionResult.Success;
-
-            default:
-                return CommandExecutionResult.Unknown;
-        }
+            ["_", "set", var param, var value] => await RunSetParams(param, value, islandInfoCollection, reply, message),
+            ["_", "get", var param] => await RunGetInfos(param, islandInfoCollection, openApi, reply, message),
+            ["_", "send", var channel, var content] => await RunSendMessage(channel, content, openApi, reply),
+            _ => CommandExecutionResult.Unknown
+        };
     }
 
     public CommandMetadata GetMetadata() => new CommandMetadata(
@@ -100,19 +82,12 @@ public class IslandManagerCommand : ICommandExecutor
         });
 
     private static async Task<CommandExecutionResult> RunSetParams(
-        string[] args,
+        string param,
+        string value,
         IMongoCollection<IslandSettings> collection,
         Func<string, Task<string>> reply,
         CommandMessage message)
     {
-        var param = args.Skip(2).FirstOrDefault();
-        var value = args.Skip(3).FirstOrDefault();
-        
-        if (param is null || value is null)
-        {
-            return CommandExecutionResult.Unknown;
-        }
-
         switch (param)
         {
             case "logger_channel":
@@ -159,19 +134,12 @@ public class IslandManagerCommand : ICommandExecutor
     }
     
     private static async Task<CommandExecutionResult> RunGetInfos(
-        IEnumerable<string> args,
+        string infoType,
         IMongoCollection<IslandSettings> collection,
         OpenApiService openApiService,
         Func<string, Task<string>> reply,
         CommandMessage message)
     {
-        var infoType = args.Skip(2).FirstOrDefault();
-        
-        if (infoType is null)
-        {
-            return CommandExecutionResult.Unknown;
-        }
-
         switch (infoType)
         {
             case "settings":
@@ -224,6 +192,27 @@ public class IslandManagerCommand : ICommandExecutor
             default:
                 return CommandExecutionResult.Unknown;
         }
+    }
+
+    private static async Task<CommandExecutionResult> RunSendMessage(
+        string channel,
+        string content,
+        OpenApiService openApi,
+        Func<string, Task<string>> reply)
+    {
+        var channelId = channel.ExtractChannelId();
+        if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(content))
+        {
+            return CommandExecutionResult.Unknown;
+        }
+
+        await openApi.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
+        {
+            ChannelId = channelId, MessageBody = new MessageBodyText { Content = content }
+        });
+
+        await reply("已发送");
+        return CommandExecutionResult.Success;
     }
 
     private static string FormatLength(string str, int maxLength, char placeHolder = ' ')
