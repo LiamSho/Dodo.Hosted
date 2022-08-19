@@ -59,9 +59,9 @@ public class IslandManagerCommand : ICommandExecutor
 
         return args switch
         {
-            ["_", "set", var param, var value] => await RunSetParams(param, value, islandInfoCollection, reply, message),
-            ["_", "get", var param] => await RunGetInfos(param, islandInfoCollection, openApi, reply, message),
-            ["_", "send", var channel, var content] => await RunSendMessage(channel, content, openApi, reply),
+            [_, "set", var param, var value] => await RunSetParams(param, value, islandInfoCollection, reply, message),
+            [_, "get", var param] => await RunGetInfos(param, islandInfoCollection, openApi, reply, message),
+            [_, "send", var channel, var content] => await RunSendMessage(channel, content, openApi, reply),
             _ => CommandExecutionResult.Unknown
         };
     }
