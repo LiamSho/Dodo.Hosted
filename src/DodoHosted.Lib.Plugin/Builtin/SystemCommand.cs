@@ -101,6 +101,7 @@ public class SystemCommand : ICommandExecutor
 - `{{PREFIX}}system plugin info <插件标识符>`    查看插件信息
 - `{{PREFIX}}system plugin load <插件包文件名>`    启用插件
 - `{{PREFIX}}system plugin unload <插件标识符>`    禁用插件
+- `{{PREFIX}}system plugin reload`    重载所有插件
 """);
 
     private static string ToMegabytes(long size)
@@ -116,14 +117,6 @@ public class SystemCommand : ICommandExecutor
         var operation = args.Skip(2).FirstOrDefault();
         var param = args.Skip(3).FirstOrDefault();
         
-        if (operation is null)
-        {
-            return CommandExecutionResult.Unknown;
-        }
-        if (operation is not "list" && param is null)
-        {
-            return CommandExecutionResult.Unknown;
-        }
         var messageBuilder = new StringBuilder();        
         switch (operation)
         {
@@ -145,7 +138,12 @@ public class SystemCommand : ICommandExecutor
                 }
                 break;
             case "info":
-                var manifest = pluginManager.GetPluginManifest(param!);
+                if (param is null)
+                {
+                    return CommandExecutionResult.Unknown;
+                }
+                
+                var manifest = pluginManager.GetPluginManifest(param);
                 if (manifest is null)
                 {
                     await reply.Invoke($"插件 `{param}` 不存在");
@@ -170,12 +168,22 @@ public class SystemCommand : ICommandExecutor
                 
                 break;
             case "load":
-                await pluginManager.LoadPlugin(param!);
+                if (param is null)
+                {
+                    return CommandExecutionResult.Unknown;
+                }
+                
+                await pluginManager.LoadPlugin(param);
                 await reply.Invoke("已执行插件加载任务");
                 return CommandExecutionResult.Success;
             case "unload":
-                pluginManager.UnloadPlugin(param!);
-                var unloadSuccess = pluginManager.GetPluginManifest(param!) is null;
+                if (param is null)
+                {
+                    return CommandExecutionResult.Unknown;
+                }
+                
+                pluginManager.UnloadPlugin(param);
+                var unloadSuccess = pluginManager.GetPluginManifest(param) is null;
                 if (unloadSuccess)
                 {
                     await reply.Invoke("插件卸载成功");
@@ -184,6 +192,12 @@ public class SystemCommand : ICommandExecutor
 
                 await reply.Invoke("插件卸载失败");
                 return CommandExecutionResult.Failed;
+            case "reload":
+                pluginManager.UnloadPlugins();
+                await pluginManager.LoadPlugins();
+
+                await reply.Invoke("已执行重载任务");
+                return CommandExecutionResult.Success;
             default:
                 return CommandExecutionResult.Unknown;
         }
