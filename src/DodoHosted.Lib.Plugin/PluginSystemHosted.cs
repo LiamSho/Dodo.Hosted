@@ -26,11 +26,13 @@ public class PluginSystemHosted : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         await _pluginManager.LoadPlugins();
+        await _pluginManager.LoadNativeTypes();
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
         _pluginManager.UnloadPlugins();
+        _pluginManager.UnloadNativeTypes();
         return Task.CompletedTask;
     }
 }

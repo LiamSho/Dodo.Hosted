@@ -31,17 +31,14 @@ public partial class PluginManager
         }
 
         var sw = Stopwatch.StartNew();
-        var result = RunEvent(dodoHostedEvent, typeString).GetAwaiter().GetResult();
+        RunEvent(dodoHostedEvent, typeString).GetAwaiter().GetResult();
         sw.Stop();
         
-        if (result)
-        {
-            _logger.LogInformation("已处理事件: {EventTypeString}, 耗时: {EventProcessTime} MS", typeString, sw.ElapsedMilliseconds);
-        }
+        _logger.LogInformation("已处理事件: {EventTypeString}, 耗时: {EventProcessTime} MS", typeString, sw.ElapsedMilliseconds);
     }
     
     /// <inheritdoc />
-    public async Task<bool> RunEvent(IDodoHostedEvent @event, string typeString)
+    public async Task RunEvent(IDodoHostedEvent @event, string typeString)
     {
         foreach (var (_, manifest) in _plugins)
         {
@@ -61,11 +58,25 @@ public partial class PluginManager
                     })!;
                 
                 scope.Dispose();
-                
-                return true;
             }
         }
 
-        return false;
+        foreach (var nativeEventHandler in _nativeEventHandlers)
+        {
+            if (nativeEventHandler.EventTypeString != typeString)
+            {
+                continue;
+            }
+            
+            var scope = _provider.CreateScope();
+            
+            await (Task)nativeEventHandler.HandlerMethod
+                .Invoke(nativeEventHandler.EventHandler, new object?[]
+                {
+                    @event, scope.ServiceProvider, _eventHandlerLogger
+                })!;
+            
+            scope.Dispose();
+        }
     }
 }

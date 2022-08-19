@@ -85,6 +85,16 @@ public interface IPluginManager
     void UnloadPlugins();
 
     /// <summary>
+    /// 卸载本地类型
+    /// </summary>
+    void UnloadNativeTypes();
+    
+    /// <summary>
+    /// 加载本地类型
+    /// </summary>
+    Task LoadNativeTypes();
+
+    /// <summary>
     /// 执行指令
     /// </summary>
     /// <param name="messageEvent">消息事件</param>
@@ -97,5 +107,5 @@ public interface IPluginManager
     /// <param name="event">事件消息</param>
     /// <param name="typeString">类型字符串</param>
     /// <returns></returns>
-    Task<bool> RunEvent(IDodoHostedEvent @event, string typeString);
+    Task RunEvent(IDodoHostedEvent @event, string typeString);
 }

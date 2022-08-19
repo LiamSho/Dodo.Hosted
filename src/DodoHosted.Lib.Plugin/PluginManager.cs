@@ -13,6 +13,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using DoDo.Open.Sdk.Services;
@@ -44,12 +45,21 @@ public partial class PluginManager : IPluginManager
     private readonly CommandManifest[] _builtinCommands;
 
     private IEnumerable<CommandManifest> AllCommands => _plugins.IsEmpty
-        ? _builtinCommands
+        ? _builtinCommands.Concat(_nativeCommandExecutors)
         : _plugins.Values
             .Select(x => x.CommandManifests)
             .Aggregate((x, y) => x.Concat(y).ToArray())
             .Concat(_builtinCommands)
+            .Concat(_nativeCommandExecutors)
             .ToArray();
+
+    // ReSharper disable once CollectionNeverUpdated.Global
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static List<Assembly> NativeAssemblies { get; } = new();
+
+    private readonly List<IPluginLifetime> _nativePluginLifetimes = new();
+    private readonly List<CommandManifest> _nativeCommandExecutors = new();
+    private readonly List<EventHandlerManifest> _nativeEventHandlers = new();
 
     public PluginManager(
         ILogger<PluginManager> logger,
@@ -124,16 +134,7 @@ public partial class PluginManager : IPluginManager
     /// <inheritdoc />
     public CommandInfo[] GetCommandInfos()
     {
-        var manifests = _plugins
-            .Select(x => x.Value.CommandManifests)
-            .ToArray();
-        return (manifests.Length == 0
-            ? _builtinCommands
-            : manifests
-                .Aggregate((x, y) => x.Concat(y).ToArray())
-                .Concat(_builtinCommands))
-            .Select(x => x as CommandInfo)
-            .ToArray();
+        return AllCommands.Select(x => x as CommandInfo).ToArray();
     }
     
     /// <inheritdoc />
@@ -294,6 +295,44 @@ public partial class PluginManager : IPluginManager
         GC.Collect();
         
         _logger.LogInformation("卸载所有插件任务已完成，当前插件数量：{PluginsCount}", _plugins.Count);
+    }
+
+    /// <inheritdoc />
+    public async Task LoadNativeTypes()
+    {
+        foreach (var assembly in NativeAssemblies)
+        {
+            _logger.LogDebug("载入 Native 程序集 {DbgNativeAssemblyName}", assembly.FullName);
+
+            var types = assembly.GetTypes();
+            
+            // 载入事件处理器
+            var eventHandlers = FetchEventHandlers(types);
+            
+            // 载入指令处理器
+            var commandExecutors = FetchCommandExecutors(types);
+            
+            // 载入插件生命周期类
+            var pluginLifetime = FetchPluginLifetime(types);
+
+            if (pluginLifetime is not null)
+            {
+                await pluginLifetime.Load(_pluginLifetimeLogger);
+                _nativePluginLifetimes.Add(pluginLifetime);
+            }
+            
+            _nativeCommandExecutors.AddRange(commandExecutors);
+            _nativeEventHandlers.AddRange(eventHandlers);
+        }
+    }
+
+    /// <inheritdoc />
+    public void UnloadNativeTypes()
+    {
+        foreach (var nativePluginLifetime in _nativePluginLifetimes)
+        {
+            nativePluginLifetime.Unload(_pluginLifetimeLogger);
+        }
     }
 
     /// <summary>
