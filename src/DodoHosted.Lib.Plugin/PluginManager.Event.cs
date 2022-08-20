@@ -13,6 +13,7 @@
 using System.Diagnostics;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base;
+using DodoHosted.Base.App;
 using DodoHosted.Base.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -31,15 +32,22 @@ public partial class PluginManager
         }
 
         var sw = Stopwatch.StartNew();
-        RunEvent(dodoHostedEvent, typeString).GetAwaiter().GetResult();
+        var count = RunEvent(dodoHostedEvent, typeString).GetAwaiter().GetResult();
         sw.Stop();
+
+        if (count == 0 && HostEnvs.DodoHostedLogEventWithoutHandler is false)
+        {
+            return;
+        }
         
-        _logger.LogInformation("已处理事件: {EventTypeString}, 耗时: {EventProcessTime} MS", typeString, sw.ElapsedMilliseconds);
+        _logger.LogInformation("已处理事件: {EventTypeString}, Handler 数量: {EventHandlerCount}, 耗时: {EventProcessTime} MS",
+            typeString, count, sw.ElapsedMilliseconds);
     }
     
     /// <inheritdoc />
-    public async Task RunEvent(IDodoHostedEvent @event, string typeString)
+    public async Task<int> RunEvent(IDodoHostedEvent @event, string typeString)
     {
+        var count = 0;
         foreach (var (_, manifest) in _plugins)
         {
             foreach (var eventHandler in manifest.EventHandlers)
@@ -58,6 +66,7 @@ public partial class PluginManager
                     })!;
                 
                 scope.Dispose();
+                count++;
             }
         }
 
@@ -77,6 +86,9 @@ public partial class PluginManager
                 })!;
             
             scope.Dispose();
+            count++;
         }
+
+        return count;
     }
 }

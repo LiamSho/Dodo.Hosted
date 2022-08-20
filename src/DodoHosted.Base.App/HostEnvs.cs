@@ -111,7 +111,12 @@ public static class HostEnvs
             _ => LogLevel.Debug
         };
 
-    
+    /// <summary>
+    /// 记录没有 Handler 的事件已被处理的日志
+    /// </summary>
+    public static bool DodoHostedLogEventWithoutHandler => Configuration.DodoHostedLogEventWithoutHandler ?? ReadEnvironmentVariable
+        ("DODO_HOSTED_LOG_EVENT_WITHOUT_HANDLER", "false") is "true";
+
     /// <summary>
     /// 入口 Assembly 目录
     /// </summary>

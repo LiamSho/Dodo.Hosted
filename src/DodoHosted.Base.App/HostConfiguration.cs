@@ -65,4 +65,9 @@ public record HostConfiguration
     /// <see cref="HostEnvs.DodoHostedOpenApiLogLevel"/>
     /// </summary>
     public LogLevel? DodoHostedOpenApiLogLevel { get; set; }
+    
+    /// <summary>
+    /// <see cref="HostEnvs.DodoHostedLogEventWithoutHandler"/>
+    /// </summary>
+    public bool? DodoHostedLogEventWithoutHandler { get; set; }
 }
