@@ -23,6 +23,7 @@ using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
 using DodoHosted.Lib.SdkWrapper;
 using DodoHosted.Open.Plugin;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.Plugin;
@@ -57,7 +58,7 @@ public partial class PluginManager : IPluginManager
     // ReSharper disable once MemberCanBePrivate.Global
     public static List<Assembly> NativeAssemblies { get; } = new();
 
-    private readonly List<IPluginLifetime> _nativePluginLifetimes = new();
+    private readonly Dictionary<IPluginLifetime, IServiceScope> _nativePluginLifetimes = new();
     private readonly List<CommandManifest> _nativeCommandExecutors = new();
     private readonly List<EventHandlerManifest> _nativeEventHandlers = new();
 
@@ -205,9 +206,11 @@ public partial class PluginManager : IPluginManager
             // 载入插件生命周期类
             var pluginLifetime = FetchPluginLifetime(pluginAssemblyTypes);
 
+            var scope = _provider.CreateScope();
+            
             if (pluginLifetime is not null)
             {
-                await pluginLifetime.Load(_pluginLifetimeLogger);
+                await pluginLifetime.Load(scope.ServiceProvider, _pluginLifetimeLogger);
             }
             
             // 添加插件
@@ -216,6 +219,7 @@ public partial class PluginManager : IPluginManager
                 PluginEntryAssembly = assembly,
                 Context = context,
                 PluginInfo = pluginInfo,
+                PluginScope = scope,
                 PluginLifetime = pluginLifetime,
                 EventHandlers = eventHandlers.ToArray(),
                 CommandManifests = commandExecutors.ToArray()
@@ -263,7 +267,10 @@ public partial class PluginManager : IPluginManager
         _logger.LogInformation("执行卸载插件 {PluginUnloadIdentifier} 任务", pluginIdentifier);
         var _ = _plugins.TryRemove(pluginIdentifier, out var pluginManifest);
         
-        pluginManifest?.PluginLifetime?.Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
+        pluginManifest?.PluginLifetime?
+            .Unload(pluginManifest.PluginScope.ServiceProvider, _pluginLifetimeLogger).GetAwaiter().GetResult();
+        
+        pluginManifest?.PluginScope.Dispose();
         
         pluginManifest?.Context.Unload();
         
@@ -288,7 +295,9 @@ public partial class PluginManager : IPluginManager
 
         foreach (var pluginManifest in pluginManifests)
         {
-            pluginManifest.PluginLifetime?.Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
+            pluginManifest.PluginLifetime?
+                .Unload(pluginManifest.PluginScope.ServiceProvider, _pluginLifetimeLogger).GetAwaiter().GetResult();
+            pluginManifest.PluginScope.Dispose();
             pluginManifest.Context.Unload();
         }
         
@@ -315,10 +324,12 @@ public partial class PluginManager : IPluginManager
             // 载入插件生命周期类
             var pluginLifetime = FetchPluginLifetime(types);
 
+            var scope = _provider.CreateScope();
+
             if (pluginLifetime is not null)
             {
-                await pluginLifetime.Load(_pluginLifetimeLogger);
-                _nativePluginLifetimes.Add(pluginLifetime);
+                await pluginLifetime.Load(scope.ServiceProvider, _pluginLifetimeLogger);
+                _nativePluginLifetimes.Add(pluginLifetime, scope);
             }
             
             _nativeCommandExecutors.AddRange(commandExecutors);
@@ -329,9 +340,10 @@ public partial class PluginManager : IPluginManager
     /// <inheritdoc />
     public void UnloadNativeTypes()
     {
-        foreach (var nativePluginLifetime in _nativePluginLifetimes)
+        foreach (var (nativePluginLifetime, scope) in _nativePluginLifetimes)
         {
-            nativePluginLifetime.Unload(_pluginLifetimeLogger);
+            nativePluginLifetime.Unload(scope.ServiceProvider, _pluginLifetimeLogger);
+            scope.Dispose();
         }
     }
 

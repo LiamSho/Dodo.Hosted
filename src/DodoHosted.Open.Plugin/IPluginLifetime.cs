@@ -20,11 +20,11 @@ public interface IPluginLifetime
     /// 将在插件载入后执行
     /// </summary>
     /// <returns></returns>
-    Task Load(ILogger logger);
+    Task Load(IServiceProvider serviceProvider, ILogger logger);
     
     /// <summary>
     /// 将在插件即将卸载前执行
     /// </summary>
     /// <returns></returns>
-    Task Unload(ILogger logger);
+    Task Unload(IServiceProvider serviceProvider, ILogger logger);
 }

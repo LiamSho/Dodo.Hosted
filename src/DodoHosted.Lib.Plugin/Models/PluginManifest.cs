@@ -12,6 +12,7 @@
 
 using System.Reflection;
 using DodoHosted.Open.Plugin;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin.Models;
 
@@ -34,6 +35,11 @@ public record PluginManifest
     /// 插件信息
     /// </summary>
     public required PluginInfo PluginInfo { get; init; }
+    
+    /// <summary>
+    /// 插件生命周期 Scope
+    /// </summary>
+    public required IServiceScope PluginScope { get; init; }
     
     /// <summary>
     /// 插件生命周期
