@@ -178,11 +178,14 @@ public class IslandManagerCommand : ICommandExecutor
 
                 var idMaxLength = roles.Select(x => x.RoleId.Length).Max();
                 var positionMaxLength = roles.Select(x => x.Position.ToString().Length).Max();
+                var maxPosition = roles.Select(x => x.Position).Max();
                 
-                foreach (var role in roles.OrderBy(x => x.Position))
+                foreach (var role in roles.OrderByDescending(x => x.Position))
                 {
-                    roleMessageBuilder.AppendLine($"- {FormatLength(role.Position.ToString(), positionMaxLength, '0')} " +
+                    var descPosition = maxPosition - role.Position + 1;
+                    roleMessageBuilder.AppendLine($"- {FormatLength(descPosition.ToString(), positionMaxLength, '0')} " +
                                                   $"`{FormatLength(role.RoleId, idMaxLength)}` " +
+                                                  $"{FormatLength(role.RoleColor, 7)} " +
                                                   $"`{role.RoleName}`");
                 }
                 
