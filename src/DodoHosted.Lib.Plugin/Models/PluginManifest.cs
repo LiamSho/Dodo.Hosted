@@ -55,4 +55,9 @@ public record PluginManifest
     /// 插件所含指令
     /// </summary>
     public required CommandManifest[] CommandManifests { get; init; }
+    
+    /// <summary>
+    /// 插件所含后台服务
+    /// </summary>
+    public required HostedServiceManifest[] HostedServices { get; init; }
 }

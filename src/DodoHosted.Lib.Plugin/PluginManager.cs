@@ -36,6 +36,8 @@ public partial class PluginManager : IPluginManager
     private readonly ILogger<PluginManager> _logger;
     private readonly ILogger _pluginLifetimeLogger;
     private readonly ILogger _eventHandlerLogger;
+    private readonly ILogger _pluginHostedServiceLogger;
+    
     private readonly IChannelLogger _channelLogger;
     private readonly IServiceProvider _provider;
     private readonly OpenApiService _openApiService;
@@ -63,6 +65,7 @@ public partial class PluginManager : IPluginManager
     private readonly Dictionary<IPluginLifetime, IServiceScope> _nativePluginLifetimes = new();
     private readonly List<CommandManifest> _nativeCommandExecutors = new();
     private readonly List<EventHandlerManifest> _nativeEventHandlers = new();
+    private readonly List<HostedServiceManifest> _nativeHostedServices = new();
 
     public PluginManager(
         ILogger<PluginManager> logger,
@@ -74,6 +77,8 @@ public partial class PluginManager : IPluginManager
         _logger = logger;
         _pluginLifetimeLogger = loggerFactory.CreateLogger("PluginLifetime");
         _eventHandlerLogger = loggerFactory.CreateLogger("EventHandler");
+        _pluginHostedServiceLogger = loggerFactory.CreateLogger("PluginHostedService");
+        
         _channelLogger = channelLogger;
         _provider = provider;
         _openApiService = openApiService;
@@ -211,6 +216,9 @@ public partial class PluginManager : IPluginManager
             // 载入指令处理器
             var commandExecutors = FetchCommandExecutors(pluginAssemblyTypes);
             
+            // 载入后台服务
+            var hostedServices = FetchHostedService(pluginAssemblyTypes).ToArray();
+            
             // 载入插件生命周期类
             var pluginLifetime = FetchPluginLifetime(pluginAssemblyTypes);
 
@@ -219,6 +227,16 @@ public partial class PluginManager : IPluginManager
             if (pluginLifetime is not null)
             {
                 await pluginLifetime.Load(scope.ServiceProvider, _pluginLifetimeLogger);
+            }
+            
+            // 运行所有的后台服务
+            foreach (var service in hostedServices)
+            {
+                _logger.LogInformation("开始执行插件后台任务 {PluginHostedServiceName}", service.Name);
+                service.JobTask = service.Job.StartAsync(
+                    service.Scope.ServiceProvider,
+                    _pluginHostedServiceLogger,
+                    service.CancellationTokenSource.Token);
             }
             
             // 添加插件
@@ -230,13 +248,14 @@ public partial class PluginManager : IPluginManager
                 PluginScope = scope,
                 PluginLifetime = pluginLifetime,
                 EventHandlers = eventHandlers.ToArray(),
-                CommandManifests = commandExecutors.ToArray()
+                CommandManifests = commandExecutors.ToArray(),
+                HostedServices = hostedServices
             };
             var success = _plugins.TryAdd(pluginInfo.Identifier, pluginManifest);
             Debug.Assert(success);
             
-            _logger.LogInformation("已载入插件 {PluginInfo}，事件处理器 {EventHandlerCount} 个，指令 {CommandCount} 个",
-                pluginInfo, pluginManifest.EventHandlers.Length, pluginManifest.CommandManifests.Length);
+            _logger.LogInformation("已载入插件 {PluginInfo}，事件处理器 {EventHandlerCount} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个",
+                pluginInfo, pluginManifest.EventHandlers.Length, pluginManifest.CommandManifests.Length, pluginManifest.HostedServices.Length);
         }
         catch (Exception ex)
         {
@@ -275,11 +294,26 @@ public partial class PluginManager : IPluginManager
         _logger.LogInformation("执行卸载插件 {PluginUnloadIdentifier} 任务", pluginIdentifier);
         var _ = _plugins.TryRemove(pluginIdentifier, out var pluginManifest);
         
-        pluginManifest?.PluginLifetime?
-            .Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
-        
+        pluginManifest?.HostedServices.AsParallel()
+            .ForAll(x =>
+            {
+                x.CancellationTokenSource.Cancel();
+                try
+                {
+                    x.JobTask?.Wait();
+                }
+                catch (AggregateException ex)
+                {
+                    if (ex.InnerExceptions.FirstOrDefault() is not TaskCanceledException)
+                    {
+                        _logger.LogError(ex, "取消 Task 出现异常");
+                    }
+                }
+                x.Scope.Dispose();
+                _logger.LogInformation("停止插件后台任务 {PluginHostedServiceName}", x.Name);
+            });
+        pluginManifest?.PluginLifetime?.Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
         pluginManifest?.PluginScope.Dispose();
-        
         pluginManifest?.Context.Unload();
         
         GC.Collect();
@@ -303,8 +337,25 @@ public partial class PluginManager : IPluginManager
 
         foreach (var pluginManifest in pluginManifests)
         {
-            pluginManifest.PluginLifetime?
-                .Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
+            pluginManifest.HostedServices.AsParallel()
+                .ForAll(x =>
+                {
+                    x.CancellationTokenSource.Cancel();
+                    try
+                    {
+                        x.JobTask?.Wait();
+                    }
+                    catch (AggregateException ex)
+                    {
+                        if (ex.InnerExceptions.FirstOrDefault() is not TaskCanceledException)
+                        {
+                            _logger.LogError(ex, "取消 Task 出现异常");
+                        }
+                    }
+                    x.Scope.Dispose();
+                    _logger.LogInformation("停止插件后台任务 {PluginHostedServiceName}", x.Name);
+                });
+            pluginManifest.PluginLifetime?.Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
             pluginManifest.PluginScope.Dispose();
             pluginManifest.Context.Unload();
         }
@@ -329,6 +380,9 @@ public partial class PluginManager : IPluginManager
             // 载入指令处理器
             var commandExecutors = FetchCommandExecutors(types);
             
+            // 载入后台服务
+            var hostedServices = FetchHostedService(types).ToArray();
+            
             // 载入插件生命周期类
             var pluginLifetime = FetchPluginLifetime(types);
 
@@ -339,15 +393,45 @@ public partial class PluginManager : IPluginManager
                 await pluginLifetime.Load(scope.ServiceProvider, _pluginLifetimeLogger);
                 _nativePluginLifetimes.Add(pluginLifetime, scope);
             }
+
+            foreach (var service in hostedServices)
+            {
+                _logger.LogInformation("开始执行 Native Assembly 后台任务 {NativeAssemblyHostedServiceName}", service.Name);
+                service.JobTask = service.Job.StartAsync(
+                    service.Scope.ServiceProvider,
+                    _pluginHostedServiceLogger,
+                    service.CancellationTokenSource.Token);
+            }
             
             _nativeCommandExecutors.AddRange(commandExecutors);
             _nativeEventHandlers.AddRange(eventHandlers);
+            _nativeHostedServices.AddRange(hostedServices);
+            
+            _logger.LogInformation("已载入 Native Assembly: {NativeAssemblyName}", assembly.FullName);
         }
     }
 
     /// <inheritdoc />
     public void UnloadNativeTypes()
     {
+        foreach (var hostedService in _nativeHostedServices)
+        {
+            hostedService.CancellationTokenSource.Cancel();
+            try
+            {
+                hostedService.JobTask?.Wait();
+            }
+            catch (AggregateException ex)
+            {
+                if (ex.InnerExceptions.FirstOrDefault() is not TaskCanceledException)
+                {
+                    _logger.LogError(ex, "取消 Task 出现异常");
+                }
+            }
+            hostedService.Scope.Dispose();
+            _logger.LogInformation("停止 Native Assembly 后台任务 {NativeAssemblyHostedServiceName}", hostedService.Name);
+        }
+        
         foreach (var (nativePluginLifetime, scope) in _nativePluginLifetimes)
         {
             nativePluginLifetime.Unload(_pluginLifetimeLogger);
@@ -384,18 +468,18 @@ public partial class PluginManager : IPluginManager
 
             if (handler is null)
             {
-                throw new PluginAssemblyLoadException($"无法创建插件事件处理器 {type.FullName} 的实例");
+                throw new PluginAssemblyLoadException($"无法创建事件处理器 {type.FullName} 的实例");
             }
             if (method is null)
             {
-                throw new PluginAssemblyLoadException($"找不到到插件事件处理器 {type.FullName} 的 Handle 方法");
+                throw new PluginAssemblyLoadException($"找不到到事件处理器 {type.FullName} 的 Handle 方法");
             }
             if (eventType is null)
             {
-                throw new PluginAssemblyLoadException($"找不到到插件事件处理器 {type.FullName} 的事件类型");
+                throw new PluginAssemblyLoadException($"找不到到事件处理器 {type.FullName} 的事件类型");
             }
             
-            _logger.LogTrace("已载入事件处理器 {TraceLoadedEventHandler}", type.FullName);
+            _logger.LogInformation("已载入事件处理器 {LoadedEventHandler}", type.FullName);
             
             manifests.Add(new EventHandlerManifest
             {
@@ -441,7 +525,7 @@ public partial class PluginManager : IPluginManager
                 throw new PluginAssemblyLoadException($"无法获取指令处理器 {type.FullName} 的元数据");
             }
             
-            _logger.LogTrace("已载入指令处理器 {TraceLoadedCommandHandler}", type.FullName);
+            _logger.LogInformation("已载入指令处理器 {LoadedCommandHandler}", type.FullName);
             
             manifests.Add(new CommandManifest
             {
@@ -450,6 +534,43 @@ public partial class PluginManager : IPluginManager
                 HelpText = FormatCommandHelpText(metadata.HelpText),
                 PermissionNodesText = FormatCommandPermissionNodesText(metadata.PermissionNodes),
                 CommandExecutor = ins
+            });
+        }
+
+        return manifests;
+    }
+
+    /// <summary>
+    /// 从 Plugin Assembly 中载入所有的后台服务
+    /// </summary>
+    /// <param name="types">Plugin Assembly 中所有的类型</param>
+    /// <returns><see cref="HostedServiceManifest"/> 清单</returns>
+    /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
+    private IEnumerable<HostedServiceManifest> FetchHostedService(IEnumerable<Type> types)
+    {
+        var hostedServiceTypes = types
+            .Where(x => x != typeof(IPluginHostedService))
+            .Where(x => x.IsAssignableTo(typeof(IPluginHostedService)))
+            .ToList();
+
+        var manifests = new List<HostedServiceManifest>();
+        foreach (var type in hostedServiceTypes)
+        {
+            var instance = Activator.CreateInstance(type);
+            if (instance is null)
+            {
+                throw new PluginAssemblyLoadException($"无法创建后台服务 {type.FullName} 的实例");
+            }
+            
+            var ins = (IPluginHostedService)instance;
+            
+            _logger.LogInformation("已载入后台服务 {LoadedHostedService} ({LoadedHostedServiceName})", type.FullName, ins.HostedServiceName);
+            
+            manifests.Add(new HostedServiceManifest
+            {
+                Job = ins,
+                Scope = _provider.CreateScope(),
+                Name = ins.HostedServiceName
             });
         }
 
