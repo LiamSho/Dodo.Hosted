@@ -19,6 +19,8 @@ using System.Text.Json;
 using DoDo.Open.Sdk.Services;
 using DodoHosted.Base.App;
 using DodoHosted.Base.App.Interfaces;
+using DodoHosted.Base.App.Web;
+using DodoHosted.Base.Events;
 using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
 using DodoHosted.Lib.SdkWrapper;
@@ -91,7 +93,13 @@ public partial class PluginManager : IPluginManager
             _pluginCacheDirectory.Create();
         }
 
+        var webRequestTypeFullName = typeof(DodoHostedWebRequestEvent).FullName ?? string.Empty;
+        
         DodoEventProcessor.DodoEvent += EventListener;
+        PluginSystemController.PluginWebOperationEvent += async (identifier, island, body) =>
+        {
+            await RunEvent(new DodoHostedWebRequestEvent(island, body), webRequestTypeFullName, identifier == "*" ? null : identifier);
+        };
     }
 
     /// <inheritdoc />

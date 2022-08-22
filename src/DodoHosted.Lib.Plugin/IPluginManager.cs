@@ -106,6 +106,7 @@ public interface IPluginManager
     /// </summary>
     /// <param name="event">事件消息</param>
     /// <param name="typeString">类型字符串</param>
+    /// <param name="pluginIdentifier">指定插件 ID</param>
     /// <returns></returns>
-    Task<int> RunEvent(IDodoHostedEvent @event, string typeString);
+    Task<int> RunEvent(IDodoHostedEvent @event, string typeString, string? pluginIdentifier = null);
 }

@@ -10,24 +10,20 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.App;
-using DodoHosted.App.Core;
-using Serilog;
+using System.Security.Cryptography;
 
-Log.Logger = Helpers
-    .GetLoggerConfiguration()
-    .CreateLogger();
+namespace DodoHosted.Base.App.Helpers;
 
-var builder = WebApplication.CreateBuilder();
-
-builder.Logging.ClearProviders();
-builder.Host.UseSerilog();
-
-builder.Services.AddDodoHostedServices();
-builder.Services.AddDodoHostedWebServices();
-
-var app = builder.Build();
-
-app.UseDodoHostedWebPipeline();
-
-await app.RunAsync();
+public static class TokenHelper
+{
+    /// <summary>
+    /// 生成一个随机 Token
+    /// </summary>
+    /// <param name="length">Token 长度，默认为 128 Bytes</param>
+    /// <returns></returns>
+    public static string GenerateToken(int length = 128)
+    {
+        var rndBytes = RandomNumberGenerator.GetBytes(length);
+        return Convert.ToBase64String(rndBytes);
+    }
+}

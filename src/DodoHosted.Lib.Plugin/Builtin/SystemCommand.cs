@@ -15,10 +15,12 @@ using System.Text;
 using DoDo.Open.Sdk.Models.Islands;
 using DoDo.Open.Sdk.Services;
 using DodoHosted.Base.App;
+using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
@@ -64,8 +66,11 @@ public class SystemCommand : ICommandExecutor
                 break;
             case "islands":
                 var openApi = provider.GetRequiredService<OpenApiService>();
+                var col = provider.GetRequiredService<IMongoDatabase>()
+                    .GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
+                
                 var islands = await openApi.GetIslandListAsync(new GetIslandListInput());
-
+                
                 if (islands is null)
                 {
                     await reply.Invoke("获取群组列表失败");
@@ -74,10 +79,19 @@ public class SystemCommand : ICommandExecutor
 
                 foreach (var island in islands)
                 {
+                    var config = await col.Find(x => x.IslandId == island.IslandId).FirstOrDefaultAsync();
+                    var allowWebApi = config is null ? "未配置" : config.AllowUseWebApi ? "✅" : "❌";
+                    var enableChannelLogger = config is null ? "未配置" : config.EnableChannelLogger ? "✅" : "❌";
                     messageBuilder.AppendLine($"- {island.IslandName} `{island.IslandId}`");
+                    messageBuilder.AppendLine($"  $ Web API: {allowWebApi}");
+                    messageBuilder.AppendLine($"  $ Channel Logger: {enableChannelLogger}");
                 }
                 
                 break;
+            case "web":
+                var mongoCollection = provider.GetRequiredService<IMongoDatabase>()
+                    .GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
+                return await RunWebCommand(args, mongoCollection, reply);
             case "plugin":
                 var pm = provider.GetRequiredService<IPluginManager>();
                 return await RunPluginCommand(args, pm, reply);
@@ -97,6 +111,8 @@ public class SystemCommand : ICommandExecutor
 - `{{PREFIX}}system gc`    查看系统 GC 信息
 - `{{PREFIX}}system info`    查看系统信息
 - `{{PREFIX}}system islands`    查看 Bot 所在的所有群组
+- `{{PREFIX}}system web allow <群组 ID>`    允许某个群组访问 Web API 服务
+- `{{PREFIX}}system web deny <群组 ID>`    禁止某个群组访问 Web API 服务
 - `{{PREFIX}}system plugin list`    查看插件列表
 - `{{PREFIX}}system plugin info <插件标识符>`    查看插件信息
 - `{{PREFIX}}system plugin load <插件包文件名>`    启用插件
@@ -203,6 +219,35 @@ public class SystemCommand : ICommandExecutor
         }
 
         await reply.Invoke(messageBuilder.ToString());
+        return CommandExecutionResult.Success;
+    }
+
+    private static async Task<CommandExecutionResult> RunWebCommand(
+        string[] args,
+        IMongoCollection<IslandSettings> collection,
+        Func<string, Task<string>> reply)
+    {
+        var (type, islandId) = args switch
+        {
+            [_, _, "allow", var id] => (true, id),
+            [_, _, "deny", var id] => (false, id),
+            _ => (false, null)
+        };
+
+        if (islandId is null)
+        {
+            return CommandExecutionResult.Unknown;
+        }
+        
+        var settings = await collection.Find(x => x.IslandId == islandId).FirstOrDefaultAsync();
+        if (settings is null)
+        {
+            await reply.Invoke("群组不存在");
+            return CommandExecutionResult.Failed;
+        }
+        settings.AllowUseWebApi = type;
+        await collection.ReplaceOneAsync(x => x.IslandId == islandId, settings);
+        await reply.Invoke("已更新群组设置");
         return CommandExecutionResult.Success;
     }
 }

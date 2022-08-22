@@ -45,11 +45,23 @@ public partial class PluginManager
     }
     
     /// <inheritdoc />
-    public async Task<int> RunEvent(IDodoHostedEvent @event, string typeString)
+    public async Task<int> RunEvent(IDodoHostedEvent @event, string typeString, string? pluginIdentifier = null)
     {
+        // 记录事件处理器数量
         var count = 0;
+        
+        // 插件中的事件处理器
         foreach (var (_, manifest) in _plugins)
         {
+            // 检查 PluginIdentifier 是否匹配
+            if (string.IsNullOrEmpty(pluginIdentifier) is false)
+            {
+                if (manifest.PluginInfo.Identifier != pluginIdentifier)
+                {
+                    continue;
+                }
+            }
+            
             foreach (var eventHandler in manifest.EventHandlers)
             {
                 if (eventHandler.EventTypeString != typeString)
@@ -70,6 +82,12 @@ public partial class PluginManager
             }
         }
 
+        // 若 PluginIdentifier 不为空，或者不为 Native，则不处理 Native Assembly 中的事件处理器
+        if (string.IsNullOrEmpty(pluginIdentifier) is false || pluginIdentifier != "native")
+        {
+            return count;
+        }
+        
         foreach (var nativeEventHandler in _nativeEventHandlers)
         {
             if (nativeEventHandler.EventTypeString != typeString)

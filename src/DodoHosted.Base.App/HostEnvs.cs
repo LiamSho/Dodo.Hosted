@@ -11,6 +11,8 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Reflection;
+using System.Security.Cryptography;
+using DodoHosted.Base.App.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Base.App;
@@ -117,6 +119,18 @@ public static class HostEnvs
     public static bool DodoHostedLogEventWithoutHandler => Configuration.DodoHostedLogEventWithoutHandler ?? ReadEnvironmentVariable
         ("DODO_HOSTED_LOG_EVENT_WITHOUT_HANDLER", "false") is "true";
 
+    /// <summary>
+    /// Web API 访问密钥
+    /// </summary>
+    public static string DodoHostedWebMasterToken => Configuration.DodoHostedWebMasterToken ?? ReadEnvironmentVariable
+        ("DODO_HOSTED_WEB_MASTER_TOKEN", TokenHelper.GenerateToken());
+
+    /// <summary>
+    /// 是否使用 Proxy
+    /// </summary>
+    public static bool DodoHostedWebBehindProxy => Configuration.DodoHostedWebBehindProxy ?? ReadEnvironmentVariable
+        ("DODO_HOSTED_WEB_BEHIND_PROXY", "false") == "true";
+    
     /// <summary>
     /// 入口 Assembly 目录
     /// </summary>

@@ -10,7 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DnsClient.Internal;
+using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Base.App;
 
@@ -70,4 +70,14 @@ public record HostConfiguration
     /// <see cref="HostEnvs.DodoHostedLogEventWithoutHandler"/>
     /// </summary>
     public bool? DodoHostedLogEventWithoutHandler { get; set; }
+    
+    /// <summary>
+    /// <see cref="HostEnvs.DodoHostedWebMasterToken"/>
+    /// </summary>
+    public string? DodoHostedWebMasterToken { get; set; }
+    
+    /// <summary>
+    /// <see cref="HostEnvs.DodoHostedWebBehindProxy"/>
+    /// </summary>
+    public bool? DodoHostedWebBehindProxy { get; set; }
 }

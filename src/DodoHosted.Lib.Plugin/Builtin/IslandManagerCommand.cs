@@ -36,22 +36,16 @@ public class IslandManagerCommand : ICommandExecutor
         Func<string, Task<string>> reply,
         bool shouldAllow = false)
     {
-        if (shouldAllow is false)
+        Func<string, Task<bool>> permCheck = async s =>
         {
-            if (await permissionManager.CheckPermission("system.command.island", message) is false)
+            if (shouldAllow)
             {
-                return CommandExecutionResult.Unauthorized;
+                return true;
             }
-        }
-        
-        // island <get/set> <param> [value]
-        // island send <#频道名/频道 ID> <text/image/video> <消息体>
-        // 至少 3 位
-        if (args.Length < 3)
-        {
-            return CommandExecutionResult.Unknown;
-        }
 
+            return await permissionManager.CheckPermission(s, message);
+        };
+        
         var islandInfoCollection = provider
             .GetRequiredService<IMongoDatabase>()
             .GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
@@ -59,9 +53,9 @@ public class IslandManagerCommand : ICommandExecutor
 
         return args switch
         {
-            [_, "set", var param, var value] => await RunSetParams(param, value, islandInfoCollection, reply, message),
-            [_, "get", var param] => await RunGetInfos(param, islandInfoCollection, openApi, reply, message),
-            [_, "send", var channel, var content] => await RunSendMessage(channel, content, openApi, reply),
+            [_, "set", var param, var value] => await RunSetParams(param, value, islandInfoCollection, reply, permCheck, message),
+            [_, "get", var param] => await RunGetInfos(param, islandInfoCollection, openApi, reply, permCheck, message),
+            [_, "send", var channel, var content] => await RunSendMessage(channel, content, openApi, reply, permCheck),
             _ => CommandExecutionResult.Unknown
         };
     }
@@ -72,13 +66,18 @@ public class IslandManagerCommand : ICommandExecutor
         HelpText: @"""
 - `{{PREFIX}}island set logger_channel <#频道名/频道 ID>`    设置日志频道
 - `{{PREFIX}}island set logger_channel_enabled <true/false>`    设置日志频道是否启用
+- `{{PREFIX}}island set web_api_token new`    生成新的 Web API Token
 - `{{PREFIX}}island get settings`    获取群组配置信息
 - `{{PREFIX}}island get roles`    获取群组身份组信息
+- `{{PREFIX}}island get web_api_token`    获取群组 Web API Token
 - `{{PREFIX}}island send <#频道名/频道 ID> <消息体>`    在频道中发送消息
 """,
         PermissionNodes: new Dictionary<string, string>
         {
-            { "system.command.island", "允许使用 `island` 指令" }
+            { "system.island.roles", "允许使用 `island get role` 指令" },
+            { "system.island.settings", "允许查看或设置群组配置" },
+            { "system.island.web", "允许 Web Token 相关操作" },
+            { "system.island.message", "允许发送消息操作" }
         });
 
     private static async Task<CommandExecutionResult> RunSetParams(
@@ -86,11 +85,17 @@ public class IslandManagerCommand : ICommandExecutor
         string value,
         IMongoCollection<IslandSettings> collection,
         Func<string, Task<string>> reply,
+        Func<string, Task<bool>> permCheck,
         CommandMessage message)
     {
         switch (param)
         {
             case "logger_channel":
+                if (await permCheck.Invoke("system.island.settings") is false)
+                {
+                    return CommandExecutionResult.Unauthorized;
+                }
+                
                 var channelId = value.ExtractChannelId();
                 if (channelId is null)
                 {
@@ -110,6 +115,11 @@ public class IslandManagerCommand : ICommandExecutor
                 return CommandExecutionResult.Success;
 
             case "logger_channel_enabled":
+                if (await permCheck.Invoke("system.island.settings") is false)
+                {
+                    return CommandExecutionResult.Unauthorized;
+                }
+                
                 if (value is not ("true" or "false"))
                 {
                     await reply("参数无效");
@@ -128,6 +138,29 @@ public class IslandManagerCommand : ICommandExecutor
                 await reply("修改成功");
                 
                 return CommandExecutionResult.Success;
+            case "web_api_token":
+                if (await permCheck.Invoke("system.island.web") is false)
+                {
+                    return CommandExecutionResult.Unauthorized;
+                }
+                
+                if (value is not "new")
+                {
+                    await reply("参数无效");
+                    return CommandExecutionResult.Failed;
+                }
+
+                var info3 = collection.FindOneAndUpdate(x => x.IslandId == message.IslandId,
+                    Builders<IslandSettings>.Update.Set(x => x.WebApiToken, TokenHelper.GenerateToken()));
+                
+                if (info3 is null)
+                {
+                    await reply("修改失败，找不到记录");
+                }
+                
+                await reply("修改成功");
+                
+                return CommandExecutionResult.Success;
             default:
                 return CommandExecutionResult.Unknown;
         }
@@ -138,11 +171,17 @@ public class IslandManagerCommand : ICommandExecutor
         IMongoCollection<IslandSettings> collection,
         OpenApiService openApiService,
         Func<string, Task<string>> reply,
+        Func<string, Task<bool>> permCheck,
         CommandMessage message)
     {
         switch (infoType)
         {
             case "settings":
+                if (await permCheck.Invoke("system.island.settings") is false)
+                {
+                    return CommandExecutionResult.Unauthorized;
+                }
+                
                 var islandSettings = collection.AsQueryable().FirstOrDefault(x => x.IslandId == message.IslandId);
 
                 if (islandSettings is null)
@@ -165,6 +204,10 @@ public class IslandManagerCommand : ICommandExecutor
                 return CommandExecutionResult.Success;
 
             case "roles":
+                if (await permCheck.Invoke("system.island.roles") is false)
+                {
+                    return CommandExecutionResult.Unauthorized;
+                }
 
                 var roles = await openApiService.GetRoleListAsync(new GetRoleListInput { IslandId = message.IslandId });
                 if (roles is null)
@@ -192,6 +235,23 @@ public class IslandManagerCommand : ICommandExecutor
                 await reply(roleMessageBuilder.ToString());
                 
                 return CommandExecutionResult.Success;
+            case "web_api_token":
+                if (await permCheck.Invoke("system.island.web") is false)
+                {
+                    return CommandExecutionResult.Unauthorized;
+                }
+
+                var token = collection.AsQueryable().FirstOrDefault(x => x.IslandId == message.IslandId)?.WebApiToken;
+
+                if (token is null)
+                {
+                    await reply.Invoke("找不到记录");
+                    return CommandExecutionResult.Failed;
+                }
+                
+                await reply.Invoke($"Web API Token: `{token}`");
+                
+                return CommandExecutionResult.Success;
             default:
                 return CommandExecutionResult.Unknown;
         }
@@ -201,8 +261,14 @@ public class IslandManagerCommand : ICommandExecutor
         string channel,
         string content,
         OpenApiService openApi,
-        Func<string, Task<string>> reply)
+        Func<string, Task<string>> reply,
+        Func<string, Task<bool>> permCheck)
     {
+        if (await permCheck.Invoke("system.island.message") is false)
+        {
+            return CommandExecutionResult.Unauthorized;
+        }
+        
         var channelId = channel.ExtractChannelId();
         if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(content))
         {

@@ -13,6 +13,7 @@
 using DoDo.Open.Sdk.Models.Islands;
 using DoDo.Open.Sdk.Services;
 using DodoHosted.Base.App.Entities;
+using DodoHosted.Base.App.Helpers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -55,7 +56,7 @@ public class InitializationService : IHostedService
             .ToList();
         var added = ids
             .SkipWhile(x => stored.Contains(x))
-            .Select(x => new IslandSettings(x, false, string.Empty))
+            .Select(x => new IslandSettings(x, false, string.Empty, TokenHelper.GenerateToken()))
             .ToList();
 
         if (removed.Count > 0)

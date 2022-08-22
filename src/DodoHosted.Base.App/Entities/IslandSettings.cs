@@ -20,7 +20,7 @@ namespace DodoHosted.Base.App.Entities;
 /// <param name="IslandId"></param>
 /// <param name="EnableChannelLogger"></param>
 /// <param name="LoggerChannelId"></param>
-public record IslandSettings(string IslandId, bool EnableChannelLogger, string LoggerChannelId)
+public record IslandSettings(string IslandId, bool EnableChannelLogger, string LoggerChannelId, string WebApiToken)
 {
     [BsonId]
     public Guid Id { get; init; } = Guid.NewGuid();
@@ -39,4 +39,14 @@ public record IslandSettings(string IslandId, bool EnableChannelLogger, string L
     /// Channel Logger 频道 ID
     /// </summary>
     public string LoggerChannelId { get; set; } = LoggerChannelId;
+    
+    /// <summary>
+    /// Web API Token
+    /// </summary>
+    public string WebApiToken { get; set; } = WebApiToken;
+    
+    /// <summary>
+    /// 是否允许该群组使用 Web API
+    /// </summary>
+    public bool AllowUseWebApi { get; set; } = true;
 }

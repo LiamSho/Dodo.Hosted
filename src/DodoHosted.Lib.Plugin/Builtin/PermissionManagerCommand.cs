@@ -39,19 +39,19 @@ public class PermissionManagerCommand : ICommandExecutor
             switch (arg)
             {
                 case "add" or "set" or "remove":
-                    if (await permissionManager.CheckPermission("system.command.pm.modify", message) is false)
+                    if (await permissionManager.CheckPermission("system.permission.modify", message) is false)
                     {
                         return CommandExecutionResult.Unauthorized;
                     }
                     break;
                 case "list":
-                    if (await permissionManager.CheckPermission("system.command.pm.list", message) is false)
+                    if (await permissionManager.CheckPermission("system.permission.list", message) is false)
                     {
                         return CommandExecutionResult.Unauthorized;
                     }
                     break;
                 case "check":
-                    if (await permissionManager.CheckPermission("system.command.pm.check", message) is false)
+                    if (await permissionManager.CheckPermission("system.permission.check", message) is false)
                     {
                         return CommandExecutionResult.Unauthorized;
                     }
@@ -88,9 +88,9 @@ public class PermissionManagerCommand : ICommandExecutor
 """,
         PermissionNodes: new Dictionary<string, string>
         {
-            { "system.command.pm.modify", "允许对权限进行新增(`add`)、修改(`set`)、删除操作(`remove`)" },
-            { "system.command.pm.list", "允许使用 `pm list` 查看权限表" },
-            { "system.command.pm.check", "允许使用 `pm check` 检查用户权限" }
+            { "system.permission.modify", "允许对权限进行新增(`add`)、修改(`set`)、删除操作(`remove`)" },
+            { "system.permission.list", "允许使用 `pm list` 查看权限表" },
+            { "system.permission.check", "允许使用 `pm check` 检查用户权限" }
         });
 
     // pm add <node> <(#channel/\*)> <role(id/\*)> <allow/deny>

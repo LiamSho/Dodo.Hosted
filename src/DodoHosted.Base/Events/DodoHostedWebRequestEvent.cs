@@ -10,24 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.App;
-using DodoHosted.App.Core;
-using Serilog;
+using Microsoft.AspNetCore.Http;
 
-Log.Logger = Helpers
-    .GetLoggerConfiguration()
-    .CreateLogger();
+namespace DodoHosted.Base.Events;
 
-var builder = WebApplication.CreateBuilder();
-
-builder.Logging.ClearProviders();
-builder.Host.UseSerilog();
-
-builder.Services.AddDodoHostedServices();
-builder.Services.AddDodoHostedWebServices();
-
-var app = builder.Build();
-
-app.UseDodoHostedWebPipeline();
-
-await app.RunAsync();
+public record DodoHostedWebRequestEvent(string Island, HttpRequest Request) : IDodoHostedEvent;
