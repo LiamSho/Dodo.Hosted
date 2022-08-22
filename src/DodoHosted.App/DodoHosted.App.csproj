@@ -22,7 +22,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\DodoHosted.App.Core\DodoHosted.App.Core.csproj" />
-      <ProjectReference Include="..\LocalTestPlugin\LocalTestPlugin.csproj" />
     </ItemGroup>
 
 </Project>

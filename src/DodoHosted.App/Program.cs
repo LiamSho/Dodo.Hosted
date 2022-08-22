@@ -12,14 +12,11 @@
 
 using DodoHosted.App;
 using DodoHosted.App.Core;
-using DodoHosted.Lib.Plugin;
 using Serilog;
 
 Log.Logger = Helpers
     .GetLoggerConfiguration()
     .CreateLogger();
-
-PluginManager.NativeAssemblies.AddRange(new[] { typeof(LocalTestPlugin.Entry).Assembly });
 
 var builder = WebApplication.CreateBuilder();
 
