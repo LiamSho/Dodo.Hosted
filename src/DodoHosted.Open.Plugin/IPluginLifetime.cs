@@ -26,5 +26,5 @@ public interface IPluginLifetime
     /// 将在插件即将卸载前执行
     /// </summary>
     /// <returns></returns>
-    Task Unload(IServiceProvider serviceProvider, ILogger logger);
+    Task Unload(ILogger logger);
 }

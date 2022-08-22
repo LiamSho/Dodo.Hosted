@@ -276,7 +276,7 @@ public partial class PluginManager : IPluginManager
         var _ = _plugins.TryRemove(pluginIdentifier, out var pluginManifest);
         
         pluginManifest?.PluginLifetime?
-            .Unload(pluginManifest.PluginScope.ServiceProvider, _pluginLifetimeLogger).GetAwaiter().GetResult();
+            .Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
         
         pluginManifest?.PluginScope.Dispose();
         
@@ -304,7 +304,7 @@ public partial class PluginManager : IPluginManager
         foreach (var pluginManifest in pluginManifests)
         {
             pluginManifest.PluginLifetime?
-                .Unload(pluginManifest.PluginScope.ServiceProvider, _pluginLifetimeLogger).GetAwaiter().GetResult();
+                .Unload(_pluginLifetimeLogger).GetAwaiter().GetResult();
             pluginManifest.PluginScope.Dispose();
             pluginManifest.Context.Unload();
         }
@@ -350,7 +350,7 @@ public partial class PluginManager : IPluginManager
     {
         foreach (var (nativePluginLifetime, scope) in _nativePluginLifetimes)
         {
-            nativePluginLifetime.Unload(scope.ServiceProvider, _pluginLifetimeLogger);
+            nativePluginLifetime.Unload(_pluginLifetimeLogger);
             scope.Dispose();
         }
     }
