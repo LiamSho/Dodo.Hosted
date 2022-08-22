@@ -1,0 +1,33 @@
+// This file is a part of Dodo.Hosted project.
+// 
+// Copyright (C) 2022 LiamSho and all Contributors
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY
+
+using System.Text.Json.Serialization;
+
+namespace DodoHosted.Base.Card;
+
+/// <summary>
+/// 卡片消息
+/// </summary>
+public record CardMessage
+{
+    /// <summary>
+    /// 附加文本，支持Markdown语法、菱形语法
+    /// </summary>
+    [JsonPropertyName("content")]
+    public required string Content { get; set; }
+    
+    /// <summary>
+    /// 卡片，限制10000个字符，支持 Markdown 语法，不支持菱形语法
+    /// </summary>
+    [JsonPropertyName("card")]
+    public required Card Card { get; set; }
+}
