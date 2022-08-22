@@ -20,6 +20,7 @@ namespace DodoHosted.Base.App.Entities;
 /// <param name="IslandId"></param>
 /// <param name="EnableChannelLogger"></param>
 /// <param name="LoggerChannelId"></param>
+/// <param name="WebApiToken"></param>
 public record IslandSettings(string IslandId, bool EnableChannelLogger, string LoggerChannelId, string WebApiToken)
 {
     [BsonId]
