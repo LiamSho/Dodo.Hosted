@@ -15,6 +15,7 @@ using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Models.Roles;
 using DoDo.Open.Sdk.Services;
+using DodoHosted.Base;
 using DodoHosted.Base.App;
 using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Helpers;
@@ -33,10 +34,10 @@ public class IslandManagerCommand : ICommandExecutor
         CommandMessage message,
         IServiceProvider provider,
         IPermissionManager permissionManager,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         bool shouldAllow = false)
     {
-        Func<string, Task<bool>> permCheck = async s =>
+        async Task<bool> PermCheck(string s)
         {
             if (shouldAllow)
             {
@@ -44,8 +45,8 @@ public class IslandManagerCommand : ICommandExecutor
             }
 
             return await permissionManager.CheckPermission(s, message);
-        };
-        
+        }
+
         var islandInfoCollection = provider
             .GetRequiredService<IMongoDatabase>()
             .GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
@@ -53,9 +54,9 @@ public class IslandManagerCommand : ICommandExecutor
 
         return args switch
         {
-            [_, "set", var param, var value] => await RunSetParams(param, value, islandInfoCollection, reply, permCheck, message),
-            [_, "get", var param] => await RunGetInfos(param, islandInfoCollection, openApi, reply, permCheck, message),
-            [_, "send", var channel, var content] => await RunSendMessage(channel, content, openApi, reply, permCheck),
+            [_, "set", var param, var value] => await RunSetParams(param, value, islandInfoCollection, reply, PermCheck, message),
+            [_, "get", var param] => await RunGetInfos(param, islandInfoCollection, openApi, reply, PermCheck, message),
+            [_, "send", var channel, var content] => await RunSendMessage(channel, content, openApi, reply, PermCheck),
             _ => CommandExecutionResult.Unknown
         };
     }
@@ -84,7 +85,7 @@ public class IslandManagerCommand : ICommandExecutor
         string param,
         string value,
         IMongoCollection<IslandSettings> collection,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         Func<string, Task<bool>> permCheck,
         CommandMessage message)
     {
@@ -170,7 +171,7 @@ public class IslandManagerCommand : ICommandExecutor
         string infoType,
         IMongoCollection<IslandSettings> collection,
         OpenApiService openApiService,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         Func<string, Task<bool>> permCheck,
         CommandMessage message)
     {
@@ -249,7 +250,7 @@ public class IslandManagerCommand : ICommandExecutor
                     return CommandExecutionResult.Failed;
                 }
                 
-                await reply.Invoke($"Web API Token: `{token}`");
+                await reply.Invoke($"Web API Token: `{token}`", true);
                 
                 return CommandExecutionResult.Success;
             default:
@@ -261,7 +262,7 @@ public class IslandManagerCommand : ICommandExecutor
         string channel,
         string content,
         OpenApiService openApi,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         Func<string, Task<bool>> permCheck)
     {
         if (await permCheck.Invoke("system.island.message") is false)

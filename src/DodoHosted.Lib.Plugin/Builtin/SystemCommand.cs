@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using DoDo.Open.Sdk.Models.Islands;
 using DoDo.Open.Sdk.Services;
+using DodoHosted.Base;
 using DodoHosted.Base.App;
 using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Interfaces;
@@ -31,7 +32,7 @@ public class SystemCommand : ICommandExecutor
         CommandMessage message,
         IServiceProvider provider,
         IPermissionManager permissionManager,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         bool shouldAllow = false)
     {
         if (shouldAllow is false)
@@ -128,7 +129,7 @@ public class SystemCommand : ICommandExecutor
     private static async Task<CommandExecutionResult> RunPluginCommand(
         string[] args,
         IPluginManager pluginManager,
-        Func<string, Task<string>> reply)
+        PluginBase.Reply reply)
     {
         var operation = args.Skip(2).FirstOrDefault();
         var param = args.Skip(3).FirstOrDefault();
@@ -225,7 +226,7 @@ public class SystemCommand : ICommandExecutor
     private static async Task<CommandExecutionResult> RunWebCommand(
         string[] args,
         IMongoCollection<IslandSettings> collection,
-        Func<string, Task<string>> reply)
+        PluginBase.Reply reply)
     {
         var (type, islandId) = args switch
         {

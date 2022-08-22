@@ -3,6 +3,7 @@
 // Licensed under the AGPL-3.0 license.
 
 using System.Text;
+using DodoHosted.Base;
 using DodoHosted.Base.App;
 using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
@@ -18,7 +19,7 @@ public class HelpCommand : ICommandExecutor
         CommandMessage cmdMessage,
         IServiceProvider provider,
         IPermissionManager permissionManager,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         bool shouldAllow = false)
     {
         if (shouldAllow is false)

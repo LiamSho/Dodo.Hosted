@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base;
 using DodoHosted.Base.App;
 using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
@@ -64,16 +65,17 @@ public partial class PluginManager
 
         var command = args[0];
         var cmdInfo = AllCommands.FirstOrDefault(x => x.Name == command);
-        var reply = async Task<string>(string s) =>
+        PluginBase.Reply reply = async delegate(string content, bool privateMessage)
         {
             var replySw = Stopwatch.StartNew();
-            _logger.LogTrace("回复消息 {TraceReplyTargetId}", s);
+            _logger.LogTrace("回复{TracePrivateMessage}消息 {TraceReplyTargetId}", privateMessage ? "私密" : "非私密", content);
             var output = await _openApiService.SetChannelMessageSendAsync(
                 new SetChannelMessageSendInput<MessageBodyText>
                 {
                     ChannelId = cmdMessage.ChannelId,
-                    MessageBody = new MessageBodyText { Content = s, },
-                    ReferencedMessageId = cmdMessage.MessageId
+                    MessageBody = new MessageBodyText { Content = content },
+                    ReferencedMessageId = cmdMessage.MessageId,
+                    DodoId = privateMessage ? cmdMessage.MemberId : null
                 });
             replySw.Stop();
             _logger.LogTrace("已回复消息，耗时 {TraceReplyTime} MS，消息 ID 为 {TraceReplyMessageId}", replySw.ElapsedMilliseconds, output.MessageId);
@@ -121,7 +123,8 @@ public partial class PluginManager
             case CommandExecutionResult.Unknown:
                 await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 不存在或存在格式错误\n\n" +
                                    $"指令 `{HostEnvs.CommandPrefix}{args[0]}` 的帮助描述：\n\n" +
-                                   cmdInfo.HelpText);
+                                   cmdInfo.HelpText, 
+                    false);
                 break;
             case CommandExecutionResult.Unauthorized:
                 await _channelLogger.LogWarning(cmdMessage.IslandId, $"无权访问：`{cmdMessage.OriginalText}`，" +

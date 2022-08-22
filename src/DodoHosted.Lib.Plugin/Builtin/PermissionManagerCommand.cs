@@ -13,6 +13,7 @@
 using System.Text;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Services;
+using DodoHosted.Base;
 using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Helpers;
 using DodoHosted.Base.App.Interfaces;
@@ -29,7 +30,7 @@ public class PermissionManagerCommand : ICommandExecutor
         CommandMessage message,
         IServiceProvider provider,
         IPermissionManager permissionManager,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         bool shouldAllow = false)
     {
         var arg = args.Skip(1).FirstOrDefault();
@@ -99,7 +100,7 @@ public class PermissionManagerCommand : ICommandExecutor
         string channel,
         string role,
         string value,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         CommandMessage message,
         IPermissionManager permissionManager)
     {
@@ -151,7 +152,7 @@ public class PermissionManagerCommand : ICommandExecutor
     private static async Task<CommandExecutionResult> RunSetPermission(
         string id,
         IEnumerable<string> param,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         CommandMessage message,
         IPermissionManager permissionManager)
     {
@@ -250,7 +251,7 @@ public class PermissionManagerCommand : ICommandExecutor
         string node,
         string channel,
         string user,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         CommandMessage message,
         OpenApiService openApiService,
         IPermissionManager permissionManager)
@@ -303,7 +304,7 @@ public class PermissionManagerCommand : ICommandExecutor
     // pm list [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>]
     private static async Task<CommandExecutionResult> RunListPermission(
         IEnumerable<string> args,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         CommandMessage message,
         IPermissionManager permissionManager)
     {
@@ -390,7 +391,7 @@ public class PermissionManagerCommand : ICommandExecutor
     private static async Task<CommandExecutionResult> RunRemovePermission(
         string type,
         IReadOnlyList<string> args,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         CommandMessage message,
         IPermissionManager permissionManager)
     {

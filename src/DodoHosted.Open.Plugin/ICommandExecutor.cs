@@ -10,6 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base;
 using DodoHosted.Base.App.Interfaces;
 using DodoHosted.Base.App.Models;
 
@@ -68,7 +69,7 @@ public interface ICommandExecutor
         CommandMessage message,
         IServiceProvider provider,
         IPermissionManager permissionManager,
-        Func<string, Task<string>> reply,
+        PluginBase.Reply reply,
         bool shouldAllow = false);
     
     /// <summary>
