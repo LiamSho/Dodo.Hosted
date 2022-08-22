@@ -85,4 +85,25 @@ public class DodoEventProcessor : EventProcessService
         var e = new DodoPersonalMessageEvent<T>(input);
         DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
     }
+
+    public override void CardMessageListSubmitEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyCardMessageListSubmit>> input)
+    {
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoCardMessageListSubmitEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
+    }
+
+    public override void CardMessageButtonClickEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyCardMessageButtonClick>> input)
+    {
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoCardMessageButtonClickEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
+    }
+
+    public override void CardMessageFormSubmitEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyCardMessageFormSubmit>> input)
+    {
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoCardMessageFormSubmitEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
+    }
 }
