@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/nightly/runtime:7.0
+FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0
 
 ARG APP_VERSION=0.0.0
 
