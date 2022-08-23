@@ -18,7 +18,7 @@ namespace DodoHosted.Base.Card.Enums;
 /// 文本 + 模块 对齐方式
 /// </summary>
 [StringValueTypeWriteConvertor<TextWithModuleAlign>]
-public class TextWithModuleAlign : StringValueType
+public class TextWithModuleAlign : StringValueType, IStringValueType<TextWithModuleAlign>
 {
     private TextWithModuleAlign(string value) : base(value) { }
 
@@ -31,4 +31,13 @@ public class TextWithModuleAlign : StringValueType
     /// 左对齐
     /// </summary>
     public static readonly TextWithModuleAlign Left = new("left");
+    
+    public static IEnumerable<TextWithModuleAlign> SupportedValues
+    {
+        get
+        {
+            yield return Right;
+            yield return Left;
+        }
+    }
 }

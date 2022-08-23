@@ -10,7 +10,11 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using System.Reflection;
+using System.Text.Json;
 using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base.Card.Enums;
+using DodoHosted.Base.Exceptions;
 
 namespace DodoHosted.Base.Card;
 
@@ -34,4 +38,58 @@ public static class CardMessageSerializer
                     .Select(x => (object)x).ToList()
             }
         };
+
+    [Obsolete("Not Fully Implemented")]
+    public static CardMessage Deserialize(MessageBodyCard messageBodyCard)
+    {
+        var card = new CardMessage
+        {
+            Content = messageBodyCard.Content,
+            Card = new Card
+            {
+                Title = messageBodyCard.Card.Title,
+                Theme = StringValueType.Parse<CardTheme>(messageBodyCard.Card.Theme) ?? CardTheme.Default,
+                Components = new List<ICardComponent>()
+            }
+        };
+
+        var componentObjects = messageBodyCard.Card.Components;
+        foreach (var componentObject in componentObjects)
+        {
+            var objectString = componentObject.ToString()!;
+            var jsonDocument = JsonDocument.Parse(objectString).RootElement;
+
+            var type = StringValueType.Parse<CardComponentType>(jsonDocument.GetProperty("type").GetString());
+            if (type is null)
+            {
+                throw new CardMessageSerializeException("");
+            }
+
+            var componentType = GetCardComponentType(type);
+            var component = (ICardComponent)jsonDocument.Deserialize(componentType)!;
+
+            card.Card.Components.Add(component);
+        }
+
+        return card;
+    }
+
+    private static readonly PropertyInfo[] s_propertyInfos = typeof(CardComponentType).GetProperties(BindingFlags.Static);
+
+    private static Type GetCardComponentType(CardComponentType type)
+    {
+        var p = s_propertyInfos.FirstOrDefault(x => x.GetConstantValue()?.ToString() == (string)type);
+        if (p is null)
+        {
+            throw new CardMessageSerializeException("");
+        }
+
+        var attr = p.GetCustomAttribute<StringValueTypeRefAttribute>();
+        if (attr is null)
+        {
+            throw new CardMessageSerializeException("");
+        }
+        
+        return attr.Type;
+    }
 }

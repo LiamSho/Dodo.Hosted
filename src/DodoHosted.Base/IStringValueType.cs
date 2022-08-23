@@ -10,12 +10,9 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Text.Json.Serialization;
+namespace DodoHosted.Base;
 
-namespace DodoHosted.Base.JsonExtension;
-
-[AttributeUsage(AttributeTargets.Class)]
-public class StringValueTypeWriteConvertorAttribute<T> : JsonConverterAttribute where T : StringValueType, IStringValueType<T>
+public interface IStringValueType<out T> where T : StringValueType
 {
-    public StringValueTypeWriteConvertorAttribute() : base(typeof(StringValueTypeWriteConvertor<T>)) { }
+    static abstract IEnumerable<T> SupportedValues { get; }
 }

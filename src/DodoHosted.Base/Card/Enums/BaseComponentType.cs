@@ -10,6 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.Card.BaseComponent;
 using DodoHosted.Base.JsonExtension;
 
 namespace DodoHosted.Base.Card.Enums;
@@ -18,22 +19,35 @@ namespace DodoHosted.Base.Card.Enums;
 /// 基本组件类型
 /// </summary>
 [StringValueTypeWriteConvertor<BaseComponentType>]
-public class BaseComponentType : StringValueType
+public class BaseComponentType : StringValueType, IStringValueType<BaseComponentType>
 {
     private BaseComponentType(string value) : base(value) { }
     
     /// <summary>
     /// 按钮
     /// </summary>
+    [StringValueTypeRef(typeof(Button))]
     public static readonly BaseComponentType Button = new("button");
     
     /// <summary>
     /// 输入框
     /// </summary>
+    [StringValueTypeRef(typeof(Input))]
     public static readonly BaseComponentType Input = new("input");
     
     /// <summary>
     /// 段落
     /// </summary>
+    [StringValueTypeRef(typeof(Paragraph))]
     public static readonly BaseComponentType Paragraph = new("paragraph");
+
+    public static IEnumerable<BaseComponentType> SupportedValues
+    {
+        get
+        {
+            yield return Button;
+            yield return Input;
+            yield return Paragraph;
+        }
+    }
 }

@@ -10,12 +10,15 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Text.Json.Serialization;
+namespace DodoHosted.Base.Card;
 
-namespace DodoHosted.Base.JsonExtension;
-
-[AttributeUsage(AttributeTargets.Class)]
-public class StringValueTypeWriteConvertorAttribute<T> : JsonConverterAttribute where T : StringValueType, IStringValueType<T>
+[AttributeUsage(AttributeTargets.Field)]
+public class StringValueTypeRefAttribute : Attribute
 {
-    public StringValueTypeWriteConvertorAttribute() : base(typeof(StringValueTypeWriteConvertor<T>)) { }
+    public Type Type { get; }
+    
+    public StringValueTypeRefAttribute(Type type)
+    {
+        Type = type;
+    }
 }

@@ -18,7 +18,7 @@ namespace DodoHosted.Base.Card.Enums;
 /// 文本类型
 /// </summary>
 [StringValueTypeWriteConvertor<ContentTextType>]
-public class ContentTextType : StringValueType
+public class ContentTextType : StringValueType, IStringValueType<ContentTextType>
 {
     private ContentTextType(string value) : base(value) { }
     
@@ -31,4 +31,13 @@ public class ContentTextType : StringValueType
     /// Markdown 文本
     /// </summary>
     public static ContentTextType DodoMarkdown => new("dodo-md");
+    
+    public static IEnumerable<ContentTextType> SupportedValues
+    {
+        get
+        {
+            yield return PlainText;
+            yield return DodoMarkdown;
+        }
+    }
 }

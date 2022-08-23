@@ -18,7 +18,7 @@ namespace DodoHosted.Base.Card.Enums;
 /// 卡片主题
 /// </summary>
 [StringValueTypeWriteConvertor<CardTheme>]
-public class CardTheme : StringValueType
+public class CardTheme : StringValueType, IStringValueType<CardTheme>
 {
     private CardTheme(string value) : base(value) { }
 
@@ -71,4 +71,21 @@ public class CardTheme : StringValueType
     /// 黑色
     /// </summary>
     public static readonly CardTheme Black = new("black");
+    
+    public static IEnumerable<CardTheme> SupportedValues
+    {
+        get
+        {
+            yield return Default;
+            yield return Grey;
+            yield return Red;
+            yield return Orange;
+            yield return Yellow;
+            yield return Green;
+            yield return Indigo;
+            yield return Blue;
+            yield return Purple;
+            yield return Black;
+        }
+    }
 }

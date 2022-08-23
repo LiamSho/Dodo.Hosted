@@ -15,11 +15,18 @@ using System.Text.Json.Serialization;
 
 namespace DodoHosted.Base.JsonExtension;
 
-public class StringValueTypeWriteConvertor<T> : JsonConverter<T>
+public class StringValueTypeWriteConvertor<T> : JsonConverter<T> where T : StringValueType, IStringValueType<T>
 {
     public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        throw new NotImplementedException();
+        var str = reader.GetString();
+        var val = StringValueType.Parse<T>(str);
+        if (val is null)
+        {
+            throw new JsonException();
+        }
+
+        return val;
     }
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)

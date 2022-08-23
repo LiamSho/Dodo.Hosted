@@ -18,7 +18,7 @@ namespace DodoHosted.Base.Card.Enums;
 /// 按钮动作类型
 /// </summary>
 [StringValueTypeWriteConvertor<ButtonActionType>]
-public class ButtonActionType : StringValueType
+public class ButtonActionType : StringValueType, IStringValueType<ButtonActionType>
 {
     private ButtonActionType(string value) : base(value) { }
 
@@ -41,4 +41,15 @@ public class ButtonActionType : StringValueType
     /// 回传表单
     /// </summary>
     public static readonly ButtonActionType Form = new("form");
+    
+    public static IEnumerable<ButtonActionType> SupportedValues
+    {
+        get
+        {
+            yield return LinkUrl;
+            yield return CallBack;
+            yield return CopyContent;
+            yield return Form;
+        }
+    }
 }

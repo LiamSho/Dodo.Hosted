@@ -12,7 +12,7 @@
 
 namespace DodoHosted.Base;
 
-public class StringValueType
+public abstract class StringValueType
 {
     private readonly string _value;
 
@@ -50,4 +50,9 @@ public class StringValueType
     public static bool operator !=(StringValueType? a, StringValueType? b) => a is not null && b is not null && !a.Equals(b);
 
     public static implicit operator string(StringValueType value) => value._value;
+
+    public static T? Parse<T>(string? value) where T : StringValueType, IStringValueType<T>
+    {
+        return T.SupportedValues.FirstOrDefault(supportedValue => supportedValue._value == value);
+    }
 }

@@ -18,7 +18,7 @@ namespace DodoHosted.Base.Card.Enums;
 /// 倒计时组件样式
 /// </summary>
 [StringValueTypeWriteConvertor<CountdownStyle>]
-public class CountdownStyle : StringValueType
+public class CountdownStyle : StringValueType, IStringValueType<CountdownStyle>
 {
     private CountdownStyle(string value) : base(value) { }
     
@@ -31,4 +31,13 @@ public class CountdownStyle : StringValueType
     /// 按小时显示
     /// </summary>
     public static readonly CountdownStyle Hour = new("hour");
+    
+    public static IEnumerable<CountdownStyle> SupportedValues
+    {
+        get
+        {
+            yield return Day;
+            yield return Hour;
+        }
+    }
 }

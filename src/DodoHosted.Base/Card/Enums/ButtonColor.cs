@@ -18,7 +18,7 @@ namespace DodoHosted.Base.Card.Enums;
 /// 按钮颜色
 /// </summary>
 [StringValueTypeWriteConvertor<ButtonColor>]
-public class ButtonColor : StringValueType
+public class ButtonColor : StringValueType, IStringValueType<ButtonColor>
 {
     private ButtonColor(string value) : base(value) { }
     
@@ -56,4 +56,18 @@ public class ButtonColor : StringValueType
     /// 紫色
     /// </summary>
     public static ButtonColor Purple => new("purple");
+    
+    public static IEnumerable<ButtonColor> SupportedValues
+    {
+        get
+        {
+            yield return Default;
+            yield return Grey;
+            yield return Red;
+            yield return Orange;
+            yield return Green;
+            yield return Blue;
+            yield return Purple;
+        }
+    }
 }
