@@ -53,12 +53,19 @@ public partial class PluginManager : IPluginManager
     private IEnumerable<CommandManifest> AllCommands => _plugins.IsEmpty
         ? _builtinCommands.Concat(_nativeCommandExecutors)
         : _plugins.Values
-            .Select(x => x.CommandManifests)
-            .Aggregate((x, y) => x.Concat(y).ToArray())
+            .SelectMany(x => x.CommandManifests)
             .Concat(_builtinCommands)
             .Concat(_nativeCommandExecutors)
             .ToArray();
-    private IEnumerable<EventHandlerManifest> LocalEventHandlers => _builtinEventHandlers.Concat(_nativeEventHandlers);
+
+    private IEnumerable<EventHandlerManifest> LocalEventHandlers => _builtinEventHandlers
+        .Concat(_nativeEventHandlers);
+    private IEnumerable<EventHandlerManifest> AllEventHandlers => _plugins.IsEmpty
+        ? LocalEventHandlers
+        : _plugins.Values.SelectMany(x => x.EventHandlers).Concat(LocalEventHandlers);
+    private IEnumerable<EventHandlerManifest> SpecificEventHandlers(string identifier) =>
+        _plugins.Values.FirstOrDefault(x => x.PluginInfo.Identifier == identifier)?.EventHandlers
+        ?? Enumerable.Empty<EventHandlerManifest>();
 
     // ReSharper disable once CollectionNeverUpdated.Global
     // ReSharper disable once MemberCanBePrivate.Global

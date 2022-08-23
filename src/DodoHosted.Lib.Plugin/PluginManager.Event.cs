@@ -50,55 +50,27 @@ public partial class PluginManager
         // 记录事件处理器数量
         var count = 0;
         
-        // 插件中的事件处理器
-        foreach (var (_, manifest) in _plugins)
+        // 若 PluginIdentifier 为 null，运行所有事件处理器
+        // 若 PluginIdentifier 为 native，只运行本地事件处理器
+        // 若 PluginIdentifier 为 其他值，运行指定事件处理器
+        var eventHandlers = pluginIdentifier switch
         {
-            // 检查 PluginIdentifier 是否匹配
-            if (string.IsNullOrEmpty(pluginIdentifier) is false)
-            {
-                if (manifest.PluginInfo.Identifier != pluginIdentifier)
-                {
-                    continue;
-                }
-            }
-            
-            foreach (var eventHandler in manifest.EventHandlers)
-            {
-                if (eventHandler.EventTypeString != typeString)
-                {
-                    continue;
-                }
+            "native" => LocalEventHandlers,
+            null => AllEventHandlers,
+            _ => SpecificEventHandlers(pluginIdentifier)
+        };
 
-                var scope = _provider.CreateScope();
-                
-                await (Task)eventHandler.HandlerMethod
-                    .Invoke(eventHandler.EventHandler, new object?[]
-                    {
-                        @event, scope.ServiceProvider, _eventHandlerLogger
-                    })!;
-                
-                scope.Dispose();
-                count++;
-            }
-        }
-
-        // 若 PluginIdentifier 不为空，或者不为 Native，则不处理 Native Assembly 中的事件处理器
-        if (string.IsNullOrEmpty(pluginIdentifier) is false || pluginIdentifier != "native")
+        foreach (var eventHandler in eventHandlers)
         {
-            return count;
-        }
-        
-        foreach (var localEventHandler in LocalEventHandlers)
-        {
-            if (localEventHandler.EventTypeString != typeString)
+            if (eventHandler.EventTypeString != typeString)
             {
                 continue;
             }
             
             var scope = _provider.CreateScope();
             
-            await (Task)localEventHandler.HandlerMethod
-                .Invoke(localEventHandler.EventHandler, new object?[]
+            await (Task)eventHandler.HandlerMethod
+                .Invoke(eventHandler.EventHandler, new object?[]
                 {
                     @event, scope.ServiceProvider, _eventHandlerLogger
                 })!;
