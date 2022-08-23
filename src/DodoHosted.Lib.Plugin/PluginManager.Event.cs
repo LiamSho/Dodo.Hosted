@@ -88,17 +88,17 @@ public partial class PluginManager
             return count;
         }
         
-        foreach (var nativeEventHandler in _nativeEventHandlers)
+        foreach (var localEventHandler in LocalEventHandlers)
         {
-            if (nativeEventHandler.EventTypeString != typeString)
+            if (localEventHandler.EventTypeString != typeString)
             {
                 continue;
             }
             
             var scope = _provider.CreateScope();
             
-            await (Task)nativeEventHandler.HandlerMethod
-                .Invoke(nativeEventHandler.EventHandler, new object?[]
+            await (Task)localEventHandler.HandlerMethod
+                .Invoke(localEventHandler.EventHandler, new object?[]
                 {
                     @event, scope.ServiceProvider, _eventHandlerLogger
                 })!;

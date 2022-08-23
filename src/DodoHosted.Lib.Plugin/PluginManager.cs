@@ -48,6 +48,7 @@ public partial class PluginManager : IPluginManager
     private readonly DirectoryInfo _pluginDirectory;
 
     private readonly CommandManifest[] _builtinCommands;
+    private readonly EventHandlerManifest[] _builtinEventHandlers;
 
     private IEnumerable<CommandManifest> AllCommands => _plugins.IsEmpty
         ? _builtinCommands.Concat(_nativeCommandExecutors)
@@ -57,6 +58,7 @@ public partial class PluginManager : IPluginManager
             .Concat(_builtinCommands)
             .Concat(_nativeCommandExecutors)
             .ToArray();
+    private IEnumerable<EventHandlerManifest> LocalEventHandlers => _builtinEventHandlers.Concat(_nativeEventHandlers);
 
     // ReSharper disable once CollectionNeverUpdated.Global
     // ReSharper disable once MemberCanBePrivate.Global
@@ -88,6 +90,7 @@ public partial class PluginManager : IPluginManager
         _plugins = new ConcurrentDictionary<string, PluginManifest>();
 
         _builtinCommands = FetchCommandExecutors(this.GetType().Assembly.GetTypes()).ToArray();
+        _builtinEventHandlers = FetchEventHandlers(this.GetType().Assembly.GetTypes()).ToArray();
 
         if (_pluginDirectory.Exists is false)
         {
