@@ -15,6 +15,7 @@ using System.Text.Json;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base.Attributes;
 using DodoHosted.Base.Card.BaseComponent;
+using DodoHosted.Base.Card.CardComponent;
 using DodoHosted.Base.Card.Enums;
 using DodoHosted.Base.Exceptions;
 
@@ -152,6 +153,61 @@ public static class CardMessageSerializer
         }
 
         return model;
+    }
+
+    /// <summary>
+    /// 序列化列表选择器，获取列表选择器的选项
+    /// </summary>
+    /// <typeparam name="T">枚举类型</typeparam>
+    /// <returns></returns>
+    public static List<ListSelectorOption> SerializeListSelectorOptions<T>() where T : Enum
+    {
+        return SerializeListSelectorOptions(typeof(T));
+    }
+    
+    /// <summary>
+    /// 序列化列表选择器，获取列表选择器的选项
+    /// </summary>
+    /// <param name="enumType">枚举类型</param>
+    /// <returns></returns>
+    public static List<ListSelectorOption> SerializeListSelectorOptions(Type enumType)
+    {
+        var options = enumType
+            .GetFields()
+            .Select(x => x.GetCustomAttribute<ListSelectorAttribute>())
+            .Where(x => x is not null)
+            .Select(x => new ListSelectorOption(x!.Name, x.Description));
+
+        return options.ToList();
+    }
+    
+    /// <summary>
+    /// 反序列化列表选择器，获取枚举列表
+    /// </summary>
+    /// <param name="listData">列表选择器数据</param>
+    /// <typeparam name="T">源类型</typeparam>
+    /// <returns></returns>
+    public static List<T> DeserializeListSelectorOptions<T>(IEnumerable<MessageModelListData> listData) where T : Enum
+    {
+        var fields = typeof(T)
+            .GetFields()
+            .Select(x => (x, x.GetCustomAttribute<ListSelectorAttribute>()))
+            .Where(x => x.Item2 is not null)
+            .Select(x => (x.x, x.Item2!))
+            .ToList();
+
+        var list = new List<T>();
+        var enumValues = typeof(T).GetEnumValues();
+        
+        foreach (var data in listData)
+        {
+            var (p, _) = fields.FirstOrDefault(x => x.Item2.Name == data.Name);
+            var index = (int)p.GetRawConstantValue()!;
+            var enumValue = (T)enumValues.GetValue(index)!;
+            list.Add(enumValue);
+        }
+
+        return list;
     }
 
     private static readonly PropertyInfo[] s_propertyInfos = typeof(CardComponentType).GetProperties(BindingFlags.Static);

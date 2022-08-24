@@ -33,40 +33,47 @@ public record ListSelector(int Min, int Max, List<ListSelectorOption> Elements, 
         : this(1, 1, elements.ToList(), null, interactCustomId) { }
     public ListSelector(int min, int max, string? interactCustomId = null, params ListSelectorOption[] elements)
         : this(min, max, elements.ToList(), null, interactCustomId) { }
-    
+    public ListSelector(int min, int max, Type modelType, string interactCustomId)
+        : this(min, max, CardMessageSerializer.SerializeListSelectorOptions(modelType), null, interactCustomId) { }
+    public ListSelector(int min, int max, Type modelType, string interactCustomId, string placeholder)
+        : this(min, max, CardMessageSerializer.SerializeListSelectorOptions(modelType), placeholder, interactCustomId) { }
+    public ListSelector(Type modelType, string interactCustomId)
+        : this(1, 1, CardMessageSerializer.SerializeListSelectorOptions(modelType), null, interactCustomId) { }
+    public ListSelector(Type modelType, string interactCustomId, string placeholder)
+        : this(1, 1, CardMessageSerializer.SerializeListSelectorOptions(modelType), placeholder, interactCustomId) { }
     
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.ListSelector;
-    
+
     /// <summary>
     /// 交互自定义 ID
     /// </summary>
     [JsonPropertyName("interactCustomId")]
-    public string? InteractCustomId { get; set; }
-    
+    public string? InteractCustomId { get; set; } = InteractCustomId;
+
     /// <summary>
     /// 输入框提示
     /// </summary>
     [JsonPropertyName("placeholder")]
-    public string? Placeholder { get; set; }
-    
+    public string? Placeholder { get; set; } = Placeholder;
+
     /// <summary>
     /// 数据列表
     /// </summary>
     [JsonPropertyName("elements")]
-    public List<ListSelectorOption> Elements { get; set; }
-    
+    public List<ListSelectorOption> Elements { get; set; } = Elements;
+
     /// <summary>
     /// 最少选中个数
     /// </summary>
     [JsonPropertyName("min")]
-    public int Min { get; set; }
-    
+    public int Min { get; set; } = Min;
+
     /// <summary>
     /// 最大选中个数
     /// </summary>
     [JsonPropertyName("max")]
-    public int Max { get; set; }
+    public int Max { get; set; } = Max;
 }
 
 /// <summary>
