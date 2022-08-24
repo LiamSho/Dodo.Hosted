@@ -30,11 +30,11 @@ public record Paragraph(int Column, List<Text> Fields) : ITextComponent
     /// 栏数，2~6栏
     /// </summary>
     [JsonPropertyName("cols")]
-    public int Column { get; set; }
-    
+    public int Column { get; set; } = Column;
+
     /// <summary>
     /// 数据列表
     /// </summary>
     [JsonPropertyName("fields")]
-    public List<Text> Fields { get; set; }
+    public List<Text> Fields { get; set; } = Fields;
 }

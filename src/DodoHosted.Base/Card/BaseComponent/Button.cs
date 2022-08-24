@@ -33,36 +33,36 @@ public record Button(string Name, ButtonAction Click, ButtonColor Color, string?
     
     [JsonPropertyName("type")]
     public BaseComponentType Type => BaseComponentType.Button;
-    
+
     /// <summary>
     /// 自定义按钮 ID
     /// </summary>
     [JsonPropertyName("interactCustomId")]
-    public string? InteractCustomId { get; set; }
-    
+    public string? InteractCustomId { get; set; } = InteractCustomId;
+
     /// <summary>
     /// 按钮点击动作
     /// </summary>
     [JsonPropertyName("click")]
-    public ButtonAction Click { get; set; }
+    public ButtonAction Click { get; set; } = Click;
 
     /// <summary>
     /// 按钮颜色
     /// </summary>
     [JsonPropertyName("color")]
-    public ButtonColor Color { get; set; } = ButtonColor.Default;
-    
+    public ButtonColor Color { get; set; } = Color;
+
     /// <summary>
     /// 按钮名称
     /// </summary>
     [JsonPropertyName("name")]
-    public string Name { get; set; }
-    
+    public string Name { get; set; } = Name;
+
     /// <summary>
     /// 回传表单，仅当按钮点击动作 <see cref="ButtonAction.Action"/> 为 <see cref="ButtonActionType.Form"/> 时需要填写
     /// </summary>
     [JsonPropertyName("form")]
-    public Form? Form { get; set; }
+    public Form? Form { get; set; } = Form;
 }
 
 /// <summary>
