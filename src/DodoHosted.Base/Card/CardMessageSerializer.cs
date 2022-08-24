@@ -13,6 +13,8 @@
 using System.Reflection;
 using System.Text.Json;
 using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base.Attributes;
+using DodoHosted.Base.Card.BaseComponent;
 using DodoHosted.Base.Card.Enums;
 using DodoHosted.Base.Exceptions;
 
@@ -72,6 +74,73 @@ public static class CardMessageSerializer
         }
 
         return card;
+    }
+
+    /// <summary>
+    /// 序列化模型，获取表单类
+    /// </summary>
+    /// <param name="title">表单标题</param>
+    /// <typeparam name="T">模型类</typeparam>
+    /// <returns></returns>
+    public static Form SerializeFormData<T>(string title) where T : class
+    {
+        var properties = typeof(T)
+            .GetProperties()
+            .Where(x => x.PropertyType == typeof(string))
+            .Select(x => (x,
+                x.GetCustomAttribute<FormAttribute>(),
+                x.GetCustomAttribute<FormBindAttribute>(),
+                x.GetCustomAttribute<FormLimitAttribute>()))
+            .Where(x => x.Item2 is not null && x.Item3 is not null)
+            .Select(x => (x.Item2!, x.Item3!, x.Item4 ?? new FormLimitAttribute(0, 4000)));
+
+        var inputs = new List<Input>();
+
+        foreach (var (form, formBind, formLimit) in properties)
+        {
+            inputs.Add(new Input
+            {
+                Key = formBind.Id,
+                Title = form.Title,
+                Placeholder = form.Placeholder,
+                MinChar = formLimit.MinCharacters,
+                MaxChar = formLimit.MaxCharacters,
+                Rows = formLimit.Rows
+            });
+        }
+
+        return new Form { Title = title, Elements = inputs };
+    }
+    
+    /// <summary>
+    /// 反序列化表单信息
+    /// </summary>
+    /// <param name="formData">接收到的表单数据</param>
+    /// <typeparam name="T">表单实体类</typeparam>
+    /// <returns></returns>
+    /// <remarks>
+    /// 表单实体类必须包含无参构造函数
+    /// </remarks>
+    public static T DeserializeFormData<T>(IReadOnlyCollection<MessageModelFormData> formData) where T : class, new()
+    {
+        var properties =  typeof(T)
+            .GetProperties()
+            .Where(x => x.PropertyType == typeof(string))
+            .Select(x => (x, x.GetCustomAttribute<FormBindAttribute>()))
+            .Where(x => x.Item2 is not null)
+            .Select(x => (x.x, x.Item2!));
+
+        var model = new T();
+    
+        foreach (var (p, a) in properties)
+        {
+            var value = formData
+                .FirstOrDefault(x => x.Key == a.Id)?
+                .value ?? string.Empty;
+            p.SetValue(model, value);
+        }
+
+        return model;
     }
 
     private static readonly PropertyInfo[] s_propertyInfos = typeof(CardComponentType).GetProperties(BindingFlags.Static);
