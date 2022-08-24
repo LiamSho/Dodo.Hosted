@@ -18,26 +18,28 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// <summary>
 /// 视频
 /// </summary>
-public record Video : ICardComponent
+public record Video(string Title, string Cover, string Source) : ICardComponent
 {
+    public Video() : this(string.Empty, string.Empty, string.Empty) { }
+    
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.Video;
-    
+
     /// <summary>
     /// 视频标题
     /// </summary>
     [JsonPropertyName("title")]
-    public required string Title { get; set; }
-    
+    public string Title { get; set; } = Title;
+
     /// <summary>
     /// 视频封面
     /// </summary>
     [JsonPropertyName("cover")]
-    public required string Cover { get; set; }
-    
+    public string Cover { get; set; } = Cover;
+
     /// <summary>
     /// 视频地址
     /// </summary>
     [JsonPropertyName("src")]
-    public required string Source { get; set; }
+    public string Source { get; set; } = Source;
 }

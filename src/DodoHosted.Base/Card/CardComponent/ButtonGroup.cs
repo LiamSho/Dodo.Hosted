@@ -19,14 +19,17 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// <summary>
 /// 按钮组
 /// </summary>
-public record ButtonGroup : ICardComponent
+public record ButtonGroup(List<Button> Buttons) : ICardComponent
 {
+    public ButtonGroup() : this(new List<Button>()) { }
+    public ButtonGroup(params Button[] buttons) : this(buttons.ToList()) { }
+    
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.ButtonGroup;
-    
+
     /// <summary>
     /// 按钮列表
     /// </summary>
     [JsonPropertyName("elements")]
-    public required List<Button> Buttons { get; set; }
+    public List<Button> Buttons { get; set; } = Buttons;
 }

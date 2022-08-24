@@ -18,13 +18,15 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// <summary>
 /// 图片
 /// </summary>
-public record Image : ICardComponent, IAccessoryComponent, IRemarkElementComponent
+public record Image(string Source) : ICardComponent, IAccessoryComponent, IRemarkElementComponent
 {
+    public Image() : this(string.Empty) { }
+    
     public CardComponentType Type => CardComponentType.Image;
 
     /// <summary>
     /// 图片地址
     /// </summary>
     [JsonPropertyName("src")]
-    public required string Source { get; set; }
+    public string Source { get; set; } = Source;
 }

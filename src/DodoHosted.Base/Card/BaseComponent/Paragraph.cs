@@ -18,8 +18,11 @@ namespace DodoHosted.Base.Card.BaseComponent;
 /// <summary>
 /// 段落
 /// </summary>
-public record Paragraph : ITextComponent
+public record Paragraph(int Column, List<Text> Fields) : ITextComponent
 {
+    public Paragraph() : this(2, new List<Text>()) { }
+    public Paragraph(int column, params Text[] fields) : this(column, fields.ToList()) { }
+    
     [JsonPropertyName("type")]
     public string Type => BaseComponentType.Paragraph;
 
@@ -27,11 +30,11 @@ public record Paragraph : ITextComponent
     /// 栏数，2~6栏
     /// </summary>
     [JsonPropertyName("cols")]
-    public required int Column { get; set; }
+    public int Column { get; set; }
     
     /// <summary>
     /// 数据列表
     /// </summary>
     [JsonPropertyName("fields")]
-    public required List<Text> Fields { get; set; }
+    public List<Text> Fields { get; set; }
 }

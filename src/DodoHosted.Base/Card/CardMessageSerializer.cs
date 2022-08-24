@@ -84,7 +84,18 @@ public static class CardMessageSerializer
     /// <returns></returns>
     public static Form SerializeFormData<T>(string title) where T : class
     {
-        var properties = typeof(T)
+        return SerializeFormData(title, typeof(T));
+    }
+
+    /// <summary>
+    /// 序列化模型，获取表单类
+    /// </summary>
+    /// <param name="title">表单标题</param>
+    /// <param name="type">模型类型</param>
+    /// <returns></returns>
+    public static Form SerializeFormData(string title, Type type)
+    {
+        var properties = type
             .GetProperties()
             .Where(x => x.PropertyType == typeof(string))
             .Select(x => (x,

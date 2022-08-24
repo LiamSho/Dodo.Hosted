@@ -19,8 +19,11 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// <summary>
 /// 标题
 /// </summary>
-public record Header : ICardComponent
+public record Header(Text Text) : ICardComponent
 {
+    public Header() : this(new Text(string.Empty, ContentTextType.DodoMarkdown)) { }
+    public Header(string markdownText) : this(new Text(markdownText, ContentTextType.DodoMarkdown)) { }
+    
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.Header;
 
@@ -28,5 +31,5 @@ public record Header : ICardComponent
     /// 标题数据
     /// </summary>
     [JsonPropertyName("text")]
-    public required Text Text { get; set; }
+    public Text Text { get; set; } = Text;
 }

@@ -18,17 +18,21 @@ namespace DodoHosted.Base.Card.BaseComponent;
 /// <summary>
 /// 通用文本组件
 /// </summary>
-public record Text : ITextComponent, IRemarkElementComponent
+public record Text(string Content, ContentTextType Type) : ITextComponent, IRemarkElementComponent
 {
+    public Text() : this(string.Empty, ContentTextType.DodoMarkdown) { }
+    
+    public Text(string content) : this(content, ContentTextType.DodoMarkdown) { }
+
     /// <summary>
     /// 文本类型
     /// </summary>
     [JsonPropertyName("type")]
-    public required ContentTextType Type { get; set; }
-    
+    public ContentTextType Type { get; set; } = Type;
+
     /// <summary>
     /// 文本内容
     /// </summary>
     [JsonPropertyName("content")]
-    public required string Content { get; set; }
+    public string Content { get; set; } = Content;
 }

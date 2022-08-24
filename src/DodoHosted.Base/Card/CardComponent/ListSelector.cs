@@ -18,8 +18,23 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// <summary>
 /// 列表选择器
 /// </summary>
-public record ListSelector : ICardComponent
+public record ListSelector(int Min, int Max, List<ListSelectorOption> Elements, string? Placeholder = null, string? InteractCustomId = null) : ICardComponent
 {
+    public ListSelector() : this(1, 1, new List<ListSelectorOption>()) { }
+    public ListSelector(List<ListSelectorOption> elements, string? placeholder = null, string? interactCustomId = null) 
+        : this(1, 1, elements, placeholder, interactCustomId) { }
+    public ListSelector(string? placeholder = null, string? interactCustomId = null, params ListSelectorOption[] elements) 
+        : this(1, 1, elements.ToList(), placeholder, interactCustomId) { }
+    public ListSelector(int min, int max, string? placeholder = null, string? interactCustomId = null, params ListSelectorOption[] elements)
+        : this(min, max, elements.ToList(), placeholder, interactCustomId) { }
+    public ListSelector(List<ListSelectorOption> elements,string? interactCustomId = null) 
+        : this(1, 1, elements, null, interactCustomId) { }
+    public ListSelector(string? interactCustomId = null, params ListSelectorOption[] elements) 
+        : this(1, 1, elements.ToList(), null, interactCustomId) { }
+    public ListSelector(int min, int max, string? interactCustomId = null, params ListSelectorOption[] elements)
+        : this(min, max, elements.ToList(), null, interactCustomId) { }
+    
+    
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.ListSelector;
     
@@ -39,19 +54,19 @@ public record ListSelector : ICardComponent
     /// 数据列表
     /// </summary>
     [JsonPropertyName("elements")]
-    public required List<ListSelectorOption> Elements { get; set; }
+    public List<ListSelectorOption> Elements { get; set; }
     
     /// <summary>
     /// 最少选中个数
     /// </summary>
     [JsonPropertyName("min")]
-    public required int Min { get; set; }
+    public int Min { get; set; }
     
     /// <summary>
     /// 最大选中个数
     /// </summary>
     [JsonPropertyName("max")]
-    public required int Max { get; set; }
+    public int Max { get; set; }
 }
 
 /// <summary>

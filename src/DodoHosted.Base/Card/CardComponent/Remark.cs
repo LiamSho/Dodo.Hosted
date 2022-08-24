@@ -18,8 +18,11 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// <summary>
 /// 备注
 /// </summary>
-public record Remark : ICardComponent
+public record Remark(List<IRemarkElementComponent> Elements) : ICardComponent
 {
+    public Remark() : this(new List<IRemarkElementComponent>()) { }
+    public Remark(params IRemarkElementComponent[] elements) : this(elements.ToList()) { }
+    
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.Remark;
 
@@ -27,5 +30,5 @@ public record Remark : ICardComponent
     /// 数据列表
     /// </summary>
     [JsonPropertyName("elements")]
-    public required List<IRemarkElementComponent> Elements { get; set; }
+    public List<IRemarkElementComponent> Elements { get; set; } = Elements;
 }
