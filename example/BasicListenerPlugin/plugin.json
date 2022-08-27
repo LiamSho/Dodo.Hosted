@@ -1,9 +1,0 @@
-{
-  "$schema": "https://raw.githubusercontent.com/LiamSho/Dodo.Hosted/main/plugin-info-schema.json",
-  "identifier": "basic-listener-plugin",
-  "name": "Basic Listener Plugin",
-  "version": "1.0.0",
-  "description": "频道文字信息监听",
-  "author": "Liam Sho",
-  "entry_assembly": "BasicListenerPlugin"
-}
