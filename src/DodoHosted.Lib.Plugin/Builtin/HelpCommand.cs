@@ -79,7 +79,7 @@ public class HelpCommand : ICommandExecutor
         return CommandExecutionResult.Success;
     }
 
-    public CommandMetadata GetMetadata() => new CommandMetadata(
+    public CommandMetadata GetMetadata() => new(
         CommandName: "help",
         Description: "查看指令帮助",
         HelpText: @"""

@@ -222,7 +222,8 @@ public class IslandManagerCommand : ICommandExecutor
                     return CommandExecutionResult.Unauthorized;
                 }
 
-                var roles = await openApiService.GetRoleListAsync(new GetRoleListInput { IslandId = message.IslandId });
+                var roles = await openApiService
+                    .GetRoleListAsync(new GetRoleListInput { IslandId = message.IslandId }, true);
                 if (roles is null)
                 {
                     await reply("找不到群组身份组信息");

@@ -66,16 +66,27 @@ public partial class PluginManager
             {
                 continue;
             }
+
+            try
+            {
+                var scope = _provider.CreateScope();
             
-            var scope = _provider.CreateScope();
+                await (Task)eventHandler.HandlerMethod
+                    .Invoke(eventHandler.EventHandler, new object?[]
+                    {
+                        @event, scope.ServiceProvider, _eventHandlerLogger
+                    })!;
             
-            await (Task)eventHandler.HandlerMethod
-                .Invoke(eventHandler.EventHandler, new object?[]
-                {
-                    @event, scope.ServiceProvider, _eventHandlerLogger
-                })!;
-            
-            scope.Dispose();
+                scope.Dispose();
+            }
+            catch (Exception ex)
+            {
+               await _channelLogger.LogError(HostEnvs.DodoHostedAdminIsland,
+                   "事件处理器出现异常，" +
+                   $"类型：`{eventHandler.EventHandlerType.FullName}`" +
+                   $"Exception：{ex.GetType().FullName}，" +
+                   $"Message：{ex.Message}");
+            }
             count++;
         }
 

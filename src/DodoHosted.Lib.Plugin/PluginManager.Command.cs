@@ -112,9 +112,24 @@ public partial class PluginManager
         var scope = _provider.CreateScope();
         
         var permissionManager = scope.ServiceProvider.GetRequiredService<IPermissionManager>();
-        var result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, scope.ServiceProvider, permissionManager, reply,IsSuperAdmin(cmdMessage.Roles));
+        var result = CommandExecutionResult.Failed;
+        try
+        {
+            result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, scope.ServiceProvider, permissionManager, reply,IsSuperAdmin(cmdMessage.Roles));
+        }
+        catch (Exception ex)
+        {
+            await reply.Invoke($"指令执行出错，Exception：`{ex.GetType().FullName}`，Message：{ex.Message}");
+            await _channelLogger.LogError(cmdMessage.IslandId,
+                $"指令执行出错：`{cmdMessage.OriginalText}`，" +
+                $"发送者：<@!{cmdMessage.MemberId}>，" +
+                $"频道：<#{cmdMessage.ChannelId}>，" +
+                $"消息 ID：`{cmdMessage.MessageId}`，" +
+                $"Exception：`{ex.GetType().FullName}`，" +
+                $"Message：{ex.Message}");
+        }
+        
         _logger.LogTrace("指令执行结果：{TraceCommandExecutionResult}", result);
-
         switch (result)
         {
             case CommandExecutionResult.Success:
