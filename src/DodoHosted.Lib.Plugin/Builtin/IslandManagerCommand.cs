@@ -13,6 +13,7 @@
 using System.Text;
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Messages;
+using DoDo.Open.Sdk.Models.Resources;
 using DoDo.Open.Sdk.Models.Roles;
 using DoDo.Open.Sdk.Services;
 using DodoHosted.Base;
@@ -54,9 +55,18 @@ public class IslandManagerCommand : ICommandExecutor
 
         return args switch
         {
-            [_, "set", var param, var value] => await RunSetParams(param, value, islandInfoCollection, reply, PermCheck, message),
-            [_, "get", var param] => await RunGetInfos(param, islandInfoCollection, openApi, reply, PermCheck, message),
-            [_, "send", var channel, var content] => await RunSendMessage(channel, content, openApi, reply, PermCheck),
+            [_, "set", var param, var value] =>
+                await RunSetParams(param, value, islandInfoCollection, reply, PermCheck, message),
+            [_, "get", var param] =>
+                await RunGetInfos(param, islandInfoCollection, openApi, reply, PermCheck, message),
+            [_, "send", ..var sendArgs] => sendArgs switch
+            {
+                [ "text", var channel, var messageBody ] =>
+                    await RunSendMessage(BotSendMessageType.Text, channel, messageBody, openApi, reply, PermCheck),
+                [ "image", var channel, var imageUrl] =>
+                    await RunSendMessage(BotSendMessageType.Image, channel, imageUrl, openApi, reply, PermCheck),
+                _ => CommandExecutionResult.Unknown
+            },
             _ => CommandExecutionResult.Unknown
         };
     }
@@ -71,14 +81,16 @@ public class IslandManagerCommand : ICommandExecutor
 - `{{PREFIX}}island get settings`    获取群组配置信息
 - `{{PREFIX}}island get roles`    获取群组身份组信息
 - `{{PREFIX}}island get web_api_token`    获取群组 Web API Token
-- `{{PREFIX}}island send <#频道名/频道 ID> <消息体>`    在频道中发送消息
+- `{{PREFIX}}island send text <#频道名/频道 ID> <消息体>`    在频道中发送文本消息
+- `{{PREFIX}}island send image <#频道名/频道 ID> <图片链接>`    在频道中发送图片消息
 """,
         PermissionNodes: new Dictionary<string, string>
         {
             { "system.island.roles", "允许使用 `island get role` 指令" },
             { "system.island.settings", "允许查看或设置群组配置" },
             { "system.island.web", "允许 Web Token 相关操作" },
-            { "system.island.message", "允许发送消息操作" }
+            { "system.island.message.text", "允许发送文字消息操作" },
+            { "system.island.message.image", "允许发送图片消息操作" }
         });
 
     private static async Task<CommandExecutionResult> RunSetParams(
@@ -259,13 +271,14 @@ public class IslandManagerCommand : ICommandExecutor
     }
 
     private static async Task<CommandExecutionResult> RunSendMessage(
+        BotSendMessageType type,
         string channel,
         string content,
         OpenApiService openApi,
         PluginBase.Reply reply,
         Func<string, Task<bool>> permCheck)
     {
-        if (await permCheck.Invoke("system.island.message") is false)
+        if (await permCheck.Invoke($"system.island.message.{type.ToString().ToLowerInvariant()}") is false)
         {
             return CommandExecutionResult.Unauthorized;
         }
@@ -276,10 +289,32 @@ public class IslandManagerCommand : ICommandExecutor
             return CommandExecutionResult.Unknown;
         }
 
-        await openApi.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
+        switch (type)
         {
-            ChannelId = channelId, MessageBody = new MessageBodyText { Content = content }
-        });
+            case BotSendMessageType.Text:
+                await openApi.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
+                {
+                    ChannelId = channelId, MessageBody = new MessageBodyText { Content = content }
+                }, true);
+                break;
+            case BotSendMessageType.Image:
+                var response = await openApi
+                    .SetResourcePictureUploadAsync(new SetResourceUploadInput { FilePath = content }, true);
+                
+                await openApi.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyPicture>
+                {
+                    ChannelId = channelId, MessageBody = new MessageBodyPicture
+                    {
+                        Url = response.Url,
+                        Width = response.Width,
+                        Height = response.Height,
+                        IsOriginal = 1
+                    }
+                }, true);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type, null);
+        }
 
         await reply("已发送");
         return CommandExecutionResult.Success;
@@ -294,5 +329,11 @@ public class IslandManagerCommand : ICommandExecutor
         }
 
         return s;
+    }
+    
+    private enum BotSendMessageType
+    {
+        Text,
+        Image
     }
 }
