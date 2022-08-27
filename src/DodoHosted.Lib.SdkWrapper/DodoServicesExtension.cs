@@ -41,14 +41,14 @@ public static class DodoServicesExtension
         dodoOpenApiOptionsBuilder.Invoke(openApiOptionsBuilder);
         dodoOpenEventOptionsBuilder.Invoke(openEventOptionsBuilder);
 
-        serviceCollection.AddSingleton<IOptions<OpenApiOptions>>(s =>
+        serviceCollection.AddSingleton(s =>
         {
             var loggerFactory = s.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger<OpenApiService>();
             var options = openApiOptionsBuilder.UseLogger(logger).Build();
             return Options.Create(options);
         });
-        serviceCollection.AddSingleton<IOptions<OpenEventOptions>>(_ =>
+        serviceCollection.AddSingleton(_ =>
         {
             var options = openEventOptionsBuilder.Build();
             return Options.Create(options);
