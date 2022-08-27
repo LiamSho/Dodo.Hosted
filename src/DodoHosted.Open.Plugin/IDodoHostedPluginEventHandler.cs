@@ -22,19 +22,6 @@ namespace DodoHosted.Open.Plugin;
 /// <remarks>
 /// 实现类不能包涵泛型参数
 /// </remarks>
-/// <example>
-/// <code>
-/// // 这个实现将处理频道文字消息
-/// public class SimpleEventHandler : IDodoHostedPluginEventHandler&lt;DodoChannelMessageEvent&lt;MessageBodyText&gt;&gt;
-/// {
-///     public Task Handle(DodoChannelMessageEvent&lt;MessageBodyText&gt; @event, IServiceProvider provider)
-///     {
-///         // do something
-///         return Task.CompletedTask;
-///     }
-/// }
-/// </code>
-/// </example>
 public interface IDodoHostedPluginEventHandler<in T> where T : IDodoHostedEvent
 {
     /// <summary>

@@ -19,36 +19,6 @@ namespace DodoHosted.Open.Plugin;
 /// <summary>
 /// Command 执行器接口
 /// </summary>
-/// <example>
-/// <code>
-/// // 此处使用了 C# 11 的新特性
-/// public class MyCommandExecutor : ICommandExecutor
-/// {
-///     public async Task Execute(string[] args, DodoMemberInfo sender, DodoMessageInfo message, bool shouldAllow = false)
-///     {
-///         if (shouldAllow is false)
-///         {
-///             // Perform permission check
-///             // Return if permission check failed
-///         }
-///
-///         // Do your job here
-///     }
-///
-///     public CommandMetadata GetMetadata() => new CommandMetadata(
-///         CommandName: "myCommand",
-///         Description: "指令说明",
-///         HelpText: @"""
-/// - `{{PREFIX}}myCommand`    指令帮助文本 1
-/// - `{{PREFIX}}myCommand do`    指令帮助文本 2
-/// """,
-///         PermissionNodes: new Dictionary&lt;string, string&gt;
-///         {
-///             {"my-command.node.sth", "运行使用 xxx"}
-///         });
-/// }
-/// </code>
-/// </example>
 public interface ICommandExecutor
 {
     /// <summary>
