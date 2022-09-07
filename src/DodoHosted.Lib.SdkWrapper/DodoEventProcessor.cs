@@ -106,4 +106,32 @@ public class DodoEventProcessor : EventProcessService
         var e = new DodoCardMessageFormSubmitEvent(input);
         DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
     }
+
+    public override void ChannelArticleEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyChannelArticle>> input)
+    {
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoChannelArticleEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
+    }
+
+    public override void ChannelArticleCommentEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyChannelArticleComment>> input)
+    {
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoChannelArticleCommentEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
+    }
+
+    public override void ChannelVoiceMemberJoinEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyChannelVoiceMemberJoin>> input)
+    {
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoChannelVoiceMemberJoinEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
+    }
+
+    public override void ChannelVoiceMemberLeaveEvent(EventSubjectOutput<EventSubjectDataBusiness<EventBodyChannelVoiceMemberLeave>> input)
+    {
+        _logger.LogTrace("DodoEventReceived: {TraceDodoEvent}", JsonSerializer.Serialize(input));
+        var e = new DodoChannelVoiceMemberLeaveEvent(input);
+        DodoEvent?.Invoke(e, e.GetType().FullName ?? string.Empty);
+    }
 }
