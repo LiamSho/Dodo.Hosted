@@ -12,6 +12,7 @@
 
 using System.Text.Json.Serialization;
 using DodoHosted.Base.Card.Enums;
+using DodoHosted.Base.JsonExtension.Extra;
 
 namespace DodoHosted.Base.Card.BaseComponent;
 
@@ -28,6 +29,7 @@ public record Text(string Content, ContentTextType Type) : ITextComponent, IRema
     /// 文本类型
     /// </summary>
     [JsonPropertyName("type")]
+    [JsonConverter(typeof(ContentTextTypeConvertor))]
     public ContentTextType Type { get; set; } = Type;
 
     /// <summary>

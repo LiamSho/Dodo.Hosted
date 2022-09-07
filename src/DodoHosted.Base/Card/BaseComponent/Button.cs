@@ -26,10 +26,10 @@ public record Button(string Name, ButtonAction Click, ButtonColor Color, string?
     public Button(string name, string url, ButtonColor color) : this(name, new ButtonAction(ButtonActionType.LinkUrl, url), color) { }
     public Button(string name, string interactCustomId, string formTitle, Type modelType)
         : this(name, new ButtonAction(ButtonActionType.Form), ButtonColor.Default, interactCustomId,
-            CardMessageSerializer.SerializeFormData(formTitle, modelType)) { }
+            modelType.SerializeFormData(formTitle)) { }
     public Button(string name, ButtonColor color, string interactCustomId, string formTitle, Type modelType)
         : this(name, new ButtonAction(ButtonActionType.Form), color, interactCustomId,
-            CardMessageSerializer.SerializeFormData(formTitle, modelType)) { }
+            modelType.SerializeFormData(formTitle)) { }
     
     [JsonPropertyName("type")]
     public BaseComponentType Type => BaseComponentType.Button;

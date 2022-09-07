@@ -28,11 +28,12 @@ public static class CardMessageSerializer
     /// </summary>
     /// <param name="cardMessage"></param>
     /// <returns><see cref="MessageBodyCard"/></returns>
-    public static MessageBodyCard Serialize(CardMessage cardMessage)
-        => new()
+    public static MessageBodyCard Serialize(this CardMessage cardMessage)
+    {
+        return new MessageBodyCard
         {
             Content = cardMessage.Content,
-            Card = new DoDo.Open.Sdk.Models.Messages.Card
+            Card = new MessageModelCard
             {
                 Title = cardMessage.Card.Title,
                 Theme = cardMessage.Card.Theme,
@@ -41,9 +42,15 @@ public static class CardMessageSerializer
                     .Select(x => (object)x).ToList()
             }
         };
+    }
 
-    [Obsolete("Not Fully Implemented")]
-    public static CardMessage Deserialize(MessageBodyCard messageBodyCard)
+    /// <summary>
+    /// 反序列化卡片消息
+    /// </summary>
+    /// <param name="messageBodyCard"></param>
+    /// <returns></returns>
+    /// <exception cref="CardMessageSerializeException"></exception>
+    public static CardMessage Deserialize(this MessageBodyCard messageBodyCard)
     {
         var card = new CardMessage
         {
@@ -62,16 +69,25 @@ public static class CardMessageSerializer
             var objectString = componentObject.ToString()!;
             var jsonDocument = JsonDocument.Parse(objectString).RootElement;
 
-            var type = StringValueType.Parse<CardComponentType>(jsonDocument.GetProperty("type").GetString());
-            if (type is null)
+            var componentType = GetComponentType(jsonDocument);
+            
+            ICardComponent? cardComponent = null;
+            try
             {
-                throw new CardMessageSerializeException("");
+                var deserialized = jsonDocument.Deserialize(componentType)!;
+                cardComponent = deserialized as ICardComponent;
+            }
+            catch (Exception)
+            {
+                // Ignore
             }
 
-            var componentType = GetCardComponentType(type);
-            var component = (ICardComponent)jsonDocument.Deserialize(componentType)!;
-
-            card.Card.Components.Add(component);
+            if (cardComponent is null)
+            {
+                throw new CardMessageSerializeException($"无法反序列化卡片组件: {jsonDocument.ToString()}");
+            }
+            
+            card.Card.Components.Add(cardComponent);
         }
 
         return card;
@@ -83,9 +99,9 @@ public static class CardMessageSerializer
     /// <param name="title">表单标题</param>
     /// <typeparam name="T">模型类</typeparam>
     /// <returns></returns>
-    public static Form SerializeFormData<T>(string title) where T : class
+    public static Form SerializeFormData<T>(this string title) where T : class
     {
-        return SerializeFormData(title, typeof(T));
+        return typeof(T).SerializeFormData(title);
     }
 
     /// <summary>
@@ -94,7 +110,7 @@ public static class CardMessageSerializer
     /// <param name="title">表单标题</param>
     /// <param name="type">模型类型</param>
     /// <returns></returns>
-    public static Form SerializeFormData(string title, Type type)
+    public static Form SerializeFormData(this Type type, string title)
     {
         var properties = type
             .GetProperties()
@@ -133,7 +149,7 @@ public static class CardMessageSerializer
     /// <remarks>
     /// 表单实体类必须包含无参构造函数
     /// </remarks>
-    public static T DeserializeFormData<T>(IReadOnlyCollection<MessageModelFormData> formData) where T : class, new()
+    public static T DeserializeFormData<T>(this IReadOnlyCollection<MessageModelFormData> formData) where T : class, new()
     {
         var properties =  typeof(T)
             .GetProperties()
@@ -148,7 +164,7 @@ public static class CardMessageSerializer
         {
             var value = formData
                 .FirstOrDefault(x => x.Key == a.Id)?
-                .value ?? string.Empty;
+                .Value ?? string.Empty;
             p.SetValue(model, value);
         }
 
@@ -170,7 +186,7 @@ public static class CardMessageSerializer
     /// </summary>
     /// <param name="enumType">枚举类型</param>
     /// <returns></returns>
-    public static List<ListSelectorOption> SerializeListSelectorOptions(Type enumType)
+    public static List<ListSelectorOption> SerializeListSelectorOptions(this Type enumType)
     {
         var options = enumType
             .GetFields()
@@ -187,7 +203,7 @@ public static class CardMessageSerializer
     /// <param name="listData">列表选择器数据</param>
     /// <typeparam name="T">源类型</typeparam>
     /// <returns></returns>
-    public static List<T> DeserializeListSelectorOptions<T>(IEnumerable<MessageModelListData> listData) where T : Enum
+    public static List<T> DeserializeListSelectorOptions<T>(this IEnumerable<MessageModelListData> listData) where T : Enum
     {
         var fields = typeof(T)
             .GetFields()
@@ -210,22 +226,42 @@ public static class CardMessageSerializer
         return list;
     }
 
-    private static readonly PropertyInfo[] s_propertyInfos = typeof(CardComponentType).GetProperties(BindingFlags.Static);
+    private static readonly List<CardComponentDescription> s_componentTypes =
+        typeof(CardComponentType)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Select(x => new CardComponentDescription(
+                (CardComponentType)x.GetValue(null)!, x.GetCustomAttribute<StringValueTypeRefAttribute>()!))
+            .ToList();
 
-    private static Type GetCardComponentType(CardComponentType type)
+    private static Type GetComponentType(JsonElement element)
     {
-        var p = s_propertyInfos.FirstOrDefault(x => x.GetConstantValue()?.ToString() == (string)type);
-        if (p is null)
+        var typeString = element.GetProperty("type").GetString();
+        var type = StringValueType.Parse<CardComponentType>(typeString);
+        if (type is null)
         {
-            throw new CardMessageSerializeException("");
+            throw new CardMessageSerializeException($"未知的卡片组件类型 {typeString ?? "NULL"}");
         }
 
-        var attr = p.GetCustomAttribute<StringValueTypeRefAttribute>();
-        if (attr is null)
+        if (type != "section")
         {
-            throw new CardMessageSerializeException("");
+            return s_componentTypes.FirstOrDefault(x => x.Type == type)!.Attr.Type;
         }
-        
-        return attr.Type;
+
+        var hasAccessory = element.TryGetProperty("accessory", out _);
+        if (hasAccessory)
+        {
+            return typeof(TextWithModule);
+        }
+            
+        var isParagraph = element.GetProperty("text").TryGetProperty("fields", out _);
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (isParagraph)
+        {
+            return typeof(MultilineText);
+        }
+
+        return typeof(TextFiled);
     }
+
+    private record CardComponentDescription(CardComponentType Type, StringValueTypeRefAttribute Attr);
 }
