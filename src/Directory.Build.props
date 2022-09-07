@@ -11,7 +11,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
-    <Copyright>Copyright ©  2022 LiamSho</Copyright>
+    <Copyright>Copyright © 2022 LiamSho</Copyright>
     <PackageProjectUrl>https://github.com/LiamSho/Dodo.Hosted</PackageProjectUrl>
     <RepositoryUrl>https://github.com/LiamSho/Dodo.Hosted</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
