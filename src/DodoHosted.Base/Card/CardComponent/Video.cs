@@ -20,8 +20,6 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// </summary>
 public record Video(string Title, string Cover, string Source) : ICardComponent
 {
-    public Video() : this(string.Empty, string.Empty, string.Empty) { }
-    
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.Video;
 

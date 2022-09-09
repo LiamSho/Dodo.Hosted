@@ -20,7 +20,10 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// </summary>
 public record ImageGroup(List<Image> Images) : ICardComponent
 {
-    public ImageGroup() : this(new List<Image>()) { }
+    /// <summary>
+    /// 多图
+    /// </summary>
+    /// <param name="images">图片组件</param>
     public ImageGroup(params Image[] images) : this(images.ToList()) { }
     
     [JsonPropertyName("type")]

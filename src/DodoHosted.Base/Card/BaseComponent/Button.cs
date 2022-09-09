@@ -20,15 +20,41 @@ namespace DodoHosted.Base.Card.BaseComponent;
 /// </summary>
 public record Button(string Name, ButtonAction Click, ButtonColor Color, string? InteractCustomId = null, Form? Form = null) : IAccessoryComponent
 {
-    public Button() : this(string.Empty, new ButtonAction(ButtonActionType.CopyContent), ButtonColor.Default) { }
-    public Button(string name, string url) : this(name, new ButtonAction(ButtonActionType.LinkUrl, url), ButtonColor.Default) { }
-    public Button(string name, ButtonAction action) : this(name, action, ButtonColor.Default) { }
-    public Button(string name, string url, ButtonColor color) : this(name, new ButtonAction(ButtonActionType.LinkUrl, url), color) { }
-    public Button(string name, string interactCustomId, string formTitle, Type modelType)
-        : this(name, new ButtonAction(ButtonActionType.Form), ButtonColor.Default, interactCustomId,
-            modelType.SerializeFormData(formTitle)) { }
-    public Button(string name, ButtonColor color, string interactCustomId, string formTitle, Type modelType)
-        : this(name, new ButtonAction(ButtonActionType.Form), color, interactCustomId,
+    /// <summary>
+    /// 空白按钮，Action 类型为 <see cref="ButtonActionType.CopyContent"/>
+    /// </summary>
+    /// <param name="name">按钮名</param>
+    public Button(string name) : this(name, new ButtonAction(ButtonActionType.CopyContent), ButtonColor.Default) { }
+
+    /// <summary>
+    /// 链接跳转按钮
+    /// </summary>
+    /// <param name="name">按钮名</param>
+    /// <param name="url">跳转的链接</param>
+    /// <param name="color">按钮色彩，默认为 <see cref="ButtonColor.Default"/></param>
+    public Button(string name, Uri url, ButtonColor? color = null)
+        : this(name, new ButtonAction(ButtonActionType.LinkUrl, url.AbsoluteUri), color ?? ButtonColor.Default) { }
+
+    /// <summary>
+    /// 回传消息按钮
+    /// </summary>
+    /// <param name="name">按钮名</param>
+    /// <param name="interactCustomId">按钮交互 ID</param>
+    /// <param name="value">回传消息值，默认为空</param>
+    /// <param name="color">按钮色彩，默认为 <see cref="ButtonColor.Default"/></param>
+    public Button(string name, string interactCustomId, string? value = null, ButtonColor? color = null)
+        : this(name, new ButtonAction(ButtonActionType.CallBack, value ?? string.Empty), color ?? ButtonColor.Default, interactCustomId) { }
+
+    /// <summary>
+    /// 表单消息
+    /// </summary>
+    /// <param name="name">按钮名</param>
+    /// <param name="interactCustomId">按钮交互 ID</param>
+    /// <param name="formTitle">表单标题</param>
+    /// <param name="modelType">表单模型</param>
+    /// <param name="color">按钮色彩，默认为 <see cref="ButtonColor.Default"/></param>
+    public Button(string name, string interactCustomId, string formTitle, Type modelType, ButtonColor? color = null)
+        : this(name, new ButtonAction(ButtonActionType.Form), color ?? ButtonColor.Default, interactCustomId,
             modelType.SerializeFormData(formTitle)) { }
     
     [JsonPropertyName("type")]

@@ -19,14 +19,25 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// <summary>
 /// 文字 + 模块
 /// </summary>
-public record TextWithModule(ITextComponent Text, IAccessoryComponent Accessory, TextWithModuleAlign Align) : ICardComponent
+public record TextWithModule(ITextComponent Text, IAccessoryComponent Accessory, TextWithModuleAlign? Align = null) : ICardComponent
 {
-    public TextWithModule() : this(new Text(string.Empty), new Image(string.Empty), TextWithModuleAlign.Left) { }
-    public TextWithModule(ITextComponent text, IAccessoryComponent accessory) : this(text, accessory, TextWithModuleAlign.Left) { }
-    public TextWithModule(string markdownText, string imageSource) : this(new Text(markdownText), new Image(imageSource), TextWithModuleAlign.Left) { }
-    public TextWithModule(string markdownText, string imageSource, TextWithModuleAlign align) : this(new Text(markdownText), new Image(imageSource), align) { }
-    public TextWithModule(string markdownText, IAccessoryComponent accessory) : this(new Text(markdownText), accessory, TextWithModuleAlign.Left) { }
-    public TextWithModule(string markdownText, IAccessoryComponent accessory, TextWithModuleAlign align) : this(new Text(markdownText), accessory, align) { }
+    /// <summary>
+    /// 文字 + 模块
+    /// </summary>
+    /// <param name="markdownText">Markdown 文本</param>
+    /// <param name="imageSource">图片源</param>
+    /// <param name="align">对齐方式，默认为 <see cref="TextWithModuleAlign.Left"/></param>
+    public TextWithModule(string markdownText, string imageSource, TextWithModuleAlign? align = null)
+        : this(new Text(markdownText), new Image(imageSource), align) { }
+    
+    /// <summary>
+    /// 文字 + 模块
+    /// </summary>
+    /// <param name="markdownText">Markdown 文本</param>
+    /// <param name="accessory">附件组件</param>
+    /// <param name="align">对齐方式，默认为 <see cref="TextWithModuleAlign.Left"/></param>
+    public TextWithModule(string markdownText, IAccessoryComponent accessory, TextWithModuleAlign? align = null)
+        : this(new Text(markdownText), accessory, align) { }
     
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.TextWithModule;
@@ -35,7 +46,7 @@ public record TextWithModule(ITextComponent Text, IAccessoryComponent Accessory,
     /// 对齐方式
     /// </summary>
     [JsonPropertyName("align")]
-    public TextWithModuleAlign Align { get; set; } = Align;
+    public TextWithModuleAlign Align { get; set; } = Align ?? TextWithModuleAlign.Left;
 
     /// <summary>
     /// 文本

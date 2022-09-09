@@ -20,8 +20,11 @@ namespace DodoHosted.Base.Card.BaseComponent;
 /// </summary>
 public record Paragraph(int Column, List<Text> Fields) : ITextComponent
 {
-    public Paragraph() : this(2, new List<Text>()) { }
-    public Paragraph(int column, params Text[] fields) : this(column, fields.ToList()) { }
+    /// <summary>
+    /// 段落
+    /// </summary>
+    /// <param name="fields">段落文本</param>
+    public Paragraph(params Text[] fields) : this(fields.Length, fields.ToList()) { }
     
     [JsonPropertyName("type")]
     public string Type => BaseComponentType.Paragraph;

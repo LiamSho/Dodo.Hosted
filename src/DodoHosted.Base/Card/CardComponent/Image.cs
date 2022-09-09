@@ -20,8 +20,6 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// </summary>
 public record Image(string Source) : ICardComponent, IAccessoryComponent, IRemarkElementComponent
 {
-    public Image() : this(string.Empty) { }
-    
     public CardComponentType Type => CardComponentType.Image;
 
     /// <summary>

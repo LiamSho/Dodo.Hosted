@@ -21,9 +21,13 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// </summary>
 public record TextFiled(Text Text) : ICardComponent
 {
-    public TextFiled() : this(new Text(string.Empty, ContentTextType.DodoMarkdown)) { }
-    public TextFiled(string content) : this(new Text(content, ContentTextType.DodoMarkdown)) { }
-    public TextFiled(string content, ContentTextType type) : this(new Text(content, type)) { }
+    /// <summary>
+    /// 文本
+    /// </summary>
+    /// <param name="content">文本内容</param>
+    /// <param name="type">文本类型，默认为 <see cref="ContentTextType.DodoMarkdown"/></param>
+    public TextFiled(string content, ContentTextType? type = null)
+        : this(new Text(content, type ?? ContentTextType.DodoMarkdown)) { }
     
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.Text;

@@ -20,27 +20,27 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// </summary>
 public record ListSelector(int Min, int Max, List<ListSelectorOption> Elements, string? Placeholder = null, string? InteractCustomId = null) : ICardComponent
 {
-    public ListSelector() : this(1, 1, new List<ListSelectorOption>()) { }
-    public ListSelector(List<ListSelectorOption> elements, string? placeholder = null, string? interactCustomId = null) 
-        : this(1, 1, elements, placeholder, interactCustomId) { }
-    public ListSelector(string? placeholder = null, string? interactCustomId = null, params ListSelectorOption[] elements) 
-        : this(1, 1, elements.ToList(), placeholder, interactCustomId) { }
-    public ListSelector(int min, int max, string? placeholder = null, string? interactCustomId = null, params ListSelectorOption[] elements)
-        : this(min, max, elements.ToList(), placeholder, interactCustomId) { }
-    public ListSelector(List<ListSelectorOption> elements,string? interactCustomId = null) 
-        : this(1, 1, elements, null, interactCustomId) { }
-    public ListSelector(string? interactCustomId = null, params ListSelectorOption[] elements) 
-        : this(1, 1, elements.ToList(), null, interactCustomId) { }
-    public ListSelector(int min, int max, string? interactCustomId = null, params ListSelectorOption[] elements)
-        : this(min, max, elements.ToList(), null, interactCustomId) { }
-    public ListSelector(int min, int max, Type modelType, string interactCustomId)
-        : this(min, max, CardMessageSerializer.SerializeListSelectorOptions(modelType), null, interactCustomId) { }
-    public ListSelector(int min, int max, Type modelType, string interactCustomId, string placeholder)
-        : this(min, max, CardMessageSerializer.SerializeListSelectorOptions(modelType), placeholder, interactCustomId) { }
-    public ListSelector(Type modelType, string interactCustomId)
-        : this(1, 1, CardMessageSerializer.SerializeListSelectorOptions(modelType), null, interactCustomId) { }
-    public ListSelector(Type modelType, string interactCustomId, string placeholder)
-        : this(1, 1, CardMessageSerializer.SerializeListSelectorOptions(modelType), placeholder, interactCustomId) { }
+    /// <summary>
+    /// 列表选择器
+    /// </summary>
+    /// <param name="interactCustomId">交互 ID</param>
+    /// <param name="placeholder">占位符</param>
+    /// <param name="min">最少选择数目，默认为 1</param>
+    /// <param name="max">最多选择数目，默认为 1</param>
+    /// <param name="elements">选择组件</param>
+    public ListSelector(string interactCustomId, string? placeholder = null, int? min = null, int? max = null, params ListSelectorOption[] elements)
+        : this(min ?? 1, max ?? 1, elements.ToList(), placeholder, interactCustomId) { }
+    
+    /// <summary>
+    /// 列表选择器
+    /// </summary>
+    /// <param name="modelType">模型类型</param>
+    /// <param name="interactCustomId">交互 ID</param>
+    /// <param name="placeholder">占位符</param>
+    /// <param name="min">最少选择数目，默认为 1</param>
+    /// <param name="max">最多选择数目，默认为 1</param>
+    public ListSelector(Type modelType, string interactCustomId, string? placeholder = null, int? min = null, int? max = null)
+        : this(min ?? 1, max ?? 1, modelType.SerializeListSelectorOptions(), placeholder, interactCustomId) { }
     
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.ListSelector;

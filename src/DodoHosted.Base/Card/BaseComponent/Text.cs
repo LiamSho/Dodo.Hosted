@@ -21,8 +21,10 @@ namespace DodoHosted.Base.Card.BaseComponent;
 /// </summary>
 public record Text(string Content, ContentTextType Type) : ITextComponent, IRemarkElementComponent
 {
-    public Text() : this(string.Empty, ContentTextType.DodoMarkdown) { }
-    
+    /// <summary>
+    /// 通用文本组件
+    /// </summary>
+    /// <param name="content">文本内容，Markdown 格式</param>
     public Text(string content) : this(content, ContentTextType.DodoMarkdown) { }
 
     /// <summary>

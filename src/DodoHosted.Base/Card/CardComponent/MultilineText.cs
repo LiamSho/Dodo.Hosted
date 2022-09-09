@@ -21,9 +21,11 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// </summary>
 public record MultilineText(Paragraph Text) : ICardComponent
 {
-    public MultilineText() : this(new Paragraph()) { }
-    public MultilineText(int cols, List<Text> fields) : this(new Paragraph(cols, fields)) { }
-    public MultilineText(int cols, params Text[] fields) : this(new Paragraph(cols, fields)) { }
+    /// <summary>
+    /// 多栏文本
+    /// </summary>
+    /// <param name="fields">段落文本</param>
+    public MultilineText(params Text[] fields) : this(new Paragraph(fields)) { }
     
     
     [JsonPropertyName("type")]

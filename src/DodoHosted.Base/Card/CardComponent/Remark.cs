@@ -20,7 +20,10 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// </summary>
 public record Remark(List<IRemarkElementComponent> Elements) : ICardComponent
 {
-    public Remark() : this(new List<IRemarkElementComponent>()) { }
+    /// <summary>
+    /// 备注
+    /// </summary>
+    /// <param name="elements">备注组件</param>
     public Remark(params IRemarkElementComponent[] elements) : this(elements.ToList()) { }
     
     [JsonPropertyName("type")]

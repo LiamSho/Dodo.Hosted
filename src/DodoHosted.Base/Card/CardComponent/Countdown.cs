@@ -20,14 +20,23 @@ namespace DodoHosted.Base.Card.CardComponent;
 /// </summary>
 public record Countdown(string? Title, long EndTime, CountdownStyle Style) : ICardComponent
 {
-    public Countdown() : this(null, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), CountdownStyle.Hour) { }
-    public Countdown(long endTime) : this(null, endTime, CountdownStyle.Hour) { }
-    public Countdown(long endTime, CountdownStyle style) : this(null, endTime, style) { }
-    public Countdown(string title, long endTime) : this(title, endTime, CountdownStyle.Hour) { }
-    public Countdown(DateTimeOffset endTime) : this(null, endTime.ToUnixTimeMilliseconds(), CountdownStyle.Hour) { }
-    public Countdown(DateTimeOffset endTime, CountdownStyle style) : this(null, endTime.ToUnixTimeMilliseconds(), style) { }
-    public Countdown(string title, DateTimeOffset endTime) : this(title, endTime.ToUnixTimeMilliseconds(), CountdownStyle.Hour) { }
-    public Countdown(string title, DateTimeOffset endTime, CountdownStyle style) : this(title, endTime.ToUnixTimeMilliseconds(), style) { }
+    /// <summary>
+    /// 倒计时组件
+    /// </summary>
+    /// <param name="endTime">结束时间，Unix 时间戳</param>
+    /// <param name="title">标题</param>
+    /// <param name="style">样式，默认为 <see cref="CountdownStyle.Hour"/></param>
+    public Countdown(long endTime, string? title = null, CountdownStyle? style = null)
+        : this(title, endTime, style ?? CountdownStyle.Hour) { }
+    
+    /// <summary>
+    /// 倒计时组件
+    /// </summary>
+    /// <param name="endTime">结束时间，<see cref="DateTimeOffset"/></param>
+    /// <param name="title">标题</param>
+    /// <param name="style">样式，默认为 <see cref="CountdownStyle.Hour"/></param>
+    public Countdown(DateTimeOffset endTime, string? title = null, CountdownStyle? style = null)
+        : this(title, endTime.ToUnixTimeMilliseconds(), style ?? CountdownStyle.Hour) { }
     
     [JsonPropertyName("type")]
     public CardComponentType Type => CardComponentType.Countdown;
