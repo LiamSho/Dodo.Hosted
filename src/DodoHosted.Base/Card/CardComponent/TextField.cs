@@ -32,5 +32,5 @@ public record TextFiled(Text Text) : ICardComponent
     /// 文本数据
     /// </summary>
     [JsonPropertyName("text")]
-    public required Text Text { get; set; } = Text;
+    public Text Text { get; set; } = Text;
 }

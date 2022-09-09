@@ -30,5 +30,5 @@ public record ImageGroup(List<Image> Images) : ICardComponent
     /// 图片列表
     /// </summary>
     [JsonPropertyName("elements")]
-    public required List<Image> Images { get; set; } = Images;
+    public List<Image> Images { get; set; } = Images;
 }
