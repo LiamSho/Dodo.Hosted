@@ -11,15 +11,16 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base;
 using DodoHosted.Base.App;
 using DodoHosted.Base.App.Interfaces;
-using DodoHosted.Base.App.Models;
+using DodoHosted.Base.Card;
+using DodoHosted.Base.Enums;
 using DodoHosted.Base.Events;
+using DodoHosted.Lib.Plugin.Helper;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -41,30 +42,24 @@ public partial class PluginManager
         var sw = Stopwatch.StartNew();
         
         var eventBody = messageEvent.Message.Data.EventBody;
-        var cmdMessage = new CommandMessage
-        {
-            IslandId = eventBody.IslandId,
-            ChannelId = eventBody.ChannelId,
-            EventId = messageEvent.Message.Data.EventId,
-            MemberId = eventBody.DodoId,
-            MessageId = eventBody.MessageId,
-            MemberLevel = eventBody.Member.Level,
-            MemberJoinTime = DateTimeOffset.Parse(eventBody.Member.JoinTime),
-            PersonalNickname = eventBody.Personal.NickName,
-            MemberNickname = eventBody.Member.NickName,
-            OriginalText = eventBody.MessageBody.Content,
-        };
-        _logger.LogTrace("接收到指令：{TraceCommandMessageReceived}，发送者：{TraceCommandSender}", message, cmdMessage.PersonalNickname);
+        var userInfo = new PluginBase.UserInfo(
+            eventBody.Personal.NickName,
+            eventBody.Personal.AvatarUrl,
+            (Sex)eventBody.Personal.Sex,
+            eventBody.Member.NickName,
+            eventBody.Member.Level,
+            DateTimeOffset.Parse(eventBody.Member.JoinTime),
+            eventBody.DodoId);
+        var eventInfo = new PluginBase.EventInfo(
+            eventBody.IslandId,
+            eventBody.ChannelId,
+            eventBody.MessageId,
+            messageEvent.Message.Data.EventId,
+            messageEvent.Message.Data.Timestamp);
+        var text = eventBody.MessageBody.Content;
+        
+        _logger.LogTrace("接收到指令：{TraceCommandMessageReceived}，发送者：{TraceCommandSender}", message, userInfo.NickName);
 
-        var args = GetCommandArgs(cmdMessage.OriginalText).ToArray();
-        _logger.LogTrace("已解析接收到的指令：{TraceReceivedCommandParsed}", $"[{string.Join(", ", args)}]");
-        if (args.Length == 0)
-        {
-            return;
-        }
-
-        var command = args[0];
-        var cmdInfo = AllCommands.FirstOrDefault(x => x.Name == command);
         PluginBase.Reply reply = async delegate(string content, bool privateMessage)
         {
             var replySw = Stopwatch.StartNew();
@@ -72,59 +67,89 @@ public partial class PluginManager
             var output = await _openApiService.SetChannelMessageSendAsync(
                 new SetChannelMessageSendInput<MessageBodyText>
                 {
-                    ChannelId = cmdMessage.ChannelId,
+                    ChannelId = eventInfo.ChannelId,
                     MessageBody = new MessageBodyText { Content = content },
-                    ReferencedMessageId = cmdMessage.MessageId,
-                    DodoId = privateMessage ? cmdMessage.MemberId : null
+                    ReferencedMessageId = eventInfo.MessageId,
+                    DodoId = privateMessage ? userInfo.DodoId : null
                 });
             replySw.Stop();
-            _logger.LogTrace("已回复消息，耗时 {TraceReplyTime} MS，消息 ID 为 {TraceReplyMessageId}", replySw.ElapsedMilliseconds, output.MessageId);
+            _logger.LogTrace("已回复消息，耗时 {TraceReplyTime} MS，消息 ID 为 {TraceReplyMessageId}",
+                replySw.ElapsedMilliseconds, output.MessageId);
             
             return output.MessageId;
         };
         
-        if (cmdInfo is null)
+        var parsed = text.GetCommandArgs();
+        if (parsed is null)
         {
-            _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
-                cmdMessage.OriginalText, CommandExecutionResult.Unknown, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
-            await _channelLogger.LogWarning(cmdMessage.IslandId, $"指令不存在：`{cmdMessage.OriginalText}`，" +
-                                      $"发送者：<@!{cmdMessage.MemberId}>，" +
-                                      $"频道：<#{cmdMessage.ChannelId}>，" +
-                                      $"消息 ID：`{cmdMessage.MessageId}`");
-            await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 不存在，执行 `{HostEnvs.CommandPrefix}help` 查看所有可用指令");
+            await reply.Invoke("指令解析失败");
+            _logger.LogWarning("指令解析失败，指令：{WarningCommandParseFailed}", text);
             return;
         }
 
-        var senderRoles = await GetMemberRole(cmdMessage.MemberId, cmdMessage.IslandId);
+        _logger.LogTrace("已解析接收到的指令：{TraceCommandParsedName} {TraceCommandParsedPath} {TraceCommandParsedArgs}",
+            parsed.CommandName,
+            $"[{string.Join(", ", parsed.Path)}]",
+            $"[{string.Join(",", parsed.Arguments.Select(x => $"{{{x.Key}:{x.Value}}}"))}]");
 
-        cmdMessage.Roles = senderRoles
-            .Select(x =>
-                new MemberRole
-                {
-                    Id = x.RoleId,
-                    Name = x.RoleName,
-                    Color = x.RoleColor,
-                    Position = x.Position,
-                    Permission = Convert.ToInt32(x.Permission, 16)
-                })
-            .ToList();
+        var cmdInfo = AllCommands.FirstOrDefault(x => x.CommandName == parsed.CommandName);
+
+        if (cmdInfo is null)
+        {
+            _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
+                text, CommandExecutionResult.Unknown, $"{userInfo.NickName} ({userInfo.DodoId})", eventInfo.ChannelId, eventInfo.MessageId);
+            await _channelLogger.LogWarning(eventInfo.IslandId, $"指令不存在：`{text}`，" +
+                                      $"发送者：<@!{userInfo.DodoId}>，" +
+                                      $"频道：<#{eventInfo.ChannelId}>，" +
+                                      $"消息 ID：`{eventInfo.MessageId}`");
+            await reply.Invoke($"指令 `{text}` 不存在，执行 `{HostEnvs.CommandPrefix}help` 查看所有可用指令");
+            return;
+        }
+
+        var senderRoles = await GetMemberRole(userInfo.DodoId, eventInfo.IslandId);
 
         var scope = _provider.CreateScope();
         
         var permissionManager = scope.ServiceProvider.GetRequiredService<IPermissionManager>();
         var result = CommandExecutionResult.Failed;
+
+        async Task<string> ReplyCard(CardMessage cardMessage, bool privateMessage)
+        {
+            var replySw = Stopwatch.StartNew();
+            _logger.LogTrace("回复{TracePrivateMessage}卡片消息", privateMessage ? "私密" : "非私密");
+            var output = await _openApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyCard>
+            {
+                ChannelId = eventInfo.ChannelId,
+                MessageBody = cardMessage.Serialize(),
+                ReferencedMessageId = eventInfo.MessageId,
+                DodoId = privateMessage ? userInfo.DodoId : null
+            });
+            replySw.Stop();
+            _logger.LogTrace("已回复卡片消息，耗时 {TraceReplyTime} MS，消息 ID 为 {TraceReplyMessageId}",
+                replySw.ElapsedMilliseconds, output.MessageId);
+
+            return output.MessageId;
+        }
+        async Task<bool> PermissionCheck(string node) =>
+            IsSuperAdmin(senderRoles) ||
+            await permissionManager.CheckPermission(node, senderRoles, eventInfo.IslandId, eventInfo.ChannelId);
+
+        var context = new PluginBase.Context(
+            new PluginBase.Functions(reply, ReplyCard, PermissionCheck),
+            userInfo, eventInfo, _openApiService, scope.ServiceProvider);
+        
         try
         {
-            result = await cmdInfo.CommandExecutor.Execute(args, cmdMessage, scope.ServiceProvider, permissionManager, reply,IsSuperAdmin(cmdMessage.Roles));
+            result = await cmdInfo.Invoke(parsed, context);
         }
         catch (Exception ex)
         {
             await reply.Invoke($"指令执行出错，Exception：`{ex.GetType().FullName}`，Message：{ex.Message}");
-            await _channelLogger.LogError(cmdMessage.IslandId,
-                $"指令执行出错：`{cmdMessage.OriginalText}`，" +
-                $"发送者：<@!{cmdMessage.MemberId}>，" +
-                $"频道：<#{cmdMessage.ChannelId}>，" +
-                $"消息 ID：`{cmdMessage.MessageId}`，" +
+            await _channelLogger.LogError(eventInfo.IslandId,
+                $"指令执行出错：`{text}`，" +
+                $"发送者：<@!{userInfo.DodoId}>，" +
+                $"频道：<#{eventInfo.ChannelId}>，" +
+                $"消息 ID：`{eventInfo.MessageId}`，" +
                 $"Exception：`{ex.GetType().FullName}`，" +
                 $"Message：{ex.Message}");
         }
@@ -134,21 +159,16 @@ public partial class PluginManager
         {
             case CommandExecutionResult.Success:
             case CommandExecutionResult.Failed:
-                break;
             case CommandExecutionResult.Unknown:
-                await reply.Invoke($"指令 `{cmdMessage.OriginalText}` 不存在或存在格式错误\n\n" +
-                                   $"指令 `{HostEnvs.CommandPrefix}{args[0]}` 的帮助描述：\n\n" +
-                                   cmdInfo.HelpText, 
-                    false);
                 break;
             case CommandExecutionResult.Unauthorized:
-                await _channelLogger.LogWarning(cmdMessage.IslandId, $"无权访问：`{cmdMessage.OriginalText}`，" +
-                                          $"发送者：<@!{cmdMessage.MemberId}>，" +
-                                          $"频道：<#{cmdMessage.ChannelId}>，" +
-                                          $"消息 ID：`{cmdMessage.MessageId}`");
+                await _channelLogger.LogWarning(eventInfo.IslandId, $"无权访问：`{text}`，" +
+                                          $"发送者：<@!{userInfo.DodoId}>，" +
+                                          $"频道：<#{eventInfo.ChannelId}>，" +
+                                          $"消息 ID：`{eventInfo.MessageId}`");
                 break;
             default:
-                await _channelLogger.LogError(cmdMessage.IslandId, $"未知的指令执行结果：`{result}`");
+                await _channelLogger.LogError(eventInfo.IslandId, $"未知的指令执行结果：`{result}`");
                 break;
         }
         
@@ -156,83 +176,13 @@ public partial class PluginManager
         
         sw.Stop();
         
-        _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，耗时：{CommandExecutionTime} MS，发送者：{CommandSender}，频道：{CommandSendChannel}，消息：{CommandMessage}",
-            cmdMessage.OriginalText, result, sw.ElapsedMilliseconds, $"{cmdMessage.PersonalNickname} ({cmdMessage.MemberId})", cmdMessage.ChannelId, cmdMessage.MessageId);
+        _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，" +
+                               "耗时：{CommandExecutionTime} MS，发送者：{CommandSender}，" +
+                               "频道：{CommandSendChannel}，消息：{CommandMessage}",
+            text, result, sw.ElapsedMilliseconds, $"{userInfo.NickName} ({userInfo.DodoId})",
+            eventInfo.ChannelId, eventInfo.MessageId);
     }
-    
-    /// <summary>
-    /// 解析获取指令参数
-    /// </summary>
-    /// <param name="commandMessage"></param>
-    /// <returns></returns>
-    private static IEnumerable<string> GetCommandArgs(string commandMessage)
-    {
-        if (string.IsNullOrEmpty(commandMessage) || commandMessage.Length < 2)
-        {
-            return Array.Empty<string>();
-        }
-        
-        var args = new List<string>();
-        var command = commandMessage[1..].TrimEnd().AsSpan();
-        var startPointer = 0;
-    
-        var inQuote = false;
-            
-        // /cmd "some thing \"in\" quote" value
-        // cmd | some thing "in" quote | value
-            
-        for (var movePointer = 0; movePointer < command.Length; movePointer++)
-        {
-            if (command[movePointer] == '"')
-            {
-                if (movePointer == 0)
-                {
-                    return new[] { commandMessage[1..] };
-                }
-                    
-                if (command[movePointer - 1] == '\\')
-                {
-                    continue;
-                }
-                    
-                inQuote = !inQuote;
-            }
-                
-            if (command[movePointer] != ' ')
-            {
-                continue;
-            }
-    
-            if (inQuote)
-            {
-                continue;
-            }
-    
-            if (command[movePointer - 1] == '"')
-            {
-                var str = command[(startPointer + 1)..^1].ToString();
-                args.Add(Regex.Unescape(str));
-            }
-            else
-            {
-                args.Add(command.Slice(startPointer, movePointer - startPointer).ToString());
-            }
-            startPointer = movePointer + 1;
-        }
 
-        if (command[^1] == '\"')
-        {
-            var str = command[(startPointer + 1)..^1].ToString();
-            args.Add(Regex.Unescape(str));
-        }
-        else
-        {
-            args.Add(command[startPointer..].ToString());
-        }
-
-        return args;
-    }
-    
     /// <summary>
     /// 获取用户身份组列表
     /// </summary>
@@ -253,12 +203,14 @@ public partial class PluginManager
     }
 
     /// <summary>
-    /// 是否用哟超级管理员权限组
+    /// 是否有超级管理员权限
     /// </summary>
     /// <param name="roles">权限组列表</param>
     /// <returns></returns>
-    private static bool IsSuperAdmin(IEnumerable<MemberRole> roles)
+    private static bool IsSuperAdmin(IEnumerable<GetMemberRoleListOutput> roles)
     {
-        return roles.Any(x => (x.Permission >> 3) % 2 == 1);
+        return roles
+            .Select(x => Convert.ToInt32(x.Permission, 16))
+            .Any(x => (x >> 3) % 2 == 1);
     }
 }

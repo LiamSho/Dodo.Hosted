@@ -10,6 +10,11 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Open.Plugin;
+namespace DodoHosted.Base.Enums;
 
-public interface ICommandExecutor { }
+public enum Sex
+{
+    Secret = -1,
+    Female = 0,
+    Male = 1
+}

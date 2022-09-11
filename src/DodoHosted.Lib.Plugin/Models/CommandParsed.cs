@@ -10,32 +10,11 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Open.Plugin;
-
 namespace DodoHosted.Lib.Plugin.Models;
 
-/// <summary>
-/// 指令清单
-/// </summary>
-public record CommandManifest
+public record CommandParsed
 {
-    /// <summary>
-    /// 指令执行器
-    /// </summary>
-    public required ICommandExecutor CommandExecutor { get; set; }
-    
-    /// <summary>
-    /// 指令方法
-    /// </summary>
-    public required CommandMethodManifest[] Methods { get; set; }
-    
-    /// <summary>
-    /// 指令名称
-    /// </summary>
     public required string CommandName { get; set; }
-    
-    /// <summary>
-    /// 指令简介
-    /// </summary>
-    public required string Description { get; set; }
+    public required string[] Path { get; set; }
+    public required Dictionary<string, string> Arguments { get; set; }
 }

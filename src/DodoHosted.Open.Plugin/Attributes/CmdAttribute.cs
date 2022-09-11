@@ -10,6 +10,17 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Open.Plugin;
+namespace DodoHosted.Open.Plugin.Attributes;
 
-public interface ICommandExecutor { }
+[AttributeUsage(AttributeTargets.Class)]
+public class CmdAttribute : Attribute
+{
+    public string Name { get; }
+    public string Description { get; }
+    
+    public CmdAttribute(string name, string description)
+    {
+        Name = name;
+        Description = description;
+    }
+}

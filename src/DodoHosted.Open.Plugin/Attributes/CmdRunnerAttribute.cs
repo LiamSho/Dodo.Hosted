@@ -10,6 +10,19 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Open.Plugin;
+namespace DodoHosted.Open.Plugin.Attributes;
 
-public interface ICommandExecutor { }
+[AttributeUsage(AttributeTargets.Method)]
+public class CmdRunnerAttribute : Attribute
+{
+    public string[] Path { get; }
+    public string PermissionNode { get; }
+    public string Description { get; }
+    
+    public CmdRunnerAttribute(string permissionNode, string description, params string[] path)
+    {
+        PermissionNode = permissionNode;
+        Description = description;
+        Path = path;
+    }
+}

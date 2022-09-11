@@ -33,7 +33,7 @@ public interface IPluginManager
     /// 获取已载入插件的信息
     /// </summary>
     /// <returns>已载入插件的 <see cref="PluginInfo"/></returns>
-    PluginInfo[] GetLoadedPluginInfos();
+    IEnumerable<PluginInfo> GetLoadedPluginInfos();
 
     /// <summary>
     /// 获取所有插件的信息
@@ -47,9 +47,9 @@ public interface IPluginManager
     /// <summary>
     /// 获取已载入的指令信息
     /// </summary>
-    /// <returns>已载入插件的 <see cref="CommandInfo"/></returns>
+    /// <returns>已载入插件的 <see cref="CommandManifest"/></returns>
     // ReSharper disable once ReturnTypeCanBeEnumerable.Global
-    CommandInfo[] GetCommandInfos();
+    IEnumerable<CommandManifest> GetCommandManifests();
     
     /// <summary>
     /// 载入插件包

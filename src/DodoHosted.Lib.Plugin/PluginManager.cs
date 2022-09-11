@@ -14,8 +14,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
-using System.Text;
-using System.Text.Json;
 using DoDo.Open.Sdk.Services;
 using DodoHosted.Base.App;
 using DodoHosted.Base.App.Interfaces;
@@ -33,7 +31,7 @@ namespace DodoHosted.Lib.Plugin;
 /// <inheritdoc />
 public partial class PluginManager : IPluginManager
 {
-    private readonly ILogger<PluginManager> _logger;
+    private readonly ILogger _logger;
     private readonly ILogger _pluginLifetimeLogger;
     private readonly ILogger _eventHandlerLogger;
     private readonly ILogger _pluginHostedServiceLogger;
@@ -77,13 +75,12 @@ public partial class PluginManager : IPluginManager
     private readonly List<HostedServiceManifest> _nativeHostedServices = new();
 
     public PluginManager(
-        ILogger<PluginManager> logger,
         ILoggerFactory loggerFactory,
         IChannelLogger channelLogger,
         IServiceProvider provider,
         OpenApiService openApiService)
     {
-        _logger = logger;
+        _logger = loggerFactory.CreateLogger("PluginManager");
         _pluginLifetimeLogger = loggerFactory.CreateLogger("PluginLifetime");
         _eventHandlerLogger = loggerFactory.CreateLogger("EventHandler");
         _pluginHostedServiceLogger = loggerFactory.CreateLogger("PluginHostedService");
@@ -96,8 +93,8 @@ public partial class PluginManager : IPluginManager
         _pluginDirectory = new DirectoryInfo(HostEnvs.PluginDirectory);
         _plugins = new ConcurrentDictionary<string, PluginManifest>();
 
-        _builtinCommands = FetchCommandExecutors(this.GetType().Assembly.GetTypes()).ToArray();
-        _builtinEventHandlers = FetchEventHandlers(this.GetType().Assembly.GetTypes()).ToArray();
+        _builtinCommands = this.GetType().Assembly.GetTypes().FetchCommandExecutors(_logger).ToArray();
+        _builtinEventHandlers = this.GetType().Assembly.GetTypes().FetchEventHandlers(_logger).ToArray();
 
         if (_pluginDirectory.Exists is false)
         {
@@ -126,9 +123,9 @@ public partial class PluginManager : IPluginManager
     }
 
     /// <inheritdoc />
-    public PluginInfo[] GetLoadedPluginInfos()
+    public IEnumerable<PluginInfo> GetLoadedPluginInfos()
     {
-        return _plugins.Select(x => x.Value.PluginInfo).ToArray();
+        return _plugins.Select(x => x.Value.PluginInfo);
     }
 
     /// <inheritdoc />
@@ -140,7 +137,7 @@ public partial class PluginManager : IPluginManager
         var bundles = _pluginDirectory.GetFiles("*.zip", SearchOption.TopDirectoryOnly);
         foreach (var fileInfo in bundles)
         {
-            var pluginInfo = await ReadPluginInfo(fileInfo);
+            var pluginInfo = await PluginLoadHelper.ReadPluginInfo(fileInfo);
 
             if (pluginInfo is null)
             {
@@ -156,11 +153,11 @@ public partial class PluginManager : IPluginManager
     }
 
     /// <inheritdoc />
-    public CommandInfo[] GetCommandInfos()
+    public IEnumerable<CommandManifest> GetCommandManifests()
     {
-        return AllCommands.Select(x => x as CommandInfo).ToArray();
+        return AllCommands;
     }
-    
+
     /// <inheritdoc />
     public async Task LoadPlugin(FileInfo bundle)
     {
@@ -173,7 +170,7 @@ public partial class PluginManager : IPluginManager
             }
 
             // 读取和解析 plugin.json 文件
-            var pluginInfo = await ReadPluginInfo(bundle);
+            var pluginInfo = await PluginLoadHelper.ReadPluginInfo(bundle);
 
             if (pluginInfo is null)
             {
@@ -221,16 +218,16 @@ public partial class PluginManager : IPluginManager
             var pluginAssemblyTypes = assembly.GetTypes();
 
             // 载入事件处理器
-            var eventHandlers = FetchEventHandlers(pluginAssemblyTypes);
+            var eventHandlers = pluginAssemblyTypes.FetchEventHandlers(_logger);
             
             // 载入指令处理器
-            var commandExecutors = FetchCommandExecutors(pluginAssemblyTypes);
+            var commandExecutors = pluginAssemblyTypes.FetchCommandExecutors(_logger);
             
             // 载入后台服务
-            var hostedServices = FetchHostedService(pluginAssemblyTypes).ToArray();
+            var hostedServices = pluginAssemblyTypes.FetchHostedService(_logger, _provider).ToArray();
             
             // 载入插件生命周期类
-            var pluginLifetime = FetchPluginLifetime(pluginAssemblyTypes);
+            var pluginLifetime = pluginAssemblyTypes.FetchPluginLifetime();
 
             var scope = _provider.CreateScope();
             
@@ -385,16 +382,16 @@ public partial class PluginManager : IPluginManager
             var types = assembly.GetTypes();
             
             // 载入事件处理器
-            var eventHandlers = FetchEventHandlers(types);
+            var eventHandlers = types.FetchEventHandlers(_logger);
             
             // 载入指令处理器
-            var commandExecutors = FetchCommandExecutors(types);
+            var commandExecutors = types.FetchCommandExecutors(_logger);
             
             // 载入后台服务
-            var hostedServices = FetchHostedService(types).ToArray();
+            var hostedServices = types.FetchHostedService(_logger, _provider).ToArray();
             
             // 载入插件生命周期类
-            var pluginLifetime = FetchPluginLifetime(types);
+            var pluginLifetime = types.FetchPluginLifetime();
 
             var scope = _provider.CreateScope();
 
@@ -447,224 +444,5 @@ public partial class PluginManager : IPluginManager
             nativePluginLifetime.Unload(_pluginLifetimeLogger);
             scope.Dispose();
         }
-    }
-
-    /// <summary>
-    /// 从 Plugin Assembly 中载入所有的事件处理器
-    /// </summary>
-    /// <param name="types">Plugin Assembly 中所有的类型</param>
-    /// <returns><see cref="EventHandlerManifest"/> 清单</returns>
-    /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    private IEnumerable<EventHandlerManifest> FetchEventHandlers(IEnumerable<Type> types)
-    {
-        var eventHandlerTypes = types
-            .Where(x => x != typeof(IDodoHostedPluginEventHandler<>))
-            .Where(x => x
-                .GetInterfaces()
-                .Any(i =>
-                    i.IsGenericType &&
-                    i.GetGenericTypeDefinition() == typeof(IDodoHostedPluginEventHandler<>)))
-            .Where(x => x.ContainsGenericParameters is false);
-
-        var manifests = new List<EventHandlerManifest>();
-        foreach (var type in eventHandlerTypes)
-        {
-            var interfaceType = type.GetInterfaces()
-                .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDodoHostedPluginEventHandler<>));
-                
-            var handler = Activator.CreateInstance(type);
-            var method = interfaceType.GetMethod("Handle");
-            var eventType = interfaceType.GetGenericArguments().FirstOrDefault();
-
-            if (handler is null)
-            {
-                throw new PluginAssemblyLoadException($"无法创建事件处理器 {type.FullName} 的实例");
-            }
-            if (method is null)
-            {
-                throw new PluginAssemblyLoadException($"找不到到事件处理器 {type.FullName} 的 Handle 方法");
-            }
-            if (eventType is null)
-            {
-                throw new PluginAssemblyLoadException($"找不到到事件处理器 {type.FullName} 的事件类型");
-            }
-            
-            _logger.LogInformation("已载入事件处理器 {LoadedEventHandler}", type.FullName);
-            
-            manifests.Add(new EventHandlerManifest
-            {
-                EventHandler = handler,
-                EventType = eventType,
-                EventTypeString = eventType.FullName!,
-                EventHandlerType = type,
-                HandlerMethod = method
-            });
-        }
-
-        return manifests;
-    }
-
-    /// <summary>
-    /// 从 Plugin Assembly 中载入所有的指令处理器
-    /// </summary>
-    /// <param name="types">Plugin Assembly 中所有的类型</param>
-    /// <returns><see cref="CommandManifest"/> 清单</returns>
-    /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    private IEnumerable<CommandManifest> FetchCommandExecutors(IEnumerable<Type> types)
-    {
-        var commandExecutorTypes = types
-            .Where(x => x != typeof(ICommandExecutor))
-            .Where(x => x.IsAssignableTo(typeof(ICommandExecutor)))
-            .Where(x => x.ContainsGenericParameters is false)
-            .ToList();
-        
-        var manifests = new List<CommandManifest>();
-        foreach (var type in commandExecutorTypes)
-        {
-            var instance = Activator.CreateInstance(type);
-            if (instance is null)
-            {
-                throw new PluginAssemblyLoadException($"无法创建指令处理器 {type.FullName} 的实例");
-            }
-
-            var ins = (ICommandExecutor)instance;
-
-            var metadata = ins.GetMetadata();
-            if (metadata is null)
-            {
-                throw new PluginAssemblyLoadException($"无法获取指令处理器 {type.FullName} 的元数据");
-            }
-            
-            _logger.LogInformation("已载入指令处理器 {LoadedCommandHandler}", type.FullName);
-            
-            manifests.Add(new CommandManifest
-            {
-                Name = metadata.CommandName,
-                Description = metadata.Description,
-                HelpText = FormatCommandHelpText(metadata.HelpText),
-                PermissionNodesText = FormatCommandPermissionNodesText(metadata.PermissionNodes),
-                CommandExecutor = ins
-            });
-        }
-
-        return manifests;
-    }
-
-    /// <summary>
-    /// 从 Plugin Assembly 中载入所有的后台服务
-    /// </summary>
-    /// <param name="types">Plugin Assembly 中所有的类型</param>
-    /// <returns><see cref="HostedServiceManifest"/> 清单</returns>
-    /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    private IEnumerable<HostedServiceManifest> FetchHostedService(IEnumerable<Type> types)
-    {
-        var hostedServiceTypes = types
-            .Where(x => x != typeof(IPluginHostedService))
-            .Where(x => x.IsAssignableTo(typeof(IPluginHostedService)))
-            .ToList();
-
-        var manifests = new List<HostedServiceManifest>();
-        foreach (var type in hostedServiceTypes)
-        {
-            var instance = Activator.CreateInstance(type);
-            if (instance is null)
-            {
-                throw new PluginAssemblyLoadException($"无法创建后台服务 {type.FullName} 的实例");
-            }
-            
-            var ins = (IPluginHostedService)instance;
-            
-            _logger.LogInformation("已载入后台服务 {LoadedHostedService} ({LoadedHostedServiceName})", type.FullName, ins.HostedServiceName);
-            
-            manifests.Add(new HostedServiceManifest
-            {
-                Job = ins,
-                Scope = _provider.CreateScope(),
-                Name = ins.HostedServiceName
-            });
-        }
-
-        return manifests;
-    }
-
-    /// <summary>
-    /// 从 Plugin Assembly 中载入插件生命周期类
-    /// </summary>
-    /// <param name="types">Plugin Assembly 中所有的类型</param>
-    /// <returns></returns>
-    private static IPluginLifetime? FetchPluginLifetime(IEnumerable<Type> types)
-    {
-        var type = types.FirstOrDefault(x => x.IsAssignableTo(typeof(IPluginLifetime)));
-        if (type is null)
-        {
-            return null;
-        }
-
-        return Activator.CreateInstance(type) as IPluginLifetime;
-    }
-
-    /// <summary>
-    /// 格式化指令帮助文档输出
-    /// </summary>
-    /// <param name="message"></param>
-    /// <returns></returns>
-    private static string FormatCommandHelpText(string message)
-    {
-        var msg = message.Replace("{{PREFIX}}", HostEnvs.CommandPrefix);
-
-        while (msg.StartsWith("\"") || msg.StartsWith("\n"))
-        {
-            msg = msg[1..];
-        }
-
-        while (msg.EndsWith("\"") || msg.EndsWith("\n"))
-        {
-            msg = msg[..^1];
-        }
-
-        return msg;
-    }
-    
-    /// <summary>
-    /// 格式化权限节点文本
-    /// </summary>
-    /// <returns></returns>
-    private static string FormatCommandPermissionNodesText(Dictionary<string, string> permissionNodes)
-    {
-        if (permissionNodes.Count == 0)
-        {
-            return "- ***该指令未配置权限节点表帮助文本***";
-        }
-        
-        var sb = new StringBuilder();
-
-        foreach (var (node, explain) in permissionNodes)
-        {
-            sb.AppendLine($"- `{node}`: {explain}");
-        }
-
-        return sb.ToString();
-    }
-
-    /// <summary>
-    /// 读取插件包中的 <c>plugin.json</c>
-    /// </summary>
-    /// <param name="file">插件包文件</param>
-    /// <returns></returns>
-    private static async Task<PluginInfo?> ReadPluginInfo(FileInfo file)
-    {
-        await using var fs = file.OpenRead();
-        using var zipArchive = new ZipArchive(fs, ZipArchiveMode.Read);
-        
-        var pluginInfoFileEntry = zipArchive.Entries.FirstOrDefault(x => x.Name == "plugin.json");
-        if (pluginInfoFileEntry is null)
-        {
-            return null;
-        }
-            
-        await using var pluginInfoReader = pluginInfoFileEntry.Open();
-
-        var pluginInfo = await JsonSerializer.DeserializeAsync<PluginInfo>(pluginInfoReader);
-        return pluginInfo;
     }
 }

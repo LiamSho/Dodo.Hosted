@@ -10,6 +10,10 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Open.Plugin;
+namespace DodoHosted.Lib.Plugin.Exceptions;
 
-public interface ICommandExecutor { }
+public class InternalProcessException : Exception
+{
+    public InternalProcessException(string className, string methodName, string msg)
+        : base("内部处理错误，类名：" + className + "，方法名：" + methodName + "，错误信息：" + msg) { }
+}

@@ -10,39 +10,37 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Base.App.Helpers;
+namespace DodoHosted.Base.Types;
 
-// ReSharper disable ConvertIfStatementToReturnStatement
-
-public static class DodoTextHelper
+public struct DodoMemberId
 {
-    public static string? ExtractChannelId(this string channelText, bool allowAsterisk = false)
+    public string Value { get; }
+    public bool Valid { get; }
+
+    public DodoMemberId(string value)
     {
-        if (channelText.StartsWith("<#") && channelText.EndsWith(">"))
-        {
-            return channelText[2..^1];
-        }
+        var extractMemberId = Extract(value);
 
-        if (channelText == "*" && allowAsterisk)
+        if (extractMemberId is null)
         {
-            return channelText;
+            Value = string.Empty;
+            Valid = false;
         }
-
-        if (long.TryParse(channelText, out _))
+        else
         {
-            return channelText;
+            Value = extractMemberId;
+            Valid = true;
         }
-
-        return null;
     }
-
-    public static string? ExtractMemberId(this string memberText)
+    
+    public static string? Extract(string memberText)
     {
         if (memberText.StartsWith("<@!") && memberText.EndsWith(">"))
         {
             return memberText[3..^1];
         }
         
+        // ReSharper disable once ConvertIfStatementToReturnStatement
         if (long.TryParse(memberText, out _))
         {
             return memberText;
