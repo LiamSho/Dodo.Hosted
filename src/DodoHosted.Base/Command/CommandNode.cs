@@ -81,9 +81,16 @@ public class CommandNode
                 
                 // 下一个
                 node = node.Parent;
-            } 
+            }
 
-            return perm;
+            if (perm.Contains('*') is false)
+            {
+                return perm;
+            }
+
+            var split = perm.Split('.').ToList();
+            var indexOfAsterisk = split.IndexOf("*");
+            return string.Join(".", split.GetRange(0, indexOfAsterisk + 1));
         }
     }
 
@@ -118,6 +125,10 @@ public class CommandNode
         _children.Remove(node);
     }
 
+    public CommandNode? GetChild(string value)
+    {
+        return _children.FirstOrDefault(x => x.Value == value);
+    }
     public IEnumerable<CommandNode> GetChildren()
     {
         return _children;
@@ -153,12 +164,21 @@ public class CommandNode
 
         return node?._children ?? Enumerable.Empty<CommandNode>();
     }
-
-    public CommandNode? GetChild(string value)
+    
+    public CommandNode? GetNode(params string[] path)
     {
-        return _children.FirstOrDefault(x => x.Value == value);
-    }
+        RequireRoot();
+        
+        var node = this;
+        // ReSharper disable once LoopCanBeConvertedToQuery
+        foreach (var p in path)
+        {
+            node = node?._children.FirstOrDefault(x => x.Value == p);
+        }
 
+        return node;
+    }
+    
     private void UpdateChildren()
     {
         Depth = Parent?.Depth + 1 ?? 0;

@@ -21,6 +21,7 @@ using DodoHosted.Base.Card;
 using DodoHosted.Base.Enums;
 using DodoHosted.Base.Events;
 using DodoHosted.Lib.Plugin.Helper;
+using DodoHosted.Lib.Plugin.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -55,10 +56,10 @@ public partial class PluginManager
             eventBody.MessageId,
             messageEvent.Message.Data.EventId,
             messageEvent.Message.Data.Timestamp);
-        var text = eventBody.MessageBody.Content;
         
         _logger.LogTrace("接收到指令：{TraceCommandMessageReceived}，发送者：{TraceCommandSender}", message, userInfo.NickName);
 
+        // Reply 委托
         PluginBase.Reply reply = async delegate(string content, bool privateMessage)
         {
             var replySw = Stopwatch.StartNew();
@@ -78,11 +79,12 @@ public partial class PluginManager
             return output.MessageId;
         };
         
-        var parsed = text.GetCommandArgs();
+        // 解析指令
+        var parsed = message.GetCommandArgs();
         if (parsed is null)
         {
             await reply.Invoke("指令解析失败");
-            _logger.LogWarning("指令解析失败，指令：{WarningCommandParseFailed}", text);
+            _logger.LogWarning("指令解析失败，指令：{WarningCommandParseFailed}", message);
             return;
         }
 
@@ -91,27 +93,53 @@ public partial class PluginManager
             $"[{string.Join(", ", parsed.Path)}]",
             $"[{string.Join(",", parsed.Arguments.Select(x => $"{{{x.Key}:{x.Value}}}"))}]");
 
+        // 检查是否是帮助请求
+        var hasHelpRequest = parsed.Arguments.TryGetValueByMultipleKey(new[] { "-help", "?" }, out var value);
+
+        var originalPath = parsed.Path;
+        if (hasHelpRequest && value == "true")
+        {
+            parsed = new CommandParsed
+            {
+                CommandName = "help",
+                Path = Array.Empty<string>(),
+                Arguments = new Dictionary<string, string>
+                {
+                    { "-name", parsed.CommandName }
+                }
+            };
+        }
+        if (originalPath.Length != 0)
+        {
+            parsed.Arguments.Add("-path", string.Join("," , originalPath));
+        }
+        
+        // 寻找指令
         var cmdInfo = AllCommands.FirstOrDefault(x => x.RootNode.Value == parsed.CommandName);
 
+        // 指令不存在
         if (cmdInfo is null)
         {
             _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
-                text, CommandExecutionResult.Unknown, $"{userInfo.NickName} ({userInfo.DodoId})", eventInfo.ChannelId, eventInfo.MessageId);
-            await _channelLogger.LogWarning(eventInfo.IslandId, $"指令不存在：`{text}`，" +
+                message, CommandExecutionResult.Unknown, $"{userInfo.NickName} ({userInfo.DodoId})", eventInfo.ChannelId, eventInfo.MessageId);
+            await _channelLogger.LogWarning(eventInfo.IslandId, $"指令不存在：`{message}`，" +
                                       $"发送者：<@!{userInfo.DodoId}>，" +
                                       $"频道：<#{eventInfo.ChannelId}>，" +
                                       $"消息 ID：`{eventInfo.MessageId}`");
-            await reply.Invoke($"指令 `{text}` 不存在，执行 `{HostEnvs.CommandPrefix}help` 查看所有可用指令");
+            await reply.Invoke($"指令 `{message}` 不存在，执行 `{HostEnvs.CommandPrefix}help` 查看所有可用指令");
             return;
         }
 
+        // 发送者角色
         var senderRoles = await GetMemberRole(userInfo.DodoId, eventInfo.IslandId);
 
+        // DI 容器 Scope
         var scope = _provider.CreateScope();
         
         var permissionManager = scope.ServiceProvider.GetRequiredService<IPermissionManager>();
         var result = CommandExecutionResult.Failed;
 
+        // ReplyCard 委托
         async Task<string> ReplyCard(CardMessage cardMessage, bool privateMessage)
         {
             var replySw = Stopwatch.StartNew();
@@ -129,10 +157,13 @@ public partial class PluginManager
 
             return output.MessageId;
         }
+        
+        // PermissionCheck 委托
         async Task<bool> PermissionCheck(string node) =>
             IsSuperAdmin(senderRoles) ||
             await permissionManager.CheckPermission(node, senderRoles, eventInfo.IslandId, eventInfo.ChannelId);
 
+        // 指令执行上下文
         var context = new PluginBase.Context(
             new PluginBase.Functions(reply, ReplyCard, PermissionCheck),
             userInfo, eventInfo, _openApiService, scope.ServiceProvider);
@@ -143,9 +174,10 @@ public partial class PluginManager
         }
         catch (Exception ex)
         {
+            // 出现错误
             await reply.Invoke($"指令执行出错，Exception：`{ex.GetType().FullName}`，Message：{ex.Message}");
             await _channelLogger.LogError(eventInfo.IslandId,
-                $"指令执行出错：`{text}`，" +
+                $"指令执行出错：`{message}`，" +
                 $"发送者：<@!{userInfo.DodoId}>，" +
                 $"频道：<#{eventInfo.ChannelId}>，" +
                 $"消息 ID：`{eventInfo.MessageId}`，" +
@@ -156,21 +188,27 @@ public partial class PluginManager
         _logger.LogTrace("指令执行结果：{TraceCommandExecutionResult}", result);
         switch (result)
         {
+            // 成功
             case CommandExecutionResult.Success:
+            // 失败
             case CommandExecutionResult.Failed:
+            // 未知的指令
             case CommandExecutionResult.Unknown:
                 break;
+            // 无权访问
             case CommandExecutionResult.Unauthorized:
-                await _channelLogger.LogWarning(eventInfo.IslandId, $"无权访问：`{text}`，" +
+                await _channelLogger.LogWarning(eventInfo.IslandId, $"无权访问：`{message}`，" +
                                           $"发送者：<@!{userInfo.DodoId}>，" +
                                           $"频道：<#{eventInfo.ChannelId}>，" +
                                           $"消息 ID：`{eventInfo.MessageId}`");
                 break;
+            // 未知执行结果
             default:
                 await _channelLogger.LogError(eventInfo.IslandId, $"未知的指令执行结果：`{result}`");
                 break;
         }
         
+        // 释放 Scope
         scope.Dispose();
         
         sw.Stop();
@@ -178,7 +216,7 @@ public partial class PluginManager
         _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，" +
                                "耗时：{CommandExecutionTime} MS，发送者：{CommandSender}，" +
                                "频道：{CommandSendChannel}，消息：{CommandMessage}",
-            text, result, sw.ElapsedMilliseconds, $"{userInfo.NickName} ({userInfo.DodoId})",
+            message, result, sw.ElapsedMilliseconds, $"{userInfo.NickName} ({userInfo.DodoId})",
             eventInfo.ChannelId, eventInfo.MessageId);
     }
 

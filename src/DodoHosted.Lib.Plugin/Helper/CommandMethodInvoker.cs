@@ -33,7 +33,7 @@ public static class CommandMethodInvoker
         
         if (node?.Method is null)
         {
-            await context.Functions.Reply.Invoke($"找不到指令，请输入 {HostEnvs.CommandPrefix}help {cmdManifest.RootNode.Value} 查看帮助");
+            await context.Functions.Reply.Invoke($"找不到指令，请输入 {HostEnvs.CommandPrefix}help -n {cmdManifest.RootNode.Value} 查看帮助");
             return CommandExecutionResult.Unknown;
         }
 
@@ -133,7 +133,7 @@ public static class CommandMethodInvoker
         return result ? CommandExecutionResult.Success : CommandExecutionResult.Failed;
     }
 
-    private static bool TryGetValueByMultipleKey<T, K>(this IReadOnlyDictionary<T, K> dictionary, IEnumerable<T> keys, out K? value) where T : notnull
+    internal static bool TryGetValueByMultipleKey<T, K>(this IReadOnlyDictionary<T, K> dictionary, IEnumerable<T> keys, out K? value) where T : notnull
     {
         foreach (var key in keys)
         {
