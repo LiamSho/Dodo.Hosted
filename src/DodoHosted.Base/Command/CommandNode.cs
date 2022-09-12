@@ -83,14 +83,7 @@ public class CommandNode
                 node = node.Parent;
             }
 
-            if (perm.Contains('*') is false)
-            {
-                return perm;
-            }
-
-            var split = perm.Split('.').ToList();
-            var indexOfAsterisk = split.IndexOf("*");
-            return string.Join(".", split.GetRange(0, indexOfAsterisk + 1));
+            return perm;
         }
     }
 

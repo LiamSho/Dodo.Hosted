@@ -30,6 +30,11 @@ public class CommandTreeBuilder
 
     public CommandTreeBuilder(string nodeName, string description, string? permNode = null, Delegate? method = null)
     {
+        if (permNode == "*")
+        {
+            throw new CommandNodeException("权限节点不可为通配符");
+        }
+        
         _nodeName = nodeName;
         _description = description;
         _permission = permNode ?? nodeName;

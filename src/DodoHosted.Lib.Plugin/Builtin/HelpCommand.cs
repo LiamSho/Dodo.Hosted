@@ -67,6 +67,6 @@ public class HelpCommand : ICommandExecutor
 
     public CommandTreeBuilder GetBuilder()
     {
-        return new CommandTreeBuilder("help", "显示帮助信息", "*", method: GetAllCommands);
+        return new CommandTreeBuilder("help", "显示帮助信息", "system.command.help", method: GetAllCommands);
     }
 }
