@@ -12,6 +12,7 @@
 
 using DodoHosted.Base;
 using DodoHosted.Base.App;
+using DodoHosted.Base.Command;
 using DodoHosted.Base.Types;
 using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
@@ -23,38 +24,44 @@ public static class CommandMethodInvoker
 {
     public static async Task<CommandExecutionResult> Invoke(this CommandManifest cmdManifest, CommandParsed commandParsed, PluginBase.Context context)
     {
-        var method = cmdManifest.Methods.FirstOrDefault(x => x.Path.SequenceEqual(commandParsed.Path));
-        if (method is null)
+        var node = cmdManifest.RootNode;
+        // ReSharper disable once LoopCanBeConvertedToQuery
+        foreach (var path in commandParsed.Path)
         {
-            await context.Functions.Reply.Invoke($"找不到指令，请输入 {HostEnvs.CommandPrefix}help {cmdManifest.CommandName} 查看帮助");
+            node = node?.GetChild(path);
+        }
+        
+        if (node?.Method is null)
+        {
+            await context.Functions.Reply.Invoke($"找不到指令，请输入 {HostEnvs.CommandPrefix}help {cmdManifest.RootNode.Value} 查看帮助");
             return CommandExecutionResult.Unknown;
         }
 
-        if (string.IsNullOrEmpty(method.PermissionNode) is false)
+        if (string.IsNullOrEmpty(node.PermissionNode) is false)
         {
-            if (await context.Functions.PermissionCheck.Invoke(method.PermissionNode) is false)
+            if (await context.Functions.PermissionCheck.Invoke(node.PermissionNode) is false)
             {
                 await context.Functions.Reply.Invoke("你没有权限执行此指令");
                 return CommandExecutionResult.Unauthorized;
             }
         }
 
-        var result = await method.Invoke(commandParsed, context, cmdManifest.CommandExecutor);
+        var result = await node.Invoke(commandParsed, context, cmdManifest.CommandExecutor);
 
         return result;
     }
     
-    private static async Task<CommandExecutionResult> Invoke(this CommandMethodManifest method, CommandParsed commandParsed, PluginBase.Context context, ICommandExecutor obj)
+    private static async Task<CommandExecutionResult> Invoke(this CommandNode node, CommandParsed commandParsed, PluginBase.Context context, ICommandExecutor obj)
     {
-        var paramLength = method.Options.Count + (method.ContextParamOrder == -1 ? 0 : 1);
+        var paramLength = node.Options!.Count + (node.ContextParamOrder == -1 ? 0 : 1);
         var parameters = new object?[paramLength];
 
-        if (method.ContextParamOrder != -1)
+        if (node.ContextParamOrder != -1)
         {
-            parameters[method.ContextParamOrder] = context;
+            parameters[(int)node.ContextParamOrder!] = context;
         }
         
-        var methodParameters = method.Options;
+        var methodParameters = node.Options;
         
         foreach (var (order, (type, attr)) in methodParameters)
         {
@@ -68,16 +75,18 @@ public static class CommandMethodInvoker
                     return CommandExecutionResult.Failed;
                 }
 
-                parameters[order] = attr.Default;
+                parameters[order] = null;
             }
             else
             {
-                if (CommandTypeHelper.SupportedClrValueTypes.Contains(type))
+                if (CommandTypeHelper.SupportedBasicValueTypes.Contains(type))
                 {
-                    var converted = Convert.ChangeType(value, type);
+                    var nonNullableType = Nullable.GetUnderlyingType(type) ?? type;
+                    
+                    var converted = Convert.ChangeType(value, nonNullableType);
                     if (converted is null)
                     {
-                        await context.Functions.Reply.Invoke($"参数类型错误，{attr.Name} 需要 {type.Name} 类型参数");
+                        await context.Functions.Reply.Invoke($"参数类型错误，{attr.Name} 需要 {nonNullableType.Name} 类型参数");
                         return CommandExecutionResult.Failed;
                     }
                     parameters[order] = converted;
@@ -117,7 +126,7 @@ public static class CommandMethodInvoker
             }
         }
 
-        var task = (Task<bool>)method.Method.Invoke(obj, parameters)!;
+        var task = (Task<bool>)node.Method!.Invoke(obj, parameters)!;
         
         var result = await task;
         

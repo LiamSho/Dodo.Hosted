@@ -10,6 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.Command;
 using DodoHosted.Open.Plugin;
 
 namespace DodoHosted.Lib.Plugin.Models;
@@ -27,15 +28,5 @@ public record CommandManifest
     /// <summary>
     /// 指令方法
     /// </summary>
-    public required CommandMethodManifest[] Methods { get; set; }
-    
-    /// <summary>
-    /// 指令名称
-    /// </summary>
-    public required string CommandName { get; set; }
-    
-    /// <summary>
-    /// 指令简介
-    /// </summary>
-    public required string Description { get; set; }
+    public required CommandNode RootNode { get; set; }
 }

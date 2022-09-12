@@ -92,7 +92,7 @@ public partial class PluginManager
             $"[{string.Join(", ", parsed.Path)}]",
             $"[{string.Join(",", parsed.Arguments.Select(x => $"{{{x.Key}:{x.Value}}}"))}]");
 
-        var cmdInfo = AllCommands.FirstOrDefault(x => x.CommandName == parsed.CommandName);
+        var cmdInfo = AllCommands.FirstOrDefault(x => x.RootNode.Value == parsed.CommandName);
 
         if (cmdInfo is null)
         {

@@ -14,12 +14,13 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
 using DodoHosted.Base;
+using DodoHosted.Base.Command;
+using DodoHosted.Base.Command.Attributes;
 using DodoHosted.Base.Types;
 using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Helper;
 using DodoHosted.Lib.Plugin.Models;
 using DodoHosted.Open.Plugin;
-using DodoHosted.Open.Plugin.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -101,69 +102,6 @@ internal static class PluginLoadHelper
         var manifests = new List<CommandManifest>();
         foreach (var type in commandExecutorTypes)
         {
-            var cmdAttr = type.GetCustomAttribute<CmdAttribute>();
-            if (cmdAttr is null)
-            {
-                throw new PluginAssemblyLoadException("CommandExecutor 必须标记 CmdAttribute");
-            }
-
-            var cmdName = cmdAttr.Name;
-            var description = cmdAttr.Description;
-
-            var methodManifests = new List<CommandMethodManifest>();
-            var methods = type
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => x.ReturnType == typeof(Task<bool>))
-                .Where(x => x.GetCustomAttribute<CmdRunnerAttribute>() is not null);
-            
-            foreach (var method in methods)
-            {
-                var cmdRunnerAttr = method.GetCustomAttribute<CmdRunnerAttribute>()!;
-                if (method.GetParameters()
-                    .SkipWhile(x => x.ParameterType == typeof(PluginBase.Context))
-                    .Select(p => p.GetCustomAttribute<CmdOptionAttribute>())
-                    .Any(cmdOption => cmdOption is null))
-                {
-                    throw new PluginAssemblyLoadException("CommandExecutor 方法的参数必须标记 CmdOptionAttribute");
-                }
-
-                var paramOptions = method.GetParameters()
-                    .Where(x => x.GetCustomAttribute<CmdOptionAttribute>() is not null)
-                    .Select(x => (x.Position, (x.ParameterType, x.GetCustomAttribute<CmdOptionAttribute>()!)))
-                    .ToDictionary(x => x.Position, y => y.Item2);
-                var unsupported = paramOptions
-                    .Where(x => CommandTypeHelper.SupportedCmdOptionTypes.Contains(x.Value.ParameterType) is false)
-                    .Select(x => x.Value)
-                    .ToArray();
-                if (unsupported.Length != 0)
-                {
-                    var msg = unsupported.Select(x => $"[{x.ParameterType.FullName}] {x.Item2.Name}");
-                    throw new PluginAssemblyLoadException($"指令执行器方法 {method.Name} 包含未知的参数类型: {string.Join(", ", msg)}");
-                }
-                
-                var contextParam = method.GetParameters()
-                    .FirstOrDefault(x => x.ParameterType == typeof(PluginBase.Context));
-                var contextParamOrder = contextParam?.Position ?? -1;
-
-                var totalParams = method.GetParameters().Length;
-                var calculatedParams = paramOptions.Count + (contextParamOrder == -1 ? 0 : 1);
-                
-                if (totalParams != calculatedParams)
-                {
-                    throw new PluginAssemblyLoadException("CommandExecutor 方法的存在不可知参数");
-                }
-                
-                methodManifests.Add(new CommandMethodManifest
-                {
-                    Method = method,
-                    Path = cmdRunnerAttr.Path,
-                    PermissionNode = cmdRunnerAttr.PermissionNode,
-                    Description = cmdRunnerAttr.Description,
-                    Options = paramOptions,
-                    ContextParamOrder = contextParamOrder
-                });
-            }
-            
             var instance = Activator.CreateInstance(type);
             if (instance is null)
             {
@@ -172,14 +110,14 @@ internal static class PluginLoadHelper
 
             var ins = (ICommandExecutor)instance;
 
+            var root = ins.GetBuilder().Build();
+            
             logger.LogInformation("已载入指令处理器 {LoadedCommandHandler}", type.FullName);
             
             manifests.Add(new CommandManifest
             {
-                CommandName = cmdName,
                 CommandExecutor = ins,
-                Description = description,
-                Methods = methodManifests.ToArray()
+                RootNode = root
             });
         }
 

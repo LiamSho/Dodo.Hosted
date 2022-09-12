@@ -10,23 +10,31 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Open.Plugin.Attributes;
+namespace DodoHosted.Base.Command.Attributes;
 
+/// <summary>
+/// 指令参数 Attribute
+/// </summary>
 [AttributeUsage(AttributeTargets.Parameter)]
 public class CmdOptionAttribute : Attribute
 {
     public string Name { get;}
     public string? Abbr { get; }
     public bool Required { get; }
-    public string HelpText { get; }
-    public object? Default { get; }
+    public string Description { get; }
 
-    public CmdOptionAttribute(string name, string? abbr = null, bool required = true, string helpText = "", object? defaultValue = default)
+    /// <summary>
+    /// 指令参数 Attribute
+    /// </summary>
+    /// <param name="name">参数名称</param>
+    /// <param name="abbr">参数简写</param>
+    /// <param name="description">简介，默认为空</param>
+    /// <param name="required">是否为必须，默认为 true</param>
+    public CmdOptionAttribute(string name, string? abbr = null, string description = "", bool required = true)
     {
         Name = name;
         Abbr = abbr;
         Required = required;
-        HelpText = helpText;
-        Default = defaultValue;
+        Description = description;
     }
 }

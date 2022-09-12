@@ -20,46 +20,55 @@ public static class CommandTypeHelper
         {
             return "字符串";
         }
-        if (type == typeof(int))
+        if (type == typeof(int) || type == typeof(int?))
         {
             return "整数";
         }
-        if (type == typeof(long))
+        if (type == typeof(long) || type == typeof(long?))
         {
             return "长整数";
         }
-        if (type == typeof(double))
+        if (type == typeof(double) || type == typeof(double?))
         {
             return "浮点数";
         }
-        if (type == typeof(DodoEmoji))
+        if (type == typeof(DodoEmoji) || type == typeof(DodoEmoji?))
         {
             return "Emoji";
         }
-        if (type == typeof(DodoChannelId))
+        if (type == typeof(DodoChannelId) || type == typeof(DodoChannelId?))
         {
             return "Dodo 频道";
         }
-        if (type == typeof(DodoChannelIdWithWildcard))
+        if (type == typeof(DodoChannelIdWithWildcard) || type == typeof(DodoChannelIdWithWildcard?))
         {
             return "Dodo 频道 (可为通配符)";
         }
-        if (type == typeof(DodoMemberId))
+        if (type == typeof(DodoMemberId) || type == typeof(DodoMemberId?))
         {
             return "Dodo ID";
         }
         
         throw new ArgumentOutOfRangeException(nameof(type), "不支持的 Command 类型");
     }
-    
-    public static readonly Type[] SupportedClrValueTypes =
+
+    public static readonly Type[] SupportedBasicValueTypes =
     {
-        typeof(string), typeof(int), typeof(long), typeof(double)
+        typeof(string), typeof(int), typeof(long), typeof(double),
+        typeof(int?), typeof(long?), typeof(double?)
     };
 
     public static readonly Type[] SupportedCmdOptionTypes =
     {
         typeof(string), typeof(int), typeof(long), typeof(double),
-        typeof(DodoChannelId), typeof(DodoChannelIdWithWildcard), typeof(DodoMemberId), typeof(DodoEmoji)
+        typeof(DodoChannelId), typeof(DodoChannelIdWithWildcard), typeof(DodoMemberId), typeof(DodoEmoji),
+        typeof(int?), typeof(long?), typeof(double?), typeof(DodoChannelId?), typeof(DodoChannelIdWithWildcard?),
+        typeof(DodoMemberId?), typeof(DodoEmoji?)
+    };
+
+    public static readonly Type[] SupportedCmdOptionNullableTypes =
+    {
+        typeof(string), typeof(int?), typeof(long?), typeof(double?), typeof(DodoChannelId?), typeof(DodoChannelIdWithWildcard?),
+        typeof(DodoMemberId?), typeof(DodoEmoji?)
     };
 }

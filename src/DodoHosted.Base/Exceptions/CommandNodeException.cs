@@ -10,17 +10,14 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Open.Plugin.Attributes;
+using System.Reflection;
 
-[AttributeUsage(AttributeTargets.Class)]
-public class CmdAttribute : Attribute
+namespace DodoHosted.Base.Exceptions;
+
+public class CommandNodeException : Exception
 {
-    public string Name { get; }
-    public string Description { get; }
-    
-    public CmdAttribute(string name, string description)
-    {
-        Name = name;
-        Description = description;
-    }
+    public CommandNodeException(string message) : base(message) { }
+
+    public CommandNodeException(MemberInfo method, string message)
+        : base($"类 {method.DeclaringType?.FullName ?? "NULL"} 指令执行器方法 {method.Name}: {message}") { } 
 }
