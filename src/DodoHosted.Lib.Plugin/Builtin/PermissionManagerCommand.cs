@@ -1,471 +1,305 @@
-// // This file is a part of Dodo.Hosted project.
-// // 
-// // Copyright (C) 2022 LiamSho and all Contributors
-// // 
-// // This program is free software: you can redistribute it and/or modify
-// // it under the terms of the GNU Affero General Public License as
-// // published by the Free Software Foundation, either version 3 of the
-// // License, or (at your option) any later version.
-// // 
-// // This program is distributed in the hope that it will be useful,
-// // but WITHOUT ANY WARRANTY
-//
-// using System.Text;
-// using DoDo.Open.Sdk.Models.Members;
-// using DoDo.Open.Sdk.Services;
-// using DodoHosted.Base;
-// using DodoHosted.Base.App.Entities;
-// using DodoHosted.Base.App.Helpers;
-// using DodoHosted.Base.App.Interfaces;
-// using DodoHosted.Base.App.Models;
-// using DodoHosted.Open.Plugin;
-// using Microsoft.Extensions.DependencyInjection;
-//
-// namespace DodoHosted.Lib.Plugin.Builtin;
-//
-// public class PermissionManagerCommand : ICommandExecutor
-// {
-//     public async Task<CommandExecutionResult> Execute(
-//         string[] args,
-//         CommandMessage message,
-//         IServiceProvider provider,
-//         IPermissionManager permissionManager,
-//         PluginBase.Reply reply,
-//         bool shouldAllow = false)
-//     {
-//         var arg = args.Skip(1).FirstOrDefault();
-//
-//         if (shouldAllow is false)
-//         {
-//             switch (arg)
-//             {
-//                 case "add" or "set" or "remove":
-//                     if (await permissionManager.CheckPermission("system.permission.modify", message) is false)
-//                     {
-//                         return CommandExecutionResult.Unauthorized;
-//                     }
-//                     break;
-//                 case "list":
-//                     if (await permissionManager.CheckPermission("system.permission.list", message) is false)
-//                     {
-//                         return CommandExecutionResult.Unauthorized;
-//                     }
-//                     break;
-//                 case "check":
-//                     if (await permissionManager.CheckPermission("system.permission.check", message) is false)
-//                     {
-//                         return CommandExecutionResult.Unauthorized;
-//                     }
-//                     break;
-//                 default:
-//                     return CommandExecutionResult.Unknown;
-//             }
-//         }
-//
-//         var openApi = provider.GetRequiredService<OpenApiService>();
-//
-//         return args switch
-//         {
-//             [_, "add", var node, var channel, var role, var value] => await RunAddPermission(node, channel, role, value, reply, message, permissionManager),
-//             [_, "set", var id, ..var param] => await RunSetPermission(id, param, reply, message, permissionManager),
-//             [_, "check", var node, var channel, var user] => await RunCheckPermission(node, channel, user, reply, message, openApi, permissionManager),
-//             [_, "list", ..var param] => await RunListPermission(param, reply, message, permissionManager),
-//             [_, "remove", var type, ..var param] => await RunRemovePermission(type, param, reply, message, permissionManager),
-//             _ => CommandExecutionResult.Unknown
-//         };
-//     }
-//
-//     public CommandMetadata GetMetadata() => new CommandMetadata(
-//         CommandName: "pm",
-//         Description: "权限管理器",
-//         HelpText: @"""
-// - `{{PREFIX}}pm add <权限节点> <#频道名/频道 ID/*> <身份组 ID/*> <allow/deny>`  添加权限组
-// - `{{PREFIX}}pm set <权限 ID> [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>] [value <allow/deny>]`  更新权限信息
-// - `{{PREFIX}}pm check <权限节点> <#频道名/频道 ID> <@用户/用户 ID>`  检查用户权限
-// - `{{PREFIX}}pm list [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>]`  列出权限表
-// - `{{PREFIX}}pm remove single <权限 ID> [--dry-run]`  移除一个权限配置
-// - `{{PREFIX}}pm remove nodes <权限节点> [--dry-run]`  按照权限节点匹配进行移除
-// - `{{PREFIX}}pm remove search <#频道名/频道 ID/*> <身份组 ID/*> [--dry-run]`  按照频道与身份组检索进行移除
-// """,
-//         PermissionNodes: new Dictionary<string, string>
-//         {
-//             { "system.permission.modify", "允许对权限进行新增(`add`)、修改(`set`)、删除操作(`remove`)" },
-//             { "system.permission.list", "允许使用 `pm list` 查看权限表" },
-//             { "system.permission.check", "允许使用 `pm check` 检查用户权限" }
-//         });
-//
-//     // pm add <node> <(#channel/\*)> <role(id/\*)> <allow/deny>
-//     private static async Task<CommandExecutionResult> RunAddPermission(
-//         string node,
-//         string channel,
-//         string role,
-//         string value,
-//         PluginBase.Reply reply,
-//         CommandMessage message,
-//         IPermissionManager permissionManager)
-//     {
-//         // 若节点有 *，则只能是最后一位为 *
-//         if (node.Contains('*'))
-//         {
-//             if (node.EndsWith("*") is false)
-//             {
-//                 await reply.Invoke("Node 不合法");
-//                 return CommandExecutionResult.Failed; 
-//             }
-//         }
-//         
-//         // 解析 Channel
-//         var channelId = channel.ExtractChannelId(true);
-//         if (channelId is null)
-//         {
-//             await reply.Invoke("Channel 不合法");
-//             return CommandExecutionResult.Failed;
-//         }
-//         
-//         // 检查 Role
-//         if (role != "*" && long.TryParse(role, out _) is false)
-//         {
-//             await reply.Invoke("Role 不合法");
-//             return CommandExecutionResult.Failed;
-//         }
-//         
-//         // 检查 Value
-//         if (value is not ("allow" or "deny"))
-//         {
-//             await reply.Invoke("Value 不合法");
-//             return CommandExecutionResult.Failed;
-//         }
-//
-//         var result = await permissionManager.AddPermission(node, message.IslandId, channelId, role, value);
-//
-//         if (result is null)
-//         {
-//             await reply.Invoke("添加权限节点失败，可能已经存在值相同的同名节点");
-//             return CommandExecutionResult.Failed;
-//         }
-//
-//         await reply.Invoke($"权限节点添加成功：`{result}`");
-//         return CommandExecutionResult.Success;
-//     }
-//     
-//     // pm set <权限 ID> [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>] [value <allow/deny>]
-//     private static async Task<CommandExecutionResult> RunSetPermission(
-//         string id,
-//         IEnumerable<string> param,
-//         PluginBase.Reply reply,
-//         CommandMessage message,
-//         IPermissionManager permissionManager)
-//     {
-//         var guidParsed = Guid.TryParse(id, out var parsedGuid);
-//         if (guidParsed is false)
-//         {
-//             await reply.Invoke("Guid 不合法");
-//             return CommandExecutionResult.Failed;
-//         }
-//         
-//         string? channel = null;
-//         string? role = null;
-//         string? value = null;
-//
-//         var skippedArgs = param.ToList();
-//         while (skippedArgs.Count != 0)
-//         {
-//             switch (skippedArgs.FirstOrDefault())
-//             {
-//                 case "channel":
-//                     skippedArgs.RemoveAt(0);
-//                     channel = skippedArgs.FirstOrDefault();
-//                     if (channel is null)
-//                     {
-//                         return CommandExecutionResult.Unknown;
-//                     }
-//                     skippedArgs.RemoveAt(0);
-//                     break;
-//                 case "role":
-//                     skippedArgs.RemoveAt(0);
-//                     role = skippedArgs.FirstOrDefault();
-//                     if (role is null)
-//                     {
-//                         return CommandExecutionResult.Unknown;
-//                     }
-//                     skippedArgs.RemoveAt(0);
-//                     break;
-//                 case "value":
-//                     skippedArgs.RemoveAt(0);
-//                     value = skippedArgs.FirstOrDefault();
-//                     if (value is null)
-//                     {
-//                         return CommandExecutionResult.Unknown;
-//                     }
-//                     skippedArgs.RemoveAt(0);
-//                     break;
-//                 default:
-//                     skippedArgs.Clear();
-//                     break;
-//             }
-//         }
-//         
-//         if (channel is not null)
-//         {
-//             channel = channel.ExtractChannelId(true);
-//             if (channel is null)
-//             {
-//                 await reply.Invoke("Channel 不合法");
-//                 return CommandExecutionResult.Failed;
-//             }
-//         }
-//
-//         if (role is not null)
-//         {
-//             if (role != "*" && long.TryParse(role, out _) is false)
-//             {
-//                 await reply.Invoke("Role 不合法");
-//                 return CommandExecutionResult.Failed;
-//             }  
-//         }
-//
-//         if (value is not null)
-//         {
-//             if (value is not ("allow" or "deny"))
-//             {
-//                 await reply.Invoke("Value 不合法");
-//                 return CommandExecutionResult.Failed;
-//             }
-//         }
-//
-//         var (ori, upt) = await permissionManager
-//             .SetPermissionSchema(message.IslandId, parsedGuid, channel, role, value);
-//
-//         if (ori is null)
-//         {
-//             await reply.Invoke($"找不到 ID 为 `{id}` 的记录");
-//             return CommandExecutionResult.Failed;
-//         }
-//
-//         await reply.Invoke($"修改成功：\n- 初始值：`{ori}`\n- 修改后：`{upt}`");
-//         return CommandExecutionResult.Success;
-//     }
-//
-//     // pm check <node> <#channel> <(@member/id)>
-//     private static async Task<CommandExecutionResult> RunCheckPermission(
-//         string node,
-//         string channel,
-//         string user,
-//         PluginBase.Reply reply,
-//         CommandMessage message,
-//         OpenApiService openApiService,
-//         IPermissionManager permissionManager)
-//     {
-//         // 检查 Node
-//         if (node.Contains('*'))
-//         {
-//             await reply.Invoke("Node 不可包含 `*`");
-//             return CommandExecutionResult.Failed;
-//         }
-//         
-//         // 解析 Channel
-//         var channelId = channel.ExtractChannelId(true);
-//         if (channelId is null)
-//         {
-//             await reply.Invoke("Channel 不合法");
-//             return CommandExecutionResult.Failed;
-//         }
-//         
-//         // 解析 Member
-//         var userId = user.ExtractMemberId();
-//         if (userId is null)
-//         {
-//             await reply.Invoke("用户 ID 不合法");
-//             return CommandExecutionResult.Failed;
-//         }
-//
-//         var memberRoles = await openApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
-//         {
-//             IslandId = message.IslandId, DodoId = userId
-//         });
-//
-//         if (memberRoles is null)
-//         {
-//             await reply.Invoke("获取用户身份组列表失败");
-//             return CommandExecutionResult.Failed;
-//         }
-//
-//         var result = await permissionManager.DescribeSchemaCheck(node, memberRoles, message.IslandId, channelId);
-//
-//         var resultString = result?.Value == "allow" ? "Allow" : "Deny";
-//
-//         var __ = result is null
-//             ? await reply.Invoke($"权限检查结果：`{resultString}`\n匹配规则：`NULL`")
-//             : await reply.Invoke($"权限检查结果：`{resultString}`\n匹配规则：`{result}`");
-//         
-//         return CommandExecutionResult.Success;
-//     }
-//
-//     // pm list [channel <#频道名/频道 ID/*>] [role <身份组 ID/*>]
-//     private static async Task<CommandExecutionResult> RunListPermission(
-//         IEnumerable<string> args,
-//         PluginBase.Reply reply,
-//         CommandMessage message,
-//         IPermissionManager permissionManager)
-//     {
-//         var skippedArgs = args.ToList();
-//         string? channel = null;
-//         string? role = null;
-//
-//         while (skippedArgs.Count != 0)
-//         {
-//             switch (skippedArgs.FirstOrDefault())
-//             {
-//                 case "channel":
-//                     skippedArgs.RemoveAt(0);
-//                     channel = skippedArgs.FirstOrDefault();
-//                     if (channel is null)
-//                     {
-//                         return CommandExecutionResult.Unknown;
-//                     }
-//                     skippedArgs.RemoveAt(0);
-//                     break;
-//                 case "role":
-//                     skippedArgs.RemoveAt(0);
-//                     role = skippedArgs.FirstOrDefault();
-//                     if (role is null)
-//                     {
-//                         return CommandExecutionResult.Unknown;
-//                     }
-//                     skippedArgs.RemoveAt(0);
-//                     break;
-//                 default:
-//                     skippedArgs.Clear();
-//                     break;
-//             }
-//         }
-//
-//         if (channel is not null)
-//         {
-//             channel = channel.ExtractChannelId(true);
-//             if (channel is null)
-//             {
-//                 await reply.Invoke("Channel 不合法");
-//                 return CommandExecutionResult.Failed;
-//             }
-//         }
-//
-//         if (role is not null)
-//         {
-//             if (role != "*" && long.TryParse(role, out _) is false)
-//             {
-//                 await reply.Invoke("Role 不合法");
-//                 return CommandExecutionResult.Failed;
-//             }  
-//         }
-//
-//         var perms = await permissionManager
-//             .GetPermissionSchemas(message.IslandId, channel, role);
-//
-//         if (perms.Count == 0)
-//         {
-//             await reply.Invoke("找不到符合检索条件的权限组");
-//             return CommandExecutionResult.Success;
-//         }
-//         
-//         var messageBuilder = new StringBuilder();
-//         messageBuilder.AppendLine("检索到的权限组：");
-//
-//         foreach (var perm in perms)
-//         {
-//             messageBuilder.AppendLine($"- Id: `{perm.Id}`，" +
-//                                       $"Node: `{perm.Node}`，" +
-//                                       $"Channel: `{perm.Channel}`，" +
-//                                       $"Role: `{perm.Role}`，" +
-//                                       $"Value: `{perm.Value}`");
-//         }
-//
-//         await reply.Invoke(messageBuilder.ToString());
-//
-//         return CommandExecutionResult.Success;
-//     }
-//     
-//     // pm remove single <权限 ID> [--dry-run]`  移除一个权限配置
-//     // pm remove nodes <权限节点> [--dry-run]`  按照权限节点匹配进行移除
-//     // pm remove search <#频道名/频道 ID/*> <身份组 ID/*> [--dry-run]`  按照频道与身份组检索进行移除
-//     private static async Task<CommandExecutionResult> RunRemovePermission(
-//         string type,
-//         IReadOnlyList<string> args,
-//         PluginBase.Reply reply,
-//         CommandMessage message,
-//         IPermissionManager permissionManager)
-//     {
-//         var dryRun = args.Contains("--dry-run");
-//
-//         var messageBuilder = new StringBuilder();
-//         messageBuilder.AppendLine(dryRun ? "`DRY-RUN` 将删除以下权限记录：" : "以下权限记录已删除：");
-//
-//         var removed = new List<PermissionSchema>();
-//         
-//         switch (type)
-//         {
-//             case "single":
-//                 var singleGuid = args.Skip(3).FirstOrDefault(x => x.StartsWith("--") is false);
-//                 var guidParsed = Guid.TryParse(singleGuid, out var parsedGuid);
-//                 if (guidParsed is false)
-//                 {
-//                     await reply.Invoke("Guid 不合法");
-//                     return CommandExecutionResult.Failed;
-//                 }
-//                 var singleResult = await permissionManager.RemovePermissionSchemaById(message.IslandId, parsedGuid, dryRun);
-//                 if (singleResult is not null)
-//                 {
-//                     removed.Add(singleResult);
-//                 }
-//                 break;
-//             case "nodes":
-//                 var node = args.Skip(3).FirstOrDefault(x => x.StartsWith("--") is false);
-//                 if (node is null)
-//                 {
-//                     await reply.Invoke("Node 不合法");
-//                     return CommandExecutionResult.Failed;
-//                 }
-//                 removed = await permissionManager.RemovePermissionSchemasByNode(message.IslandId, node, dryRun);
-//                 break;
-//             case "search":
-//                 var channel = args.Skip(3).FirstOrDefault(x => x.StartsWith("--") is false);
-//                 var role = args.Skip(4).FirstOrDefault(x => x.StartsWith("--") is false);
-//                 if (role is null || channel is null)
-//                 {
-//                     return CommandExecutionResult.Unknown;
-//                 }
-//
-//                 channel = channel.ExtractChannelId(true);
-//
-//                 if (channel is null)
-//                 {
-//                     await reply.Invoke("Channel 不合法");
-//                     return CommandExecutionResult.Failed;
-//                 }
-//                 if (role != "*" && long.TryParse(role, out _) is false)
-//                 {
-//                     await reply.Invoke("Role 不合法");
-//                     return CommandExecutionResult.Failed;
-//                 }
-//
-//                 removed = await permissionManager.RemovePermissionSchemasBySearch(message.IslandId, channel, role, dryRun);
-//                 break;
-//             default:
-//                 return CommandExecutionResult.Unknown;
-//         }
-//
-//         if (removed.Count == 0)
-//         {
-//             messageBuilder.AppendLine("- `NULL`");
-//         }
-//         else
-//         {
-//             var lines = removed.Select(x => $"- `{x}`");
-//             messageBuilder.AppendJoin('\n', lines);
-//         }
-//         
-//         await reply.Invoke(messageBuilder.ToString());
-//         
-//         return CommandExecutionResult.Success;
-//     }
-// }
+// This file is a part of Dodo.Hosted project.
+// 
+// Copyright (C) 2022 LiamSho and all Contributors
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY
+
+using System.Text;
+using DoDo.Open.Sdk.Models.Members;
+using DodoHosted.Base;
+using DodoHosted.Base.App.Interfaces;
+using DodoHosted.Base.Command.Attributes;
+using DodoHosted.Base.Command.Builder;
+using DodoHosted.Base.Types;
+using DodoHosted.Open.Plugin;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace DodoHosted.Lib.Plugin.Builtin;
+
+#pragma warning disable CA1822
+// ReSharper disable MemberCanBeMadeStatic.Global
+// ReSharper disable MemberCanBePrivate.Global
+
+public class PermissionManagerCommand : ICommandExecutor
+{
+    private static IPermissionManager GetPermissionManager(PluginBase.Context context)
+    {
+        return context.Provider.GetRequiredService<IPermissionManager>();
+    }
+    
+    public async Task<bool> AddPermission(
+        PluginBase.Context context,
+        [CmdOption("node", "n", "权限节点")] string node,
+        [CmdOption("channel", "c", "适用频道")] DodoChannelIdWithWildcard channelId,
+        [CmdOption("role", "r", "权限组 ID，可为 `*`")] string roleId,
+        [CmdOption("value", "v", "值，可为 `allow` 或 `deny`")] string value)
+    {
+        var pm = GetPermissionManager(context);
+        
+        // 若节点有 *，则只能是最后一位为 *
+        if (node.Contains('*'))
+        {
+            if (node.EndsWith("*") is false)
+            {
+                await context.Functions.Reply.Invoke("Node 不合法");
+                return false;
+            }
+        }
+         
+        // 检查 Role
+        if (roleId != "*" && long.TryParse(roleId, out _) is false)
+        {
+            await context.Functions.Reply.Invoke("Role 不合法");
+            return false;
+        }
+         
+        // 检查 Value
+        if (value is not ("allow" or "deny"))
+        { 
+            await context.Functions.Reply.Invoke("Value 不合法");
+            return false;
+        }
+
+        var result = await pm.AddPermission(node, context.EventInfo.IslandId, channelId.Value, roleId, value);
+
+        if (result is null)
+        {
+            await context.Functions.Reply.Invoke("添加权限节点失败，可能已经存在值相同的同名节点");
+            return false;
+        }
+
+        await context.Functions.Reply.Invoke($"权限节点添加成功：`{result}`");
+        return true;
+    }
+
+    public async Task<bool> SetPermission(
+        PluginBase.Context context,
+        [CmdOption("id", "i", "权限节点的 GUID")] string nodeId,
+        [CmdOption("channel", "c", "适用频道", false)] DodoChannelIdWithWildcard? channelId,
+        [CmdOption("role", "r", "权限组 ID，可为 `*`", false)] string? roleId,
+        [CmdOption("value", "v", "值，可为 `allow` 或 `deny`", false)] string? value)
+    {
+        var pm = GetPermissionManager(context);
+        
+        var guidParsed = Guid.TryParse(nodeId, out var parsedGuid);
+        if (guidParsed is false)
+        {
+            await context.Functions.Reply.Invoke("Guid 不合法");
+            return false;
+        }
+
+        
+        if (roleId is not null)
+        {
+            if (roleId != "*" && long.TryParse(roleId, out _) is false)
+            {
+                await context.Functions.Reply.Invoke("Role 不合法");
+                return false;
+            }  
+        }
+
+        if (value is not null)
+        {
+            if (value is not ("allow" or "deny"))
+            {
+                await context.Functions.Reply.Invoke("Value 不合法");
+                return false;
+            }
+        }
+
+        var (ori, upt) = await pm
+            .SetPermissionSchema(context.EventInfo.IslandId, parsedGuid, channelId?.Value, roleId, value);
+
+        if (ori is null)
+        {
+            await context.Functions.Reply.Invoke($"找不到 ID 为 `{nodeId}` 的记录");
+            return false;
+        }
+
+        await context.Functions.Reply.Invoke($"修改成功：\n- 初始值：`{ori}`\n- 修改后：`{upt}`");
+        return true;
+    }
+
+    public async Task<bool> RemovePermissionById(
+        PluginBase.Context context,
+        [CmdOption("id", "i", "权限节点的 GUID")] string nodeId,
+        [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
+    {
+        var pm = GetPermissionManager(context);
+        
+        var dryRun = isDryRun ?? false;
+        
+        var messageBuilder = new StringBuilder();
+        messageBuilder.AppendLine(dryRun ? "`DRY-RUN` 将删除以下权限记录：" : "以下权限记录已删除：");
+
+        var guidParsed = Guid.TryParse(nodeId, out var parsedGuid);
+        if (guidParsed is false)
+        {
+            await context.Functions.Reply.Invoke("Guid 不合法");
+            return false;
+        }
+        
+        var removePermissionSchema = await pm.RemovePermissionSchemaById(context.EventInfo.IslandId, parsedGuid, dryRun);
+        if (removePermissionSchema is not null)
+        {
+            messageBuilder.AppendLine("- `NULL`");
+        }
+        else
+        {
+            messageBuilder.AppendLine($"- {removePermissionSchema}");
+        }
+
+        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        return true;
+    }
+
+    public async Task<bool> RemovePermissionByNode(
+        PluginBase.Context context,
+        [CmdOption("node", "n", "权限节点")] string node,
+        [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
+    {
+        var pm = GetPermissionManager(context);
+        
+        var dryRun = isDryRun ?? false;
+        
+        var messageBuilder = new StringBuilder();
+        messageBuilder.AppendLine(dryRun ? "`DRY-RUN` 将删除以下权限记录：" : "以下权限记录已删除：");
+
+        var removePermissionSchema = await pm.RemovePermissionSchemasByNode(context.EventInfo.IslandId, node, dryRun);
+        if (removePermissionSchema.Count == 0)
+        {
+            messageBuilder.AppendLine("- `NULL`");
+        }
+        else
+        {
+            messageBuilder.AppendLine($"- {removePermissionSchema}");
+        }
+
+        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        return true;
+    }
+    
+    public async Task<bool> RemovePermissionBySearch(
+        PluginBase.Context context,
+        [CmdOption("channel", "c", "适用频道")] DodoChannelIdWithWildcard channelId,
+        [CmdOption("role", "r", "权限组 ID，可为 `*`")] string roleId,
+        [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
+    {
+        var pm = GetPermissionManager(context);
+        
+        var dryRun = isDryRun ?? false;
+        
+        var messageBuilder = new StringBuilder();
+        messageBuilder.AppendLine(dryRun ? "`DRY-RUN` 将删除以下权限记录：" : "以下权限记录已删除：");
+
+        var removePermissionSchema = await pm.RemovePermissionSchemasBySearch(context.EventInfo.IslandId, channelId.Value, roleId, dryRun);
+        if (removePermissionSchema.Count == 0)
+        {
+            messageBuilder.AppendLine("- `NULL`");
+        }
+        else
+        {
+            messageBuilder.AppendLine($"- {removePermissionSchema}");
+        }
+
+        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        return true;
+    }
+
+    public async Task<bool> ListPermissions(
+        PluginBase.Context context,
+        [CmdOption("channel", "c", "适用频道", false)] DodoChannelIdWithWildcard? channelId,
+        [CmdOption("role", "r", "权限组 ID，可为 `*`", false)] string? roleId)
+    {
+        var pm = GetPermissionManager(context);
+        
+        if (roleId is not null)
+        {
+            if (roleId != "*" && long.TryParse(roleId, out _) is false)
+            {
+                await context.Functions.Reply.Invoke("Role 不合法");
+                return false;
+            }
+        }
+        
+        var perms = await pm.GetPermissionSchemas(context.EventInfo.IslandId, channelId?.Value, roleId);
+
+        if (perms.Count == 0)
+        {
+            await context.Functions.Reply.Invoke("找不到符合检索条件的权限组");
+            return true;
+        }
+        
+        var messageBuilder = new StringBuilder();
+        messageBuilder.AppendLine("检索到的权限组：");
+
+        foreach (var perm in perms)
+        {
+            messageBuilder.AppendLine($"- Id: `{perm.Id}`，" +
+                                      $"Node: `{perm.Node}`，" +
+                                      $"Channel: `{perm.Channel}`，" +
+                                      $"Role: `{perm.Role}`，" +
+                                      $"Value: `{perm.Value}`");
+        }
+
+        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+
+        return true;
+    }
+
+    public async Task<bool> CheckPermission(
+        PluginBase.Context context,
+        [CmdOption("node", "n", "权限节点")] string node,
+        [CmdOption("channel", "c", "适用频道")] DodoChannelId channelId, 
+        [CmdOption("user", "u", "用户")] DodoMemberId memberId)
+    {
+        var pm = GetPermissionManager(context);
+        
+        // 检查 Node
+        if (node.Contains('*'))
+        {
+            await context.Functions.Reply.Invoke("Node 不可包含 `*`");
+            return false;
+        }
+        
+        var memberRoles = await context.OpenApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
+        {
+            IslandId = context.EventInfo.IslandId, DodoId = memberId.Value
+        });
+        
+        if (memberRoles is null)
+        {
+            await context.Functions.Reply.Invoke("获取用户身份组列表失败");
+            return false;
+        }
+        
+        var result = await pm.DescribeSchemaCheck(node, memberRoles, context.EventInfo.IslandId, channelId.Value);
+
+        var resultString = result?.Value == "allow" ? "Allow" : "Deny";
+
+        var __ = result is null
+            ? await context.Functions.Reply.Invoke($"权限检查结果：`{resultString}`\n匹配规则：`NULL`")
+            : await context.Functions.Reply.Invoke($"权限检查结果：`{resultString}`\n匹配规则：`{result}`");
+
+        return true;
+    }
+
+    public CommandTreeBuilder GetBuilder()
+    {
+        return new CommandTreeBuilder("pm", "权限管理器", "system.permission")
+            .Then("add", "添加权限节点", "modify", AddPermission)
+            .Then("set", "修改权限节点", "modify", SetPermission)
+            .Then("remove", "移除权限节点", "modify", builder: x => x
+                .Then("single", "根据 ID 移除单个权限节点", string.Empty, RemovePermissionById)
+                .Then("nodes", "根据节点匹配移除多个权限节点", string.Empty, RemovePermissionByNode)
+                .Then("search", "根据频道与身份组检索进行移除", string.Empty, RemovePermissionBySearch))
+            .Then("list", "列出权限节点", "list", ListPermissions)
+            .Then("check", "测试用户权限检查", "check", CheckPermission);
+    }
+}
