@@ -60,12 +60,11 @@ public static class HelpMessageCard
                 var attrs = new List<string>
                 {
                     cmdOption.Required ? "`必填`" : "`可选`",
-                    $"`类型：{type.GetFriendlyName()}`"
+                    $"`{type.GetFriendlyName()}`"
                 };
 
                 card.AddComponent(new Header(title));
-                card.AddComponent(new TextFiled(string.Join(" ", attrs)));
-                card.AddComponent(new TextFiled(cmdOption.Description));
+                card.AddComponent(new TextFiled($"{string.Join(" ", attrs)} {cmdOption.Description}"));
             }
         }
 
@@ -80,8 +79,7 @@ public static class HelpMessageCard
         foreach (var child in children)
         {
             card.AddComponent(new Header(string.Join(" ", child.Value)));
-            card.AddComponent(new TextFiled($"权限：`{child.PermissionNode}`"));
-            card.AddComponent(new TextFiled(child.Description));
+            card.AddComponent(new TextFiled($"`{child.PermissionNode}` {child.Description}"));
         }
         
         return card;
