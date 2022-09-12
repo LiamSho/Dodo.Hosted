@@ -30,4 +30,13 @@ public record CardMessage
     /// </summary>
     [JsonPropertyName("card")]
     public required Card Card { get; set; }
+
+    /// <summary>
+    /// 向组件容器中新增一个组件
+    /// </summary>
+    /// <param name="component"></param>
+    public void AddComponent(ICardComponent component)
+    {
+        Card.Components.Add(component);
+    }
 }
