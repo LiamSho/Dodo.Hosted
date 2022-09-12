@@ -71,6 +71,11 @@ public static class CommandMethodInvoker
             {
                 if (attr.Required)
                 {
+                    if (type == typeof(bool))
+                    {
+                        parameters[order] = false;
+                    }
+                    
                     await context.Functions.Reply.Invoke($"缺少参数 {attr.Name}");
                     return CommandExecutionResult.Failed;
                 }

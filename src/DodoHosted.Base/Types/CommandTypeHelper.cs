@@ -32,6 +32,10 @@ public static class CommandTypeHelper
         {
             return "浮点数";
         }
+        if (type == typeof(bool) || type == typeof(bool?))
+        {
+            return "布尔值";
+        }
         if (type == typeof(DodoEmoji) || type == typeof(DodoEmoji?))
         {
             return "Emoji";
@@ -48,27 +52,27 @@ public static class CommandTypeHelper
         {
             return "Dodo ID";
         }
-        
+
         throw new ArgumentOutOfRangeException(nameof(type), "不支持的 Command 类型");
     }
 
     public static readonly Type[] SupportedBasicValueTypes =
     {
-        typeof(string), typeof(int), typeof(long), typeof(double),
-        typeof(int?), typeof(long?), typeof(double?)
+        typeof(string), typeof(int), typeof(long), typeof(double), typeof(bool),
+        typeof(int?), typeof(long?), typeof(double?), typeof(bool?)
     };
 
     public static readonly Type[] SupportedCmdOptionTypes =
     {
-        typeof(string), typeof(int), typeof(long), typeof(double),
+        typeof(string), typeof(int), typeof(long), typeof(double), typeof(bool),
         typeof(DodoChannelId), typeof(DodoChannelIdWithWildcard), typeof(DodoMemberId), typeof(DodoEmoji),
-        typeof(int?), typeof(long?), typeof(double?), typeof(DodoChannelId?), typeof(DodoChannelIdWithWildcard?),
-        typeof(DodoMemberId?), typeof(DodoEmoji?)
+        typeof(int?), typeof(long?), typeof(double?), typeof(bool?),
+        typeof(DodoChannelId?), typeof(DodoChannelIdWithWildcard?), typeof(DodoMemberId?), typeof(DodoEmoji?)
     };
 
     public static readonly Type[] SupportedCmdOptionNullableTypes =
     {
-        typeof(string), typeof(int?), typeof(long?), typeof(double?), typeof(DodoChannelId?), typeof(DodoChannelIdWithWildcard?),
-        typeof(DodoMemberId?), typeof(DodoEmoji?)
+        typeof(string), typeof(int?), typeof(long?), typeof(double?), typeof(bool?),
+        typeof(DodoChannelId?), typeof(DodoChannelIdWithWildcard?), typeof(DodoMemberId?), typeof(DodoEmoji?)
     };
 }
