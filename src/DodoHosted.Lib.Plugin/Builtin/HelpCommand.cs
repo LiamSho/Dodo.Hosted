@@ -51,7 +51,7 @@ public class HelpCommand : ICommandExecutor
 
         var node = commandPath is null
             ? manifest.RootNode
-            : manifest.RootNode.GetNode(commandPath);
+            : manifest.RootNode.GetNode(commandPath.Split(","));
 
         if (node is null)
         {
