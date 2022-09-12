@@ -11,14 +11,8 @@
 // but WITHOUT ANY WARRANTY
 
 using System.IO.Compression;
-using System.Reflection;
 using System.Text.Json;
-using DodoHosted.Base;
-using DodoHosted.Base.Command;
-using DodoHosted.Base.Command.Attributes;
-using DodoHosted.Base.Types;
 using DodoHosted.Lib.Plugin.Exceptions;
-using DodoHosted.Lib.Plugin.Helper;
 using DodoHosted.Lib.Plugin.Models;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.DependencyInjection;

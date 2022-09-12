@@ -21,7 +21,6 @@ using DodoHosted.Base.Card;
 using DodoHosted.Base.Enums;
 using DodoHosted.Base.Events;
 using DodoHosted.Lib.Plugin.Helper;
-using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
