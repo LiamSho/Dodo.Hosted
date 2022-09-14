@@ -236,6 +236,42 @@ public class IslandManagerCommand : ICommandExecutor
         return true;
     }
 
+    public async Task<bool> SendReaction(PluginBase.Context context,
+        [CmdOption("id", "i", "消息 ID")] string msgId,
+        [CmdOption("emoji", "e", "反应 Emoji")] DodoEmoji emoji)
+    {
+        await context.OpenApiService.SetChannelMessageReactionAddAsync(new SetChannelMessageReactionAddInput
+        {
+            MessageId = msgId, Emoji = new MessageModelEmoji { Id = emoji.EmojiId.ToString(), Type = 1 }
+        }, true);
+
+        return true;
+    }
+    
+    public async Task<bool> DeleteMessage(PluginBase.Context context,
+        [CmdOption("id", "i", "消息 ID")] string msgId,
+        [CmdOption("reason", "r", "删除原因", false)] string? reason)
+    {
+        await context.OpenApiService.SetChannelMessageWithdrawAsync(new SetChannelMessageWithdrawInput
+        {
+            MessageId = msgId, Reason = reason
+        }, true);
+
+        return true;
+    }
+    
+    public async Task<bool> DeleteReaction(PluginBase.Context context,
+        [CmdOption("id", "i", "消息 ID")] string msgId,
+        [CmdOption("emoji", "e", "反应 Emoji")] DodoEmoji emoji)
+    {
+        await context.OpenApiService.SetChannelMessageReactionRemoveAsync(new SetChannelMessageReactionRemoveInput
+        {
+            MessageId = msgId, Emoji = new MessageModelEmoji { Id = emoji.EmojiId.ToString(), Type = 1 }
+        }, true);
+
+        return true;
+    }
+
     public CommandTreeBuilder GetBuilder()
     {
         return new CommandTreeBuilder("island", "群组管理", "system.island")
@@ -251,7 +287,11 @@ public class IslandManagerCommand : ICommandExecutor
                 .Then("token", "获取群组 WebAPI Token", "web", GetWebApiToken))
             .Then("send", "发送消息", "message.send", builder: x => x
                 .Then("text", "发送文字消息", "text", SendText)
-                .Then("image", "发送图片消息", "image", SendImage));
+                .Then("image", "发送图片消息", "image", SendImage)
+                .Then("reaction", "发送消息反应", "reaction", SendReaction))
+            .Then("delete", "删除消息", "message.delete", builder: x => x
+                .Then("message", "删除消息", "message", DeleteMessage)
+                .Then("reaction", "删除消息反应", "reaction", DeleteReaction));
     }
 
     private static IMongoCollection<IslandSettings> GetIslandSettingsCollection(PluginBase.Context context)
