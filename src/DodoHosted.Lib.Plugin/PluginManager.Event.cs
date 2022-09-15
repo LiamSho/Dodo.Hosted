@@ -55,7 +55,7 @@ public partial class PluginManager
         // 若 PluginIdentifier 为 其他值，运行指定事件处理器
         var eventHandlers = pluginIdentifier switch
         {
-            "native" => LocalEventHandlers,
+            "native" => NativeEventHandlers,
             null => AllEventHandlers,
             _ => SpecificEventHandlers(pluginIdentifier)
         };

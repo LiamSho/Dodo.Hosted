@@ -45,22 +45,17 @@ public partial class PluginManager : IPluginManager
     private readonly DirectoryInfo _pluginCacheDirectory;
     private readonly DirectoryInfo _pluginDirectory;
 
-    private readonly CommandManifest[] _builtinCommands;
-    private readonly EventHandlerManifest[] _builtinEventHandlers;
-
     private IEnumerable<CommandManifest> AllCommands => _plugins.IsEmpty
-        ? _builtinCommands.Concat(_nativeCommandExecutors)
+        ? _nativeCommandExecutors
         : _plugins.Values
             .SelectMany(x => x.CommandManifests)
-            .Concat(_builtinCommands)
             .Concat(_nativeCommandExecutors)
             .ToArray();
 
-    private IEnumerable<EventHandlerManifest> LocalEventHandlers => _builtinEventHandlers
-        .Concat(_nativeEventHandlers);
     private IEnumerable<EventHandlerManifest> AllEventHandlers => _plugins.IsEmpty
-        ? LocalEventHandlers
-        : _plugins.Values.SelectMany(x => x.EventHandlers).Concat(LocalEventHandlers);
+        ? _nativeEventHandlers
+        : _plugins.Values.SelectMany(x => x.EventHandlers).Concat(_nativeEventHandlers);
+    private IEnumerable<EventHandlerManifest> NativeEventHandlers => _nativeEventHandlers;
     private IEnumerable<EventHandlerManifest> SpecificEventHandlers(string identifier) =>
         _plugins.Values.FirstOrDefault(x => x.PluginInfo.Identifier == identifier)?.EventHandlers
         ?? Enumerable.Empty<EventHandlerManifest>();
@@ -93,9 +88,6 @@ public partial class PluginManager : IPluginManager
         _pluginDirectory = new DirectoryInfo(HostEnvs.PluginDirectory);
         _plugins = new ConcurrentDictionary<string, PluginManifest>();
 
-        _builtinCommands = this.GetType().Assembly.GetTypes().FetchCommandExecutors(_logger).ToArray();
-        _builtinEventHandlers = this.GetType().Assembly.GetTypes().FetchEventHandlers(_logger).ToArray();
-
         if (_pluginDirectory.Exists is false)
         {
             _pluginDirectory.Create();
@@ -112,6 +104,8 @@ public partial class PluginManager : IPluginManager
         {
             await RunEvent(new DodoHostedWebRequestEvent(island, body), webRequestTypeFullName, identifier == "*" ? null : identifier);
         };
+        
+        NativeAssemblies.Add(this.GetType().Assembly);
     }
 
     /// <inheritdoc />
@@ -221,7 +215,7 @@ public partial class PluginManager : IPluginManager
             var eventHandlers = pluginAssemblyTypes.FetchEventHandlers(_logger);
             
             // 载入指令处理器
-            var commandExecutors = pluginAssemblyTypes.FetchCommandExecutors(_logger);
+            var commandExecutors = pluginAssemblyTypes.FetchCommandExecutors(_logger, _provider);
             
             // 载入后台服务
             var hostedServices = pluginAssemblyTypes.FetchHostedService(_logger, _provider).ToArray();
@@ -385,7 +379,7 @@ public partial class PluginManager : IPluginManager
             var eventHandlers = types.FetchEventHandlers(_logger);
             
             // 载入指令处理器
-            var commandExecutors = types.FetchCommandExecutors(_logger);
+            var commandExecutors = types.FetchCommandExecutors(_logger, _provider);
             
             // 载入后台服务
             var hostedServices = types.FetchHostedService(_logger, _provider).ToArray();

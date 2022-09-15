@@ -24,6 +24,7 @@ public class CommandNode
     public string Description { get; init; }
     public MethodInfo? Method { get; init; }
     public int? ContextParamOrder { get; init; }
+    public Dictionary<int, Type> ServiceOptions { get; init; }
     public Dictionary<int, (Type, CmdOptionAttribute)> Options { get; init; }
 
     public int MaxDepth
@@ -92,6 +93,7 @@ public class CommandNode
         MethodInfo? method = null,
         string? permNode = null,
         int? contentParamOrder = null,
+        Dictionary<int, Type>? serviceOptions = null,
         Dictionary<int, (Type, CmdOptionAttribute)>? options = null)
     {
         Value = value;
@@ -101,6 +103,7 @@ public class CommandNode
         
         Method = method;
         ContextParamOrder = contentParamOrder;
+        ServiceOptions = serviceOptions ?? new Dictionary<int, Type>();
         Options = options ?? new Dictionary<int, (Type, CmdOptionAttribute)>();
         
         _permissionNode = permNode;

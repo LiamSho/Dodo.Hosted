@@ -63,13 +63,13 @@ public class CommandTreeBuilder
         return this;
     }
 
-    public CommandNode Build()
+    public CommandNode Build(IServiceProvider serviceProvider)
     {
-        BuildMethodMetadata(_method, out var contextParamOrder, out var paramOptions);
+        BuildMethodMetadata(_method, serviceProvider, out var contextParamOrder, out var serviceOptions, out var paramOptions);
 
-        var current = new CommandNode(_nodeName, _description, _method, _permission, contextParamOrder, paramOptions);
+        var current = new CommandNode(_nodeName, _description, _method, _permission, contextParamOrder, serviceOptions, paramOptions);
 
-        var children = _children.Select(x => x.Build()).ToArray();
+        var children = _children.Select(x => x.Build(serviceProvider)).ToArray();
         
         foreach (var child in children)
         {
@@ -90,29 +90,57 @@ public class CommandTreeBuilder
         return current;
     }
 
-    private static void BuildMethodMetadata(MethodInfo? methodInfo, out int? contextParamOrder, out Dictionary<int, (Type, CmdOptionAttribute)>? paramOptions)
+    private static void BuildMethodMetadata(
+        MethodInfo? methodInfo,
+        IServiceProvider serviceProvider,
+        out int? contextParamOrder,
+        out Dictionary<int, Type>? serviceOptions,
+        out Dictionary<int, (Type, CmdOptionAttribute)>? paramOptions)
     {
         if (methodInfo is null)
         {
             contextParamOrder = null;
             paramOptions = null;
+            serviceOptions = null;
             
             return;
         }
         
         var parameters = methodInfo.GetParameters();
         
-        // 除了 PluginBase.Context 之外的参数，均需要带有 CmdOptionAttribute
-        if (parameters
-            .SkipWhile(x => x.ParameterType == typeof(PluginBase.Context))
-            .Select(p => p.GetCustomAttribute<CmdOptionAttribute>())
-            .Any(cmdOption => cmdOption is null))
+        // 无 Attribute 的参数只能有 PluginBase.Context 一个
+        var noAttrParams = parameters
+            .Where(x => x.GetCustomAttribute<CmdOptionAttribute>() is null &&
+                            x.GetCustomAttribute<CmdInjectAttribute>() is null)
+            .Select(x => x.ParameterType)
+            .ToArray();
+        var paramValid = noAttrParams.Length switch
         {
-            throw new CommandNodeException(methodInfo, "参数必须标记 CmdOptionAttribute");
+            0 => true,
+            1 => noAttrParams.First() == typeof(PluginBase.Context),
+            _ => false
+        };
+        
+        if (paramValid is false)
+        {
+            throw new CommandNodeException(methodInfo, "存在未知参数");
         }
 
+        // 获取 Context 位置
+        var contextParam = parameters.FirstOrDefault(x => x.ParameterType == typeof(PluginBase.Context));
+        contextParamOrder = contextParam?.Position ?? -1;
+
+        // 获取参数选项
+        paramOptions = GetParameterOptions(parameters, methodInfo);
+        
+        // 获取服务选项
+        serviceOptions = GetServiceOptions(parameters, serviceProvider, methodInfo);
+    }
+
+    private static Dictionary<int, (Type, CmdOptionAttribute)> GetParameterOptions(IEnumerable<ParameterInfo> parameters, MemberInfo methodInfo)
+    {
         // 参数列表
-        paramOptions = parameters
+        var paramOptions = parameters
             .Where(x => x.GetCustomAttribute<CmdOptionAttribute>() is not null)
             .Select(x => (x.Position, (x.ParameterType, x.GetCustomAttribute<CmdOptionAttribute>()!)))
             .ToDictionary(x => x.Position, y => y.Item2);
@@ -166,17 +194,25 @@ public class CommandTreeBuilder
         {
             throw new CommandNodeException(methodInfo, $"包含错误的参数: {string.Join(", ", unsupported)}");
         }
-                
-        var contextParam = methodInfo.GetParameters()
-            .FirstOrDefault(x => x.ParameterType == typeof(PluginBase.Context));
-        contextParamOrder = contextParam?.Position ?? -1;
 
-        var totalParams = methodInfo.GetParameters().Length;
-        var calculatedParams = paramOptions.Count + (contextParamOrder == -1 ? 0 : 1);
-                
-        if (totalParams != calculatedParams)
+        return paramOptions;
+    }
+    
+    private static Dictionary<int, Type> GetServiceOptions(IEnumerable<ParameterInfo> parameters, IServiceProvider serviceProvider, MemberInfo methodInfo)
+    {
+        var serviceOptions = parameters
+            .Where(x => x.GetCustomAttribute<CmdInjectAttribute>() is not null)
+            .ToDictionary(x => x.Position, y => y.ParameterType);
+
+        foreach (var (_, type) in serviceOptions)
         {
-            throw new CommandNodeException(methodInfo, "存在不可知参数");
+            var contains = serviceProvider.GetService(type);
+            if (contains is null)
+            {
+                throw new CommandNodeException(methodInfo, $"找不到服务 {type.FullName}");
+            }
         }
+
+        return serviceOptions;
     }
 }

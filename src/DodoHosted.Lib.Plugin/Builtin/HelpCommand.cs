@@ -15,7 +15,6 @@ using DodoHosted.Base.Command.Attributes;
 using DodoHosted.Base.Command.Builder;
 using DodoHosted.Lib.Plugin.Helper;
 using DodoHosted.Open.Plugin;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
@@ -27,21 +26,20 @@ public class HelpCommand : ICommandExecutor
 {
     public async Task<bool> GetAllCommands(
         PluginBase.Context context,
+        [CmdInject] IPluginManager pluginManager,
         [CmdOption("name", "n", "指令的名称，为空时显示所有可用指令", false)] string? commandName,
         [CmdOption("path", "p", "指令的路径，使用 `,` 分隔，为空时显示所有可用指令", false)] string? commandPath)
     {
-        var pm = context.Provider.GetRequiredService<IPluginManager>();
-        
         if (commandName is null)
         {
-            var allCommandHelpCard = await pm.GetCommandManifests()
+            var allCommandHelpCard = await pluginManager.GetCommandManifests()
                 .GetCommandListMessage(context.Functions.PermissionCheck);
 
             await context.Functions.ReplyCard.Invoke(allCommandHelpCard);
             return true;
         }
         
-        var manifest = pm.GetCommandManifests()
+        var manifest = pluginManager.GetCommandManifests()
             .FirstOrDefault(x => x.RootNode.Value == commandName);
         if (manifest is null)
         {
@@ -67,6 +65,6 @@ public class HelpCommand : ICommandExecutor
 
     public CommandTreeBuilder GetBuilder()
     {
-        return new CommandTreeBuilder("help", "显示帮助信息", "system.command.help", method: GetAllCommands);
+        return new CommandTreeBuilder("help", "显示帮助信息", "system.help", method: GetAllCommands);
     }
 }

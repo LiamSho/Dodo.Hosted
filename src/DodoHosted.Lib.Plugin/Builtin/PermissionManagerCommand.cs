@@ -18,7 +18,6 @@ using DodoHosted.Base.Command.Attributes;
 using DodoHosted.Base.Command.Builder;
 using DodoHosted.Base.Types;
 using DodoHosted.Open.Plugin;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
@@ -28,20 +27,14 @@ namespace DodoHosted.Lib.Plugin.Builtin;
 
 public class PermissionManagerCommand : ICommandExecutor
 {
-    private static IPermissionManager GetPermissionManager(PluginBase.Context context)
-    {
-        return context.Provider.GetRequiredService<IPermissionManager>();
-    }
-    
     public async Task<bool> AddPermission(
         PluginBase.Context context,
+        [CmdInject] IPermissionManager pm,
         [CmdOption("node", "n", "权限节点")] string node,
         [CmdOption("channel", "c", "适用频道")] DodoChannelIdWithWildcard channelId,
         [CmdOption("role", "r", "权限组 ID，可为 `*`")] string roleId,
         [CmdOption("value", "v", "值，可为 `allow` 或 `deny`")] string value)
     {
-        var pm = GetPermissionManager(context);
-        
         // 若节点有 *，则只能是最后一位为 *
         if (node.Contains('*'))
         {
@@ -80,13 +73,12 @@ public class PermissionManagerCommand : ICommandExecutor
 
     public async Task<bool> SetPermission(
         PluginBase.Context context,
+        [CmdInject] IPermissionManager pm,
         [CmdOption("id", "i", "权限节点的 GUID")] string nodeId,
         [CmdOption("channel", "c", "适用频道", false)] DodoChannelIdWithWildcard? channelId,
         [CmdOption("role", "r", "权限组 ID，可为 `*`", false)] string? roleId,
         [CmdOption("value", "v", "值，可为 `allow` 或 `deny`", false)] string? value)
     {
-        var pm = GetPermissionManager(context);
-        
         var guidParsed = Guid.TryParse(nodeId, out var parsedGuid);
         if (guidParsed is false)
         {
@@ -128,11 +120,10 @@ public class PermissionManagerCommand : ICommandExecutor
 
     public async Task<bool> RemovePermissionById(
         PluginBase.Context context,
+        [CmdInject] IPermissionManager pm,
         [CmdOption("id", "i", "权限节点的 GUID")] string nodeId,
         [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
     {
-        var pm = GetPermissionManager(context);
-        
         var dryRun = isDryRun ?? false;
         
         var messageBuilder = new StringBuilder();
@@ -161,11 +152,10 @@ public class PermissionManagerCommand : ICommandExecutor
 
     public async Task<bool> RemovePermissionByNode(
         PluginBase.Context context,
+        [CmdInject] IPermissionManager pm,
         [CmdOption("node", "n", "权限节点")] string node,
         [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
     {
-        var pm = GetPermissionManager(context);
-        
         var dryRun = isDryRun ?? false;
         
         var messageBuilder = new StringBuilder();
@@ -187,12 +177,11 @@ public class PermissionManagerCommand : ICommandExecutor
     
     public async Task<bool> RemovePermissionBySearch(
         PluginBase.Context context,
+        [CmdInject] IPermissionManager pm,
         [CmdOption("channel", "c", "适用频道")] DodoChannelIdWithWildcard channelId,
         [CmdOption("role", "r", "权限组 ID，可为 `*`")] string roleId,
         [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
     {
-        var pm = GetPermissionManager(context);
-        
         var dryRun = isDryRun ?? false;
         
         var messageBuilder = new StringBuilder();
@@ -214,11 +203,10 @@ public class PermissionManagerCommand : ICommandExecutor
 
     public async Task<bool> ListPermissions(
         PluginBase.Context context,
+        [CmdInject] IPermissionManager pm,
         [CmdOption("channel", "c", "适用频道", false)] DodoChannelIdWithWildcard? channelId,
         [CmdOption("role", "r", "权限组 ID，可为 `*`", false)] string? roleId)
     {
-        var pm = GetPermissionManager(context);
-        
         if (roleId is not null)
         {
             if (roleId != "*" && long.TryParse(roleId, out _) is false)
@@ -255,12 +243,11 @@ public class PermissionManagerCommand : ICommandExecutor
 
     public async Task<bool> CheckPermission(
         PluginBase.Context context,
+        [CmdInject] IPermissionManager pm,
         [CmdOption("node", "n", "权限节点")] string node,
         [CmdOption("channel", "c", "适用频道")] DodoChannelId channelId, 
         [CmdOption("user", "u", "用户")] DodoMemberId memberId)
     {
-        var pm = GetPermissionManager(context);
-        
         // 检查 Node
         if (node.Contains('*'))
         {

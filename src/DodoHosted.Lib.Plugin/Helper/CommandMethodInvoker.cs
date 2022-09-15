@@ -17,6 +17,7 @@ using DodoHosted.Base.Types;
 using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
 using DodoHosted.Open.Plugin;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin.Helper;
 
@@ -53,7 +54,7 @@ public static class CommandMethodInvoker
     
     private static async Task<CommandExecutionResult> Invoke(this CommandNode node, CommandParsed commandParsed, PluginBase.Context context, ICommandExecutor obj)
     {
-        var paramLength = node.Options.Count + (node.ContextParamOrder == -1 ? 0 : 1);
+        var paramLength = node.Options.Count + node.ServiceOptions.Count + (node.ContextParamOrder == -1 ? 0 : 1);
         var parameters = new object?[paramLength];
 
         if (node.ContextParamOrder != -1)
@@ -62,6 +63,7 @@ public static class CommandMethodInvoker
         }
         
         var methodParameters = node.Options;
+        var methodServices = node.ServiceOptions;
         
         foreach (var (order, (type, attr)) in methodParameters)
         {
@@ -129,6 +131,12 @@ public static class CommandMethodInvoker
 
                 throw new InternalProcessException(nameof(CommandMethodInvoker), nameof(Invoke), $"未知的参数类型: {type.FullName}");
             }
+        }
+
+        foreach (var (order, type) in methodServices)
+        {
+            var service = context.Provider.GetRequiredService(type);
+            parameters[order] = service;
         }
 
         var task = (Task<bool>)node.Method!.Invoke(obj, parameters)!;

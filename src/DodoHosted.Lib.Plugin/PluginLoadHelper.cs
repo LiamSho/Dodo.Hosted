@@ -77,15 +77,16 @@ internal static class PluginLoadHelper
 
         return manifests;
     }
-    
+
     /// <summary>
     /// 载入所有的指令处理器
     /// </summary>
     /// <param name="types">Plugin Assembly 中所有的类型</param>
     /// <param name="logger"></param>
+    /// <param name="serviceProvider"></param>
     /// <returns><see cref="CommandManifest"/> 清单</returns>
     /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    internal static IEnumerable<CommandManifest> FetchCommandExecutors(this IEnumerable<Type> types, ILogger logger)
+    internal static IEnumerable<CommandManifest> FetchCommandExecutors(this IEnumerable<Type> types, ILogger logger, IServiceProvider serviceProvider)
     {
         var commandExecutorTypes = types
             .Where(x => x != typeof(ICommandExecutor))
@@ -104,7 +105,7 @@ internal static class PluginLoadHelper
 
             var ins = (ICommandExecutor)instance;
 
-            var root = ins.GetBuilder().Build();
+            var root = ins.GetBuilder().Build(serviceProvider);
             
             logger.LogInformation("已载入指令处理器 {LoadedCommandHandler}", type.FullName);
             
