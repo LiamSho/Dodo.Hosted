@@ -10,7 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 

@@ -53,7 +53,7 @@ public static class CommandMethodInvoker
     
     private static async Task<CommandExecutionResult> Invoke(this CommandNode node, CommandParsed commandParsed, PluginBase.Context context, ICommandExecutor obj)
     {
-        var paramLength = node.Options!.Count + (node.ContextParamOrder == -1 ? 0 : 1);
+        var paramLength = node.Options.Count + (node.ContextParamOrder == -1 ? 0 : 1);
         var parameters = new object?[paramLength];
 
         if (node.ContextParamOrder != -1)

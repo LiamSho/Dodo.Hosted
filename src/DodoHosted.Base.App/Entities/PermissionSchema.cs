@@ -10,7 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace DodoHosted.Base.App.Entities;

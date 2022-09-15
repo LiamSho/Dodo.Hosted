@@ -18,7 +18,7 @@ namespace DodoHosted.Base.JsonExtension.Extra;
 
 public class ContentTextTypeConvertor : JsonConverter<ContentTextType>
 {
-    public override ContentTextType? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override ContentTextType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var value = reader.GetString();
 

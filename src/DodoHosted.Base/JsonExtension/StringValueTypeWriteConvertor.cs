@@ -31,6 +31,6 @@ public class StringValueTypeWriteConvertor<T> : JsonConverter<T> where T : Strin
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value?.ToString());
+        writer.WriteStringValue(value.ToString());
     }
 }

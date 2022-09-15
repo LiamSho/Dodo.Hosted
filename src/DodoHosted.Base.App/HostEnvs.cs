@@ -11,7 +11,6 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Reflection;
-using System.Security.Cryptography;
 using DodoHosted.Base.App.Helpers;
 using Microsoft.Extensions.Logging;
 
