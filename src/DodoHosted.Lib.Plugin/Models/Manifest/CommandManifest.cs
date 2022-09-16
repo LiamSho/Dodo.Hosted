@@ -10,13 +10,23 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
+using DodoHosted.Base.App.Command;
+using DodoHosted.Open.Plugin;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
+namespace DodoHosted.Lib.Plugin.Models.Manifest;
 
-public class PluginAlreadyLoadedException : Exception
+/// <summary>
+/// 指令清单
+/// </summary>
+public record CommandManifest
 {
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+    /// <summary>
+    /// 指令执行器
+    /// </summary>
+    public required ICommandExecutor CommandExecutor { get; set; }
+    
+    /// <summary>
+    /// 指令方法
+    /// </summary>
+    public required CommandNode RootNode { get; set; }
 }

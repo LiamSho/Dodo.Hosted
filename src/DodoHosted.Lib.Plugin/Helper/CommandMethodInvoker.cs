@@ -12,18 +12,20 @@
 
 using DodoHosted.Base;
 using DodoHosted.Base.App;
-using DodoHosted.Base.Command;
-using DodoHosted.Base.Types;
-using DodoHosted.Lib.Plugin.Exceptions;
-using DodoHosted.Lib.Plugin.Models;
-using DodoHosted.Open.Plugin;
+using DodoHosted.Base.App.Models;
+using DodoHosted.Lib.Plugin.Interfaces;
+using DodoHosted.Lib.Plugin.Models.Manifest;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin.Helper;
 
 public static class CommandMethodInvoker
 {
-    public static async Task<CommandExecutionResult> Invoke(this CommandManifest cmdManifest, CommandParsed commandParsed, PluginBase.Context context)
+    public static async Task<CommandExecutionResult> Invoke(
+        this CommandManifest cmdManifest,
+        PluginManifest pluginManifest,
+        CommandParsed commandParsed,
+        PluginBase.Context context)
     {
         var node = cmdManifest.RootNode;
         // ReSharper disable once LoopCanBeConvertedToQuery
@@ -47,105 +49,20 @@ public static class CommandMethodInvoker
             }
         }
 
-        var result = await node.Invoke(commandParsed, context, cmdManifest.CommandExecutor);
-
-        return result;
-    }
-    
-    private static async Task<CommandExecutionResult> Invoke(this CommandNode node, CommandParsed commandParsed, PluginBase.Context context, ICommandExecutor obj)
-    {
-        var paramLength = node.Options.Count + node.ServiceOptions.Count + (node.ContextParamOrder == -1 ? 0 : 1);
-        var parameters = new object?[paramLength];
-
+        var commandParameterHelper = context.Provider.GetRequiredService<ICommandParameterHelper>();
+        var parameters = commandParameterHelper.GetMethodInvokeParameter(node, pluginManifest, commandParsed, context);
         if (node.ContextParamOrder != -1)
         {
             parameters[(int)node.ContextParamOrder!] = context;
         }
-        
-        var methodParameters = node.Options;
-        var methodServices = node.ServiceOptions;
-        
-        foreach (var (order, (type, attr)) in methodParameters)
-        {
-            var keys = attr.Abbr is null ? new[] { $"-{attr.Name}" } : new[] { $"-{attr.Name}", attr.Abbr };
-            var hasValue = commandParsed.Arguments.TryGetValueByMultipleKey(keys, out var value);
-            if (hasValue is false)
-            {
-                if (attr.Required)
-                {
-                    if (type == typeof(bool))
-                    {
-                        parameters[order] = false;
-                    }
-                    
-                    await context.Functions.Reply.Invoke($"缺少参数 {attr.Name}");
-                    return CommandExecutionResult.Failed;
-                }
 
-                parameters[order] = null;
-            }
-            else
-            {
-                if (CommandTypeHelper.SupportedBasicValueTypes.Contains(type))
-                {
-                    var nonNullableType = Nullable.GetUnderlyingType(type) ?? type;
-                    
-                    var converted = Convert.ChangeType(value, nonNullableType);
-                    if (converted is null)
-                    {
-                        await context.Functions.Reply.Invoke($"参数类型错误，{attr.Name} 需要 {nonNullableType.Name} 类型参数");
-                        return CommandExecutionResult.Failed;
-                    }
-                    parameters[order] = converted;
-                    continue;
-                }
-
-                if (type == typeof(DodoChannelId))
-                {
-                    var converted = new DodoChannelId(value!);
-                    parameters[order] = converted;
-                    continue;
-                }
-                
-                if (type == typeof(DodoChannelIdWithWildcard))
-                {
-                    var converted = new DodoChannelIdWithWildcard(value!);
-                    parameters[order] = converted;
-                    continue;
-                }
-                
-                if (type == typeof(DodoMemberId))
-                {
-                    var converted = new DodoMemberId(value!);
-                    parameters[order] = converted;
-                    continue;
-                }
-
-                // ReSharper disable once InvertIf
-                if (type == typeof(DodoEmoji))
-                {
-                    var converted = new DodoEmoji(value!);
-                    parameters[order] = converted;
-                    continue;
-                }
-
-                throw new InternalProcessException(nameof(CommandMethodInvoker), nameof(Invoke), $"未知的参数类型: {type.FullName}");
-            }
-        }
-
-        foreach (var (order, type) in methodServices)
-        {
-            var service = context.Provider.GetRequiredService(type);
-            parameters[order] = service;
-        }
-
-        var task = (Task<bool>)node.Method!.Invoke(obj, parameters)!;
+        var task = (Task<bool>)node.Method!.Invoke(cmdManifest.CommandExecutor, parameters)!;
         
         var result = await task;
         
         return result ? CommandExecutionResult.Success : CommandExecutionResult.Failed;
     }
-
+    
     internal static bool TryGetValueByMultipleKey<T, K>(this IReadOnlyDictionary<T, K> dictionary, IEnumerable<T> keys, out K? value) where T : notnull
     {
         foreach (var key in keys)

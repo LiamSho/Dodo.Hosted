@@ -10,13 +10,17 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
+using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base.Events;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
+namespace DodoHosted.Lib.Plugin.Interfaces;
 
-public class PluginAlreadyLoadedException : Exception
-{
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+public interface ICommandManager
+{ 
+    /// <summary>
+    /// 执行指令
+    /// </summary>
+    /// <param name="messageEvent">消息事件</param>
+    /// <returns></returns>
+    Task RunCommand(DodoChannelMessageEvent<MessageBodyText> messageEvent);
 }

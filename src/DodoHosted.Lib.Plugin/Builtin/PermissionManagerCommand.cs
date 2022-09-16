@@ -13,10 +13,10 @@
 using System.Text;
 using DoDo.Open.Sdk.Models.Members;
 using DodoHosted.Base;
+using DodoHosted.Base.App.Command.Attributes;
+using DodoHosted.Base.App.Command.Builder;
 using DodoHosted.Base.App.Interfaces;
-using DodoHosted.Base.Command.Attributes;
-using DodoHosted.Base.Command.Builder;
-using DodoHosted.Base.Types;
+using DodoHosted.Base.App.Types;
 using DodoHosted.Open.Plugin;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
@@ -85,7 +85,6 @@ public class PermissionManagerCommand : ICommandExecutor
             await context.Functions.Reply.Invoke("Guid 不合法");
             return false;
         }
-
         
         if (roleId is not null)
         {

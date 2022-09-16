@@ -10,13 +10,15 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
+using DodoHosted.Base.App.Types;
+using DodoHosted.Lib.Plugin.Exceptions;
 using DodoHosted.Lib.Plugin.Models;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
+// ReSharper disable InvertIf
 
-public class PluginAlreadyLoadedException : Exception
+namespace DodoHosted.Lib.Plugin.Helper;
+
+public static class CommandOptionTypeHelper
 {
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+    
 }

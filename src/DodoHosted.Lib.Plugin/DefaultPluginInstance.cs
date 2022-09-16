@@ -10,13 +10,24 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
+using DodoHosted.Open.Plugin;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
+namespace DodoHosted.Lib.Plugin;
 
-public class PluginAlreadyLoadedException : Exception
+public class DefaultPluginInstance : DodoHostedPlugin
 {
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+    public override Task OnLoad()
+    {
+        return Task.CompletedTask;
+    }
+
+    public override Task OnDestroy()
+    {
+        return Task.CompletedTask;
+    }
+
+    public override Dictionary<Type, string> RegisterMongoDbCollection()
+    {
+        return new Dictionary<Type, string>();
+    }
 }

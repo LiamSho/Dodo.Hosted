@@ -10,13 +10,15 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
+namespace DodoHosted.Lib.Plugin.Interfaces;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
-
-public class PluginAlreadyLoadedException : Exception
+public interface IPluginLifetimeManager
 {
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+    Task LoadPlugin(FileInfo bundle);
+    Task LoadPlugin(string bundle);
+    Task LoadPlugins();
+    bool UnloadPlugin(string pluginIdentifier);
+    void UnloadPlugins();
+    Task LoadNativeTypes();
+    void UnloadNativeTypes();
 }

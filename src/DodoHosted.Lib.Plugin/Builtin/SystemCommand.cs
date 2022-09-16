@@ -13,11 +13,13 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using DoDo.Open.Sdk.Models.Islands;
+using DoDo.Open.Sdk.Services;
 using DodoHosted.Base;
 using DodoHosted.Base.App;
+using DodoHosted.Base.App.Command.Attributes;
+using DodoHosted.Base.App.Command.Builder;
 using DodoHosted.Base.App.Entities;
-using DodoHosted.Base.Command.Attributes;
-using DodoHosted.Base.Command.Builder;
+using DodoHosted.Lib.Plugin.Interfaces;
 using DodoHosted.Open.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
@@ -64,12 +66,12 @@ public class SystemCommand : ICommandExecutor
         return true;
     }
 
-    public async Task<bool> GetIslandsInfo(PluginBase.Context context)
+    public async Task<bool> GetIslandsInfo(
+        PluginBase.Context context,
+        [CmdInject] IMongoCollection<IslandSettings> collection,
+        [CmdInject] OpenApiService openApiService)
     {
-        var col = context.Provider.GetRequiredService<IMongoDatabase>()
-            .GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
-                
-        var islands = await context.OpenApiService.GetIslandListAsync(new GetIslandListInput());
+        var islands = await openApiService.GetIslandListAsync(new GetIslandListInput());
                 
         if (islands is null)
         {
@@ -81,7 +83,7 @@ public class SystemCommand : ICommandExecutor
         
         foreach (var island in islands)
         {
-            var config = await col.Find(x => x.IslandId == island.IslandId).FirstOrDefaultAsync();
+            var config = await collection.Find(x => x.IslandId == island.IslandId).FirstOrDefaultAsync();
             var allowWebApi = config is null ? "未配置" : config.AllowUseWebApi ? "✅" : "❌";
             var enableChannelLogger = config is null ? "未配置" : config.EnableChannelLogger ? "✅" : "❌";
             messageBuilder.AppendLine($"- {island.IslandName} `{island.IslandId}`");
@@ -108,35 +110,29 @@ public class SystemCommand : ICommandExecutor
         return await SetIslandWebApiStatus(context, islandId, false);
     }
 
-    public async Task<bool> GetPluginList(PluginBase.Context context)
+    public async Task<bool> GetPluginList(
+        PluginBase.Context context,
+        [CmdOption("native", "n", "显示 Native 类型", false)] bool? native,
+        [CmdInject] IPluginManager pm)
     {
-        var pm = GetPluginManager(context);
-        
-        var (allPluginInfos, failLoadedPlugins) = await pm.GetAllPluginInfos();
+        var plugins = pm.GetPlugins(native ?? false).ToArray();
 
-        if (allPluginInfos.Count == 0 && failLoadedPlugins.Count == 0)
+        if (plugins.Length == 0)
         {
             await context.Functions.Reply.Invoke("没有已载入的插件");
             return true;
         }
         
         var messageBuilder = new StringBuilder();
-        foreach (var info in allPluginInfos)
+        foreach (var p in plugins)
         {
-            var enabled = info.Value == string.Empty ? "True" : $"False ({info.Value})";
-            messageBuilder.AppendLine($"- `{info.Key.Identifier}`");
-            messageBuilder.AppendLine($"    $ 名称: {info.Key.Name}");
-            messageBuilder.AppendLine($"    $ 作者: {info.Key.Author}");
-            messageBuilder.AppendLine($"    $ 描述: {info.Key.Description}");
-            messageBuilder.AppendLine($"    $ 版本: {info.Key.Version}");
-            messageBuilder.AppendLine($"    $ 启用: {enabled}");
+            messageBuilder.AppendLine($"- `{p.PluginInfo.Identifier}`");
+            messageBuilder.AppendLine($"    $ 名称: {p.PluginInfo.Name}");
+            messageBuilder.AppendLine($"    $ 作者: {p.PluginInfo.Author}");
+            messageBuilder.AppendLine($"    $ 描述: {p.PluginInfo.Description}");
+            messageBuilder.AppendLine($"    $ 版本: {p.PluginInfo.Version}");
         }
         
-        foreach (var failLoadedPlugin in failLoadedPlugins)
-        {
-            messageBuilder.AppendLine($"- 获取信息失败：`{failLoadedPlugin}`");
-        }
-
         await context.Functions.Reply.Invoke(messageBuilder.ToString());
         
         return true;
@@ -144,11 +140,10 @@ public class SystemCommand : ICommandExecutor
 
     public async Task<bool> GetPluginInfo(
         PluginBase.Context context,
-        [CmdOption("identifier", "i", "插件标识符")] string identifier)
+        [CmdOption("identifier", "i", "插件标识符")] string identifier,
+        [CmdInject] IPluginManager pm)
     {
-        var pm = GetPluginManager(context);
-        
-        var manifest = pm.GetPluginManifest(identifier);
+        var manifest = pm.GetPlugin(identifier);
         if (manifest is null)
         {
             await context.Functions.Reply.Invoke($"插件 `{identifier}` 不存在");
@@ -161,14 +156,14 @@ public class SystemCommand : ICommandExecutor
         messageBuilder.AppendLine($"- 作者：{manifest.PluginInfo.Author}");
         messageBuilder.AppendLine($"- 描述：{manifest.PluginInfo.Description}");
         messageBuilder.AppendLine($"- 版本：{manifest.PluginInfo.Version}");
-        messageBuilder.AppendLine($"- 事件处理器 ({manifest.EventHandlers.Length} 个):");
-        foreach (var handler in manifest.EventHandlers)
+        messageBuilder.AppendLine($"- 事件处理器 ({manifest.Worker.EventHandlers.Length} 个):");
+        foreach (var handler in manifest.Worker.EventHandlers)
         {
             messageBuilder.AppendLine($"    $ `{handler.EventHandlerType.Name}`");
         }
                 
-        messageBuilder.AppendLine($"- 指令处理器 ({manifest.CommandManifests.Length} 个):");
-        foreach (var command in manifest.CommandManifests)
+        messageBuilder.AppendLine($"- 指令处理器 ({manifest.Worker.CommandExecutors.Length} 个):");
+        foreach (var command in manifest.Worker.CommandExecutors)
         {
             messageBuilder.AppendLine($"    $ `{command.RootNode.Value}`");
         }
@@ -180,11 +175,10 @@ public class SystemCommand : ICommandExecutor
     
     public async Task<bool> LoadPlugin(
         PluginBase.Context context,
-        [CmdOption("package", "p", "插件包文件名（不含扩展名）")] string packageName)
+        [CmdOption("package", "p", "插件包文件名（不含扩展名）")] string packageName,
+        [CmdInject] IPluginLifetimeManager pluginLifetimeManager)
     {
-        var pm = GetPluginManager(context);
-        
-        await pm.LoadPlugin($"{packageName}.zip");
+        await pluginLifetimeManager.LoadPlugin($"{packageName}.zip");
         await context.Functions.Reply.Invoke("已执行插件加载任务");
         
         return true;
@@ -192,13 +186,11 @@ public class SystemCommand : ICommandExecutor
     
     public async Task<bool> UnloadPlugin(
         PluginBase.Context context,
-        [CmdOption("identifier", "i", "插件标识符")] string identifier)
+        [CmdOption("identifier", "i", "插件标识符")] string identifier,
+        [CmdInject] IPluginLifetimeManager pluginLifetimeManager)
     {
-        var pm = GetPluginManager(context);
-        
-        pm.UnloadPlugin(identifier);
-        var unloadSuccess = pm.GetPluginManifest(identifier) is null;
-        if (unloadSuccess)
+        var result = pluginLifetimeManager.UnloadPlugin(identifier);
+        if (result)
         {
             await context.Functions.Reply.Invoke("插件卸载成功");
             return false;
@@ -209,12 +201,11 @@ public class SystemCommand : ICommandExecutor
         return true;
     }
     
-    public async Task<bool> ReloadPlugin(PluginBase.Context context)
+    public async Task<bool> ReloadPlugin(PluginBase.Context context,
+        [CmdInject] IPluginLifetimeManager pluginLifetimeManager)
     {
-        var pm = GetPluginManager(context);
-        
-        pm.UnloadPlugins();
-        await pm.LoadPlugins();
+        pluginLifetimeManager.UnloadPlugins();
+        await pluginLifetimeManager.LoadPlugins();
 
         await context.Functions.Reply.Invoke("已执行重载任务");
         
@@ -241,10 +232,6 @@ public class SystemCommand : ICommandExecutor
     private static string ToMegabytes(long size)
     {
         return ((double)size / 1024 / 1024).ToString("F");
-    }
-    private static IPluginManager GetPluginManager(PluginBase.Context context)
-    {
-        return context.Provider.GetRequiredService<IPluginManager>();
     }
     private static async Task<bool> SetIslandWebApiStatus(PluginBase.Context context, string islandId, bool type)
     {

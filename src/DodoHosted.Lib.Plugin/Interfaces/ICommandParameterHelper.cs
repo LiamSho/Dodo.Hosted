@@ -10,13 +10,17 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base;
+using DodoHosted.Base.App.Command;
 using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
+using DodoHosted.Lib.Plugin.Models.Manifest;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
+namespace DodoHosted.Lib.Plugin.Interfaces;
 
-public class PluginAlreadyLoadedException : Exception
+public interface ICommandParameterHelper
 {
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+    object?[] GetMethodInvokeParameter(CommandNode node, PluginManifest manifest, CommandParsed commandParsed, PluginBase.Context context);
+    bool ValidateOptionType(Type type);
+    bool ValidateServiceType(Type type, bool native = false);
+    string GetDisplayTypeName(Type type);
 }

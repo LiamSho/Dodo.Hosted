@@ -10,13 +10,17 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
+using Microsoft.Extensions.Logging;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
+namespace DodoHosted.Open.Plugin;
 
-public class PluginAlreadyLoadedException : Exception
+public abstract class DodoHostedPlugin
 {
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+    // ReSharper disable once InconsistentNaming
+    public const int API_LEVEL = 1;
+    
+    public abstract Task OnLoad();
+    public abstract Task OnDestroy();
+
+    public abstract Dictionary<Type, string> RegisterMongoDbCollection();
 }

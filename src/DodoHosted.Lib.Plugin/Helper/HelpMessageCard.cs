@@ -12,18 +12,21 @@
 
 using DodoHosted.Base;
 using DodoHosted.Base.App;
+using DodoHosted.Base.App.Command;
 using DodoHosted.Base.Card;
 using DodoHosted.Base.Card.CardComponent;
 using DodoHosted.Base.Card.Enums;
-using DodoHosted.Base.Command;
-using DodoHosted.Base.Types;
-using DodoHosted.Lib.Plugin.Models;
+using DodoHosted.Lib.Plugin.Interfaces;
+using DodoHosted.Lib.Plugin.Models.Manifest;
 
 namespace DodoHosted.Lib.Plugin.Helper;
 
 public static class HelpMessageCard
 {
-    public static async Task<CardMessage> GetCommandHelpMessage(this CommandNode node, PluginBase.PermissionCheck permissionChecker)
+    public static async Task<CardMessage> GetCommandHelpMessage(
+        this CommandNode node,
+        ICommandParameterHelper commandParameterHelper,
+        PluginBase.PermissionCheck permissionChecker)
     {
         var card = new CardMessage
         {
@@ -60,7 +63,7 @@ public static class HelpMessageCard
                 var attrs = new List<string>
                 {
                     cmdOption.Required ? "`必填`" : "`可选`",
-                    $"`{type.GetFriendlyName()}`"
+                    $"`{commandParameterHelper.GetDisplayTypeName(type)}`"
                 };
 
                 card.AddComponent(new Header(title));

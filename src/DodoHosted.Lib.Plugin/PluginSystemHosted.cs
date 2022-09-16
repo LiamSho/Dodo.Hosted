@@ -10,29 +10,33 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.App.Interfaces;
+using DodoHosted.Lib.Plugin.Interfaces;
 using Microsoft.Extensions.Hosting;
 
 namespace DodoHosted.Lib.Plugin;
 
 public class PluginSystemHosted : IHostedService
 {
-    private readonly IPluginManager _pluginManager;
+    private readonly IPluginLifetimeManager _pluginLifetimeManager;
 
-    public PluginSystemHosted(IPluginManager pluginManager)
+    public PluginSystemHosted(IPluginLifetimeManager pluginLifetimeManager, IEventManager eventManager)
     {
-        _pluginManager = pluginManager;
+        _pluginLifetimeManager = pluginLifetimeManager;
+        
+        eventManager.Initialize();
     }
     
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await _pluginManager.LoadPlugins();
-        await _pluginManager.LoadNativeTypes();
+        await _pluginLifetimeManager.LoadPlugins();
+        await _pluginLifetimeManager.LoadNativeTypes();
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _pluginManager.UnloadPlugins();
-        _pluginManager.UnloadNativeTypes();
+        _pluginLifetimeManager.UnloadPlugins();
+        _pluginLifetimeManager.UnloadNativeTypes();
         return Task.CompletedTask;
     }
 }

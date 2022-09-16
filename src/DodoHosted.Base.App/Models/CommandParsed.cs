@@ -10,13 +10,11 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
+namespace DodoHosted.Base.App.Models;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
-
-public class PluginAlreadyLoadedException : Exception
+public record CommandParsed
 {
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+    public required string CommandName { get; set; }
+    public required string[] Path { get; set; }
+    public required Dictionary<string, string> Arguments { get; set; }
 }

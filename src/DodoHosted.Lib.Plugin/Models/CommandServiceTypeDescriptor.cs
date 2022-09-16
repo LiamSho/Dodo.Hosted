@@ -10,13 +10,14 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
+using DodoHosted.Lib.Plugin.Models.Manifest;
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
+namespace DodoHosted.Lib.Plugin.Models;
 
-public class PluginAlreadyLoadedException : Exception
+public record CommandServiceTypeDescriptor(
+    Type Type,
+    Func<IServiceProvider, PluginManifest, Type, object> GetValue,
+    bool NativeOnly = false)
 {
-    public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)
-        : base($"已存在相同标识符的插件，当前已载入：{exist}，待载入：{readyToLoad}") { }
+    public string TypeClassName => Type.Name.Split('`').First();
 }
