@@ -12,10 +12,11 @@
 
 using System.Text.RegularExpressions;
 using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base.App.Models;
 using DodoHosted.Base.Enums;
 using DodoHosted.Base.Events;
 
-namespace DodoHosted.Lib.Plugin.Helper;
+namespace DodoHosted.Base.App.Helpers;
 
 public static class CommandParser
 {

@@ -12,7 +12,7 @@
 
 namespace DodoHosted.Lib.Plugin.Helper;
 
-public static class CommandMethodInvoker
+public static class  CommandMethodInvoker
 {
     public static async Task<CommandExecutionResult> Invoke(
         this CommandManifest cmdManifest,
