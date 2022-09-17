@@ -10,9 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Lib.Plugin.Interfaces;
 using DodoHosted.Lib.Plugin.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DodoHosted.Lib.Plugin;
 
@@ -24,7 +22,7 @@ public static class PluginServiceExtension
         serviceCollection.AddSingleton<IPluginLifetimeManager, PluginLifetimeManager>();
         serviceCollection.AddSingleton<ICommandManager, CommandManager>();
         serviceCollection.AddSingleton<IEventManager, EventManager>();
-        serviceCollection.AddSingleton<ICommandParameterHelper, CommandParameterHelper>();
+        serviceCollection.AddSingleton<ICommandParameterResolver, CommandParameterResolver>();
 
         serviceCollection.AddHostedService<PluginSystemHosted>();
 

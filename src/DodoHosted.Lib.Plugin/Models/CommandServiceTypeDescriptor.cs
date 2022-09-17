@@ -10,8 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Lib.Plugin.Models.Manifest;
-
 namespace DodoHosted.Lib.Plugin.Models;
 
 public record CommandServiceTypeDescriptor(

@@ -12,15 +12,8 @@
 
 using System.Diagnostics;
 using DoDo.Open.Sdk.Models.Messages;
-using DodoHosted.Base;
-using DodoHosted.Base.App;
-using DodoHosted.Base.App.Interfaces;
-using DodoHosted.Base.App.Web;
 using DodoHosted.Base.Events;
-using DodoHosted.Lib.Plugin.Interfaces;
 using DodoHosted.Lib.SdkWrapper;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.Plugin.Services;
 

@@ -10,8 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Interfaces;
-using DodoHosted.Lib.Plugin.Interfaces;
 using Microsoft.Extensions.Hosting;
 
 namespace DodoHosted.Lib.Plugin;

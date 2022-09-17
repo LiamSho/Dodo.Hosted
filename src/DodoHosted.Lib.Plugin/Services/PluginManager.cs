@@ -11,9 +11,6 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Collections.Concurrent;
-using DodoHosted.Base.App.Interfaces;
-using DodoHosted.Lib.Plugin.Interfaces;
-using DodoHosted.Lib.Plugin.Models.Manifest;
 
 namespace DodoHosted.Lib.Plugin.Services;
 

@@ -10,21 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Reflection;
-using DoDo.Open.Sdk.Services;
-using DodoHosted.Base;
-using DodoHosted.Base.App.Command;
-using DodoHosted.Base.App.Exceptions;
-using DodoHosted.Base.App.Interfaces;
-using DodoHosted.Base.App.Models;
-using DodoHosted.Base.App.Types;
-using DodoHosted.Lib.Plugin.Exceptions;
-using DodoHosted.Lib.Plugin.Helper;
-using DodoHosted.Lib.Plugin.Interfaces;
-using DodoHosted.Lib.Plugin.Models;
-using DodoHosted.Lib.Plugin.Models.Manifest;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
 // ReSharper disable InvertIf
@@ -32,7 +17,7 @@ using MongoDB.Driver;
 
 namespace DodoHosted.Lib.Plugin.Services;
 
-public class CommandParameterHelper : ICommandParameterHelper
+public class CommandParameterResolver : ICommandParameterResolver
 {
     public object?[] GetMethodInvokeParameter(
         CommandNode node,
@@ -55,34 +40,34 @@ public class CommandParameterHelper : ICommandParameterHelper
             {
                 if (attr.Required)
                 {
-                    throw new CommandNodeException("");
+                    throw new CommandParameterException($"缺少必填参数 {attr.Name}");
                 }
                 
                 parameters[order] = null;
             }
             else
             {
-                var converted = GetValue(type, value!);
+                var converted = GetOptionParameterValue(type, value!);
                 parameters[order] = converted;
             }
         }
 
         foreach (var (order, type) in serviceOptions)
         {
-            var service = GetServiceValue(context.Provider, manifest, type);
+            var service = GetServiceParameterValue(context.Provider, manifest, type);
             parameters[order] = service;
         }
         
         return parameters;
     }
     
-    public bool ValidateOptionType(Type type)
+    public bool ValidateOptionParameterType(Type type)
     {
         var optionType = GetOptionTypeDescriptor(type);
         return optionType is not null;
     }
     
-    public bool ValidateServiceType(Type type, bool native = false)
+    public bool ValidateServiceParameterType(Type type, bool native = false)
     {
         var serviceType = GetServiceTypeDescriptor(type);
 
@@ -102,15 +87,15 @@ public class CommandParameterHelper : ICommandParameterHelper
         return true;
     }
 
-    public string GetDisplayTypeName(Type type)
+    public string GetDisplayParameterTypeName(Type type)
     {
         var optionType = GetOptionTypeDescriptor(type);
 
         if (optionType is null)
         {
             throw new InternalProcessException(
-                nameof(CommandOptionTypeHelper),
-                nameof(GetDisplayTypeName),
+                nameof(CommandParameterResolver),
+                nameof(GetDisplayParameterTypeName),
                 $"未知类型 {type.FullName}");
         }
 
@@ -158,13 +143,13 @@ public class CommandParameterHelper : ICommandParameterHelper
 
                 if (collectionType is null)
                 {
-                    throw new InternalProcessException(nameof(CommandParameterHelper), nameof(GetServiceValue), "无法获取泛型参数");
+                    throw new InternalProcessException(nameof(CommandParameterResolver), nameof(GetServiceParameterValue), "无法获取泛型参数");
                 }
 
                 var contains = registered.ContainsKey(collectionType);
                 if (contains is false)
                 {
-                    throw new CommandNodeException("未注册的 MongoDb 集合");
+                    throw new CommandParameterException("未注册的 MongoDb 集合");
                 }
                 
                 var collectionName = registered[collectionType];
@@ -178,7 +163,7 @@ public class CommandParameterHelper : ICommandParameterHelper
             new(typeof(IPluginManager), (provider, _, _) => provider.GetRequiredService<IPluginManager>(), true),
             new(typeof(ICommandManager), (provider, _, _) => provider.GetRequiredService<ICommandManager>(), true),
             new(typeof(IEventManager), (provider, _, _) => provider.GetRequiredService<IEventManager>(), true),
-            new(typeof(ICommandParameterHelper), (provider, _, _) => provider.GetRequiredService<ICommandParameterHelper>(), true)
+            new(typeof(ICommandParameterResolver), (provider, _, _) => provider.GetRequiredService<ICommandParameterResolver>(), true)
         };
 
     private static object GetPrimitiveTypeValue(Type type, string str)
@@ -190,32 +175,32 @@ public class CommandParameterHelper : ICommandParameterHelper
         }
         catch (Exception)
         {
-            throw new CommandNodeException($"无法将 {str} 转换为指定类型 {type.FullName}");
+            throw new CommandParameterException($"无法将 {str} 转换为指定类型 {type.FullName}");
         }
     }
 
-    private object GetValue(Type type, string raw)
+    private object GetOptionParameterValue(Type type, string raw)
     {
         var optionType = GetOptionTypeDescriptor(type);
         if (optionType is null)
         {
             throw new InternalProcessException(
-                nameof(CommandOptionTypeHelper),
-                nameof(GetValue),
+                nameof(CommandParameterResolver),
+                nameof(GetOptionParameterValue),
                 $"未知类型 {type.FullName}");
         }
 
         return optionType.GetValue.Invoke(raw);
     }
 
-    private object GetServiceValue(IServiceProvider provider, PluginManifest manifest, Type type)
+    private object GetServiceParameterValue(IServiceProvider provider, PluginManifest manifest, Type type)
     {
         var serviceType = GetServiceTypeDescriptor(type);
         if (serviceType is null)
         {
             throw new InternalProcessException(
-                nameof(CommandOptionTypeHelper),
-                nameof(GetServiceValue),
+                nameof(CommandParameterResolver),
+                nameof(GetServiceParameterValue),
                 $"未知类型 {type.FullName}");
         }
 

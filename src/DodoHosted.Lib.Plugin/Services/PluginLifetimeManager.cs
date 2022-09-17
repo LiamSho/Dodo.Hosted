@@ -10,16 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Reflection;
-using DodoHosted.Base.App;
-using DodoHosted.Lib.Plugin.Exceptions;
-using DodoHosted.Lib.Plugin.Helper;
-using DodoHosted.Lib.Plugin.Interfaces;
-using DodoHosted.Lib.Plugin.Models;
-using DodoHosted.Lib.Plugin.Models.Manifest;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-
 namespace DodoHosted.Lib.Plugin.Services;
 
 public class PluginLifetimeManager : IPluginLifetimeManager
@@ -110,7 +100,7 @@ public class PluginLifetimeManager : IPluginLifetimeManager
             if (success is false)
             {
                 pluginManifest.UnloadPlugin(_logger, true);
-                throw new PluginAssemblyLoadException("插件添加失败");
+                throw new PluginAssemblyLoadException($"插件 {pluginInfo.Identifier} 添加失败");
             }
             
             _logger.LogInformation("已载入插件 {PluginInfo}，事件处理器 {EventHandlerCount} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个",
@@ -217,7 +207,7 @@ public class PluginLifetimeManager : IPluginLifetimeManager
 
             if (success is false)
             {
-                throw new PluginAssemblyLoadException("插件添加失败");
+                throw new PluginAssemblyLoadException($"Native 类型 {name} 添加失败");
             }
             
             _logger.LogInformation("已载入 Native Assembly: {NativeAssemblyName}，事件处理器 {EventHandlerCount} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个", 

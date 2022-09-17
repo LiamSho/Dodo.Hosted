@@ -10,11 +10,11 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Models;
-
 namespace DodoHosted.Lib.Plugin.Exceptions;
 
+/// <summary>
+/// 插件包已载入
+/// </summary>
 public class PluginAlreadyLoadedException : Exception
 {
     public PluginAlreadyLoadedException(PluginInfo exist, PluginInfo readyToLoad)

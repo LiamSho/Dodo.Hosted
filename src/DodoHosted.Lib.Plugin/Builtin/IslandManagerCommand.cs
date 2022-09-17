@@ -15,15 +15,6 @@ using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Models.Resources;
 using DoDo.Open.Sdk.Models.Roles;
-using DodoHosted.Base;
-using DodoHosted.Base.App;
-using DodoHosted.Base.App.Command.Attributes;
-using DodoHosted.Base.App.Command.Builder;
-using DodoHosted.Base.App.Entities;
-using DodoHosted.Base.App.Helpers;
-using DodoHosted.Base.App.Types;
-using DodoHosted.Open.Plugin;
-using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 
 namespace DodoHosted.Lib.Plugin.Builtin;

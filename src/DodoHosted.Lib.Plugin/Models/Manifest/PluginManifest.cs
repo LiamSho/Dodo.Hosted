@@ -10,10 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Reflection;
-using DodoHosted.Open.Plugin;
-using Microsoft.Extensions.DependencyInjection;
-
 namespace DodoHosted.Lib.Plugin.Models.Manifest;
 
 /// <summary>

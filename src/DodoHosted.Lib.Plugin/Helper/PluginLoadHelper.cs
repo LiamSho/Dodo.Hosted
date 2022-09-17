@@ -11,15 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using System.IO.Compression;
-using System.Reflection;
 using System.Text.Json;
-using DodoHosted.Lib.Plugin.Exceptions;
-using DodoHosted.Lib.Plugin.Interfaces;
-using DodoHosted.Lib.Plugin.Models;
-using DodoHosted.Lib.Plugin.Models.Manifest;
-using DodoHosted.Open.Plugin;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace DodoHosted.Lib.Plugin.Helper;
 
@@ -96,7 +88,7 @@ internal static class PluginLoadHelper
 
         if (entryAssembly is null)
         {
-            throw new InvalidPluginBundleException(pluginInfo.Identifier, $"找不到 {pluginInfo.EntryAssembly}.dll");
+            throw new PluginAssemblyLoadException($"找不到 {pluginInfo.EntryAssembly}.dll");
         }
 
         var context = new PluginAssemblyLoadContext(source.FullName);
@@ -116,7 +108,7 @@ internal static class PluginLoadHelper
     internal static PluginWorker LoadPluginWorkers(this IEnumerable<Type> pluginTypes, IServiceProvider provider, bool native = false)
     {
         var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("PluginWorkerLoader");
-        var commandParameterHelper = provider.GetRequiredService<ICommandParameterHelper>();
+        var commandParameterHelper = provider.GetRequiredService<ICommandParameterResolver>();
         
         var types = pluginTypes.ToArray();
 
@@ -137,7 +129,7 @@ internal static class PluginLoadHelper
                 {
                     foreach (var (_, (type, attr)) in node.Options)
                     {
-                        var result = commandParameterHelper.ValidateOptionType(type);
+                        var result = commandParameterHelper.ValidateOptionParameterType(type);
                         if (result is false)
                         {
                             throw new PluginAssemblyLoadException($"指令参数 {attr.Name} 的类型 {type.FullName} 不支持");
@@ -146,7 +138,7 @@ internal static class PluginLoadHelper
 
                     foreach (var (_, type) in node.ServiceOptions)
                     {
-                        var result = commandParameterHelper.ValidateServiceType(type, native);
+                        var result = commandParameterHelper.ValidateServiceParameterType(type, native);
                         if (result is false)
                         {
                             throw new PluginAssemblyLoadException($"指令服务参数 {type.FullName} 不支持");

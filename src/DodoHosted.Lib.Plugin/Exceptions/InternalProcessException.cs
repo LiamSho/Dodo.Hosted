@@ -12,6 +12,9 @@
 
 namespace DodoHosted.Lib.Plugin.Exceptions;
 
+/// <summary>
+/// 不应该出现的错误
+/// </summary>
 public class InternalProcessException : Exception
 {
     public InternalProcessException(string className, string methodName, string msg)

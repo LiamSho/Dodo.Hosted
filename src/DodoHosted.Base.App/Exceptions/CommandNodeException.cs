@@ -14,6 +14,9 @@ using System.Reflection;
 
 namespace DodoHosted.Base.App.Exceptions;
 
+/// <summary>
+/// 指令节点出现错误
+/// </summary>
 public class CommandNodeException : Exception
 {
     public CommandNodeException(string message) : base(message) { }

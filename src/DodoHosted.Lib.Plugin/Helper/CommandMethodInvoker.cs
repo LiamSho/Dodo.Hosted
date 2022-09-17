@@ -10,13 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base;
-using DodoHosted.Base.App;
-using DodoHosted.Base.App.Models;
-using DodoHosted.Lib.Plugin.Interfaces;
-using DodoHosted.Lib.Plugin.Models.Manifest;
-using Microsoft.Extensions.DependencyInjection;
-
 namespace DodoHosted.Lib.Plugin.Helper;
 
 public static class CommandMethodInvoker
@@ -49,7 +42,7 @@ public static class CommandMethodInvoker
             }
         }
 
-        var commandParameterHelper = context.Provider.GetRequiredService<ICommandParameterHelper>();
+        var commandParameterHelper = context.Provider.GetRequiredService<ICommandParameterResolver>();
         var parameters = commandParameterHelper.GetMethodInvokeParameter(node, pluginManifest, commandParsed, context);
         if (node.ContextParamOrder != -1)
         {

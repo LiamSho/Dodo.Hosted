@@ -12,12 +12,6 @@
 
 using System.Text;
 using DoDo.Open.Sdk.Models.Members;
-using DodoHosted.Base;
-using DodoHosted.Base.App.Command.Attributes;
-using DodoHosted.Base.App.Command.Builder;
-using DodoHosted.Base.App.Interfaces;
-using DodoHosted.Base.App.Types;
-using DodoHosted.Open.Plugin;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 

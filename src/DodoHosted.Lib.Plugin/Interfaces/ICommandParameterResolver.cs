@@ -10,9 +10,12 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Lib.Plugin.Exceptions;
+namespace DodoHosted.Lib.Plugin.Interfaces;
 
-public class InvalidPluginBundleException : Exception
+public interface ICommandParameterResolver
 {
-    public InvalidPluginBundleException(string bundle, string message) : base($"{bundle} 不合法，{message}") { }
+    object?[] GetMethodInvokeParameter(CommandNode node, PluginManifest manifest, CommandParsed commandParsed, PluginBase.Context context);
+    bool ValidateOptionParameterType(Type type);
+    bool ValidateServiceParameterType(Type type, bool native = false);
+    string GetDisplayParameterTypeName(Type type);
 }

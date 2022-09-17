@@ -12,6 +12,9 @@
 
 namespace DodoHosted.Lib.Plugin.Exceptions;
 
+/// <summary>
+/// 插件包载入失败
+/// </summary>
 public class PluginAssemblyLoadException : Exception
 {
     public PluginAssemblyLoadException(string message) : base(message) { }

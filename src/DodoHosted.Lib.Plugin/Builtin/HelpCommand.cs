@@ -10,13 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base;
-using DodoHosted.Base.App.Command.Attributes;
-using DodoHosted.Base.App.Command.Builder;
-using DodoHosted.Lib.Plugin.Helper;
-using DodoHosted.Lib.Plugin.Interfaces;
-using DodoHosted.Open.Plugin;
-
 namespace DodoHosted.Lib.Plugin.Builtin;
 
 #pragma warning disable CA1822
@@ -28,7 +21,7 @@ public class HelpCommand : ICommandExecutor
     public async Task<bool> GetAllCommands(
         PluginBase.Context context,
         [CmdInject] IPluginManager pluginManager,
-        [CmdInject] ICommandParameterHelper commandParameterHelper,
+        [CmdInject] ICommandParameterResolver commandParameterResolver,
         [CmdOption("name", "n", "指令的名称，为空时显示所有可用指令", false)] string? commandName,
         [CmdOption("path", "p", "指令的路径，使用 `,` 分隔，为空时显示所有可用指令", false)] string? commandPath)
     {
@@ -60,7 +53,7 @@ public class HelpCommand : ICommandExecutor
         }
 
         var commandNodeHelpCard = await node.GetCommandHelpMessage(
-            commandParameterHelper,
+            commandParameterResolver,
             context.Functions.PermissionCheck);
         await context.Functions.ReplyCard.Invoke(commandNodeHelpCard);
         

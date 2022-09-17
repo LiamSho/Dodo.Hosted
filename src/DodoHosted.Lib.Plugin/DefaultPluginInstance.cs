@@ -10,8 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Open.Plugin;
-
 namespace DodoHosted.Lib.Plugin;
 
 public class DefaultPluginInstance : DodoHostedPlugin

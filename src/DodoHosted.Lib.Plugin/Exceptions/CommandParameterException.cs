@@ -10,15 +10,12 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Types;
-using DodoHosted.Lib.Plugin.Exceptions;
-using DodoHosted.Lib.Plugin.Models;
+namespace DodoHosted.Lib.Plugin.Exceptions;
 
-// ReSharper disable InvertIf
-
-namespace DodoHosted.Lib.Plugin.Helper;
-
-public static class CommandOptionTypeHelper
+/// <summary>
+/// 指令参数错误
+/// </summary>
+public class CommandParameterException : Exception
 {
-    
+    public CommandParameterException(string message) : base(message) { }
 }

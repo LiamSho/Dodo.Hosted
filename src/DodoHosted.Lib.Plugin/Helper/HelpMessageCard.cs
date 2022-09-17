@@ -10,14 +10,9 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base;
-using DodoHosted.Base.App;
-using DodoHosted.Base.App.Command;
 using DodoHosted.Base.Card;
 using DodoHosted.Base.Card.CardComponent;
 using DodoHosted.Base.Card.Enums;
-using DodoHosted.Lib.Plugin.Interfaces;
-using DodoHosted.Lib.Plugin.Models.Manifest;
 
 namespace DodoHosted.Lib.Plugin.Helper;
 
@@ -25,7 +20,7 @@ public static class HelpMessageCard
 {
     public static async Task<CardMessage> GetCommandHelpMessage(
         this CommandNode node,
-        ICommandParameterHelper commandParameterHelper,
+        ICommandParameterResolver commandParameterResolver,
         PluginBase.PermissionCheck permissionChecker)
     {
         var card = new CardMessage
@@ -63,7 +58,7 @@ public static class HelpMessageCard
                 var attrs = new List<string>
                 {
                     cmdOption.Required ? "`必填`" : "`可选`",
-                    $"`{commandParameterHelper.GetDisplayTypeName(type)}`"
+                    $"`{commandParameterResolver.GetDisplayParameterTypeName(type)}`"
                 };
 
                 card.AddComponent(new Header(title));
