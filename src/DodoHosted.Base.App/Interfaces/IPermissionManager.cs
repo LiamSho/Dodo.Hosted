@@ -18,11 +18,7 @@ namespace DodoHosted.Base.App.Interfaces;
 
 public interface IPermissionManager
 {
-    Task<PermissionSchema?> DescribeSchemaCheck(string node, CommandMessage commandMessage);
-    Task<PermissionSchema?> DescribeSchemaCheck(string node, IEnumerable<MemberRole> roles, string islandId, string channelId);
     Task<PermissionSchema?> DescribeSchemaCheck(string node, IEnumerable<GetMemberRoleListOutput> roles, string islandId, string channelId);
-    Task<bool> CheckPermission(string node, CommandMessage commandMessage);
-    Task<bool> CheckPermission(string node, IEnumerable<MemberRole> roles, string islandId, string channelId);
     Task<bool> CheckPermission(string node, IEnumerable<GetMemberRoleListOutput> roles, string islandId, string channelId);
     Task<PermissionSchema?> AddPermission(string node, string islandId, string channelId, string roleId, string value);
     Task<(PermissionSchema?, PermissionSchema?)> SetPermissionSchema(string islandId, Guid id, string? channel = null, string? role = null, string? value = null);

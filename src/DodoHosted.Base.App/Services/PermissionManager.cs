@@ -32,26 +32,6 @@ public class PermissionManager : IPermissionManager
 
     #region Describe Schema Check
 
-    public Task<PermissionSchema?> DescribeSchemaCheck(string node, CommandMessage commandMessage)
-    {
-        return DescribeSchemaCheck(node,
-            commandMessage.Roles
-                .OrderByDescending(x => x.Position)
-                .Select(x => x.Id)
-                .ToList(),
-            commandMessage.IslandId, commandMessage.ChannelId);
-    }
-
-    public Task<PermissionSchema?> DescribeSchemaCheck(string node, IEnumerable<MemberRole> roles, string islandId, string channelId)
-    {
-        return DescribeSchemaCheck(node,
-            roles
-                .OrderByDescending(x => x.Position)
-                .Select(x => x.Id)
-                .ToList(),
-            islandId, channelId);
-    }
-
     public Task<PermissionSchema?> DescribeSchemaCheck(string node, IEnumerable<GetMemberRoleListOutput> roles, string islandId, string channelId)
     {
         return DescribeSchemaCheck(node,
@@ -189,18 +169,6 @@ public class PermissionManager : IPermissionManager
     #endregion
 
     #region Check Permission
-
-    public async Task<bool> CheckPermission(string node, CommandMessage commandMessage)
-    {
-        var schema = await DescribeSchemaCheck(node, commandMessage);
-        return schema?.Value == "allow";
-    }
-
-    public async Task<bool> CheckPermission(string node, IEnumerable<MemberRole> roles, string islandId, string channelId)
-    {
-        var schema = await DescribeSchemaCheck(node, roles, islandId, channelId);
-        return schema?.Value == "allow";
-    }
 
     public async Task<bool> CheckPermission(string node, IEnumerable<GetMemberRoleListOutput> roles, string islandId, string channelId)
     {
