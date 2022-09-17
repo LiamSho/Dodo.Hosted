@@ -11,6 +11,9 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Text.RegularExpressions;
+using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base.Enums;
+using DodoHosted.Base.Events;
 
 namespace DodoHosted.Lib.Plugin.Helper;
 
@@ -136,5 +139,33 @@ public static class CommandParser
         }
 
         return new CommandParsed { CommandName = cmdName, Path = path.ToArray(), Arguments = arguments };
+    }
+
+    public static PluginBase.UserInfo GetUserInfo(this DodoChannelMessageEvent<MessageBodyText> messageEvent)
+    {
+        var eventBody = messageEvent.Message.Data.EventBody;
+        var userInfo = new PluginBase.UserInfo(
+            eventBody.Personal.NickName,
+            eventBody.Personal.AvatarUrl,
+            (Sex)eventBody.Personal.Sex,
+            eventBody.Member.NickName,
+            eventBody.Member.Level,
+            DateTimeOffset.Parse(eventBody.Member.JoinTime),
+            eventBody.DodoId);
+
+        return userInfo;
+    }
+
+    public static PluginBase.EventInfo GetEventInfo(this DodoChannelMessageEvent<MessageBodyText> messageEvent)
+    {
+        var eventBody = messageEvent.Message.Data.EventBody;
+        var eventInfo = new PluginBase.EventInfo(
+            eventBody.IslandId,
+            eventBody.ChannelId,
+            eventBody.MessageId,
+            messageEvent.Message.Data.EventId,
+            messageEvent.Message.Data.Timestamp);
+
+        return eventInfo;
     }
 }

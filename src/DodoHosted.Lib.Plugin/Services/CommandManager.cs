@@ -15,7 +15,6 @@ using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base.Card;
-using DodoHosted.Base.Enums;
 using DodoHosted.Base.Events;
 
 namespace DodoHosted.Lib.Plugin.Services;
@@ -53,23 +52,10 @@ public class CommandManager : ICommandManager
         }
 
         var sw = Stopwatch.StartNew();
-        
-        var eventBody = messageEvent.Message.Data.EventBody;
-        var userInfo = new PluginBase.UserInfo(
-            eventBody.Personal.NickName,
-            eventBody.Personal.AvatarUrl,
-            (Sex)eventBody.Personal.Sex,
-            eventBody.Member.NickName,
-            eventBody.Member.Level,
-            DateTimeOffset.Parse(eventBody.Member.JoinTime),
-            eventBody.DodoId);
-        var eventInfo = new PluginBase.EventInfo(
-            eventBody.IslandId,
-            eventBody.ChannelId,
-            eventBody.MessageId,
-            messageEvent.Message.Data.EventId,
-            messageEvent.Message.Data.Timestamp);
-        
+
+        var eventInfo = messageEvent.GetEventInfo();
+        var userInfo = messageEvent.GetUserInfo();
+
         _logger.LogTrace("接收到指令：{TraceCommandMessageReceived}，发送者：{TraceCommandSender}", message, userInfo.NickName);
 
         // Reply 委托
