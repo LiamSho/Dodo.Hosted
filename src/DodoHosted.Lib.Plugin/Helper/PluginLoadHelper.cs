@@ -79,7 +79,6 @@ internal static class PluginLoadHelper
     /// <param name="source"></param>
     /// <param name="pluginInfo"></param>
     /// <returns></returns>
-    /// <exception cref="InvalidPluginBundleException"></exception>
     internal static (PluginAssemblyLoadContext, Assembly) LoadPluginAssembly(this DirectoryInfo source, PluginInfo pluginInfo)
     {
         var entryAssembly = source
@@ -358,11 +357,19 @@ internal static class PluginLoadHelper
         }
 
         var ins = Activator.CreateInstance(type);
-        if (ins is DodoHostedPlugin plugin)
+        
+        if (ins is not DodoHostedPlugin plugin)
         {
-            return plugin;
+            throw new PluginAssemblyLoadException($"无法实例化 {type.FullName}");
         }
 
-        throw new PluginAssemblyLoadException($"无法实例化 {type.FullName}");
+        var valid = PluginApiLevel.IsCompatible(plugin.API_LEVEL);
+
+        if (valid is false)
+        {
+            throw new PluginAssemblyLoadException($"插件 API 版本不兼容，当前 {plugin.API_LEVEL}，需要 {PluginApiLevel.GetApiLevelString()}");
+        }
+            
+        return plugin;
     }
 }

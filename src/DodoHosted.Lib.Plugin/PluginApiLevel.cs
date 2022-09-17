@@ -10,16 +10,14 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Open.Plugin;
+// ReSharper disable InconsistentNaming
+namespace DodoHosted.Lib.Plugin;
 
-public abstract class DodoHostedPlugin
+public static class PluginApiLevel
 {
-    // ReSharper disable once InconsistentNaming
-    // ReSharper disable once MemberCanBeMadeStatic.Global
-    public int API_LEVEL => 1;
-
-    public abstract Task OnLoad();
-    public abstract Task OnDestroy();
-
-    public abstract Dictionary<Type, string> RegisterMongoDbCollection();
+    private const int CURRENT_API_LEVEL = 1;
+    private const int MINIMUM_COMPATIBLE_API_LEVEL = 1;
+    
+    public static bool IsCompatible(int apiLevel) => apiLevel is >= MINIMUM_COMPATIBLE_API_LEVEL and <= CURRENT_API_LEVEL;
+    public static string GetApiLevelString() => $"[{MINIMUM_COMPATIBLE_API_LEVEL, CURRENT_API_LEVEL}]";
 }
