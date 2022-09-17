@@ -19,7 +19,7 @@ namespace DodoHosted.Lib.Plugin.Builtin;
 // ReSharper disable MemberCanBeMadeStatic.Global
 // ReSharper disable MemberCanBePrivate.Global
 
-public class PermissionManagerCommand : ICommandExecutor
+public sealed class PermissionManagerCommand : ICommandExecutor
 {
     public async Task<bool> AddPermission(
         PluginBase.Context context,

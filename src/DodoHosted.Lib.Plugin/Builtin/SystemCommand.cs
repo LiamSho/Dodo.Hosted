@@ -21,7 +21,7 @@ using MongoDB.Driver;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
-public class SystemCommand : ICommandExecutor
+public sealed class SystemCommand : ICommandExecutor
 {
     public async Task<bool> GetGcInfo(PluginBase.Context context)
     {

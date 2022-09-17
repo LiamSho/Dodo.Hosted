@@ -16,7 +16,7 @@ namespace DodoHosted.Lib.Plugin.Builtin;
 // ReSharper disable MemberCanBeMadeStatic.Global
 // ReSharper disable MemberCanBePrivate.Global
 
-public class HelpCommand : ICommandExecutor
+public sealed class HelpCommand : ICommandExecutor
 {
     public async Task<bool> GetAllCommands(
         PluginBase.Context context,

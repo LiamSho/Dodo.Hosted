@@ -224,6 +224,7 @@ internal static class PluginLoadHelper
     private static EventHandlerManifest[] FetchEventHandlers(this IEnumerable<Type> types, ILogger logger)
     {
         var eventHandlerTypes = types
+            .Where(x => x.IsSealed)
             .Where(x => x != typeof(IDodoHostedPluginEventHandler<>))
             .Where(x => x
                 .GetInterfaces()
@@ -280,6 +281,7 @@ internal static class PluginLoadHelper
     private static CommandManifest[] FetchCommandExecutors(this IEnumerable<Type> types, ILogger logger)
     {
         var commandExecutorTypes = types
+            .Where(x => x.IsSealed)
             .Where(x => x != typeof(ICommandExecutor))
             .Where(x => x.IsAssignableTo(typeof(ICommandExecutor)))
             .Where(x => x.ContainsGenericParameters is false)
@@ -321,6 +323,7 @@ internal static class PluginLoadHelper
     private static HostedServiceManifest[] FetchHostedService(this IEnumerable<Type> types, ILogger logger, IServiceProvider provider)
     {
         var hostedServiceTypes = types
+            .Where(x => x.IsSealed)
             .Where(x => x != typeof(IPluginHostedService))
             .Where(x => x.IsAssignableTo(typeof(IPluginHostedService)))
             .ToList();
@@ -357,6 +360,7 @@ internal static class PluginLoadHelper
     internal static DodoHostedPlugin? FetchPluginInstance(this IEnumerable<Type> types)
     {
         var type = types
+            .Where(x => x.IsSealed)
             .Where(x => x != typeof(DefaultPluginInstance))
             .FirstOrDefault(x => x.IsAssignableTo(typeof(DodoHostedPlugin)));
         if (type is null)

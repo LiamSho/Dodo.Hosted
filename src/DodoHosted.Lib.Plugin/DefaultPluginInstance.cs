@@ -12,7 +12,7 @@
 
 namespace DodoHosted.Lib.Plugin;
 
-public class DefaultPluginInstance : DodoHostedPlugin
+public sealed class DefaultPluginInstance : DodoHostedPlugin
 {
     public override Task OnLoad()
     {

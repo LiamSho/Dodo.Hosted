@@ -23,7 +23,7 @@ namespace DodoHosted.Lib.Plugin.Builtin;
 // ReSharper disable MemberCanBeMadeStatic.Global
 // ReSharper disable MemberCanBePrivate.Global
 
-public class IslandManagerCommand : ICommandExecutor
+public sealed class IslandManagerCommand : ICommandExecutor
 {
     public async Task<bool> SetLoggerChannel(
         PluginBase.Context context,

@@ -14,7 +14,7 @@ using MongoDB.Bson;
 
 namespace DodoHosted.Lib.Plugin;
 
-public class BuiltinInstance : DodoHostedPlugin
+public sealed class BuiltinInstance : DodoHostedPlugin
 {
     public override Task OnLoad()
     {
