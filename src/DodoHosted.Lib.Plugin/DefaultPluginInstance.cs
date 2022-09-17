@@ -24,8 +24,8 @@ public class DefaultPluginInstance : DodoHostedPlugin
         return Task.CompletedTask;
     }
 
-    public override Dictionary<Type, string> RegisterMongoDbCollection()
+    public override int ConfigurationVersion()
     {
-        return new Dictionary<Type, string>();
+        return 0;
     }
 }

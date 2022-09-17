@@ -158,6 +158,12 @@ public class CommandParameterResolver : ICommandParameterResolver
                 var genericMethod = s_getCollectionMethod.MakeGenericMethod(collectionType);
                 return genericMethod.Invoke(database, new object?[] { collectionName, null })!;
             }),
+            new(typeof(PluginConfigurationManager), (provider, manifest, _) =>
+            {
+                var mongo = provider.GetRequiredService<IMongoDatabase>();
+                var configurationVersion = manifest.DodoHostedPlugin.ConfigurationVersion();
+                return new PluginConfigurationManager(mongo, manifest.PluginInfo.Identifier, configurationVersion);
+            }),
             
             new(typeof(IPluginLifetimeManager), (provider, _, _) => provider.GetRequiredService<IPluginLifetimeManager>(), true),
             new(typeof(IPluginManager), (provider, _, _) => provider.GetRequiredService<IPluginManager>(), true),

@@ -10,6 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using MongoDB.Bson;
+
 namespace DodoHosted.Lib.Plugin;
 
 public class BuiltinInstance : DodoHostedPlugin
@@ -24,12 +26,18 @@ public class BuiltinInstance : DodoHostedPlugin
         return Task.CompletedTask;
     }
 
+    public override int ConfigurationVersion()
+    {
+        return 1;
+    }
+
     public override Dictionary<Type, string> RegisterMongoDbCollection()
     {
         return new Dictionary<Type, string>
         {
             { typeof(IslandSettings), HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS },
-            { typeof(PermissionSchema), HostConstants.MONGO_COLLECTION_PERMISSION_SCHEMA }
+            { typeof(PermissionSchema), HostConstants.MONGO_COLLECTION_PERMISSION_SCHEMA },
+            { typeof(BsonDocument), HostConstants.MONGO_COLLECTION_PLUGIN_OPTIONS }
         };
     }
 }

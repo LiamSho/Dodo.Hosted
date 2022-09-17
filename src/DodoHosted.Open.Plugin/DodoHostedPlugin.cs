@@ -21,5 +21,9 @@ public abstract class DodoHostedPlugin
     public abstract Task OnLoad();
     public abstract Task OnDestroy();
 
-    public abstract Dictionary<Type, string> RegisterMongoDbCollection();
+    public abstract int ConfigurationVersion();
+    public virtual Dictionary<Type, string> RegisterMongoDbCollection()
+    {
+        return new Dictionary<Type, string>();
+    }
 }

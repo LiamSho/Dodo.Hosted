@@ -17,4 +17,5 @@ public static class HostConstants
 {
     public const string MONGO_COLLECTION_ISLAND_SETTINGS = "system-island-settings";
     public const string MONGO_COLLECTION_PERMISSION_SCHEMA = "system-permission-schema";
+    public const string MONGO_COLLECTION_PLUGIN_OPTIONS = "system-plugin-options";
 }
