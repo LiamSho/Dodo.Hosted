@@ -70,6 +70,14 @@ internal static class PluginLoadHelper
             throw new PluginAssemblyLoadException($"插件包 {bundle.FullName} 中找不到 plugin.json");
         }
 
+        var apiVersion = pluginInfo.ApiVersion;
+        var isCompatible = PluginApiLevel.IsCompatible(apiVersion);
+        
+        if (isCompatible is false)
+        {
+            throw new PluginAssemblyLoadException($"插件包 {bundle.FullName} 的 API 版本 {apiVersion} 与主程序不兼容，需求 {PluginApiLevel.GetApiLevelString()}");
+        }
+        
         return pluginInfo;
     }
 
@@ -363,13 +371,6 @@ internal static class PluginLoadHelper
             throw new PluginAssemblyLoadException($"无法实例化 {type.FullName}");
         }
 
-        var valid = PluginApiLevel.IsCompatible(plugin.API_LEVEL);
-
-        if (valid is false)
-        {
-            throw new PluginAssemblyLoadException($"插件 API 版本不兼容，当前 {plugin.API_LEVEL}，需要 {PluginApiLevel.GetApiLevelString()}");
-        }
-            
         return plugin;
     }
 }

@@ -17,6 +17,8 @@ public static class PluginApiLevel
 {
     private const int CURRENT_API_LEVEL = 1;
     private const int MINIMUM_COMPATIBLE_API_LEVEL = 1;
+
+    public static int CurrentApiLevel => CURRENT_API_LEVEL;
     
     public static bool IsCompatible(int apiLevel) => apiLevel is >= MINIMUM_COMPATIBLE_API_LEVEL and <= CURRENT_API_LEVEL;
     public static string GetApiLevelString() => $"[{MINIMUM_COMPATIBLE_API_LEVEL, CURRENT_API_LEVEL}]";

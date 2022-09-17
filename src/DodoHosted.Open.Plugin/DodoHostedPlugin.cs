@@ -14,14 +14,11 @@ namespace DodoHosted.Open.Plugin;
 
 public abstract class DodoHostedPlugin
 {
-    // ReSharper disable once InconsistentNaming
-    // ReSharper disable once MemberCanBeMadeStatic.Global
-    public int API_LEVEL => 1;
-
     public abstract Task OnLoad();
     public abstract Task OnDestroy();
 
     public abstract int ConfigurationVersion();
+    
     public virtual Dictionary<Type, string> RegisterMongoDbCollection()
     {
         return new Dictionary<Type, string>();

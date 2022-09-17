@@ -193,7 +193,8 @@ public class PluginLifetimeManager : IPluginLifetimeManager
                     Description = "Native Assembly",
                     EntryAssembly = assembly.FullName!,
                     Identifier = $"native-{name}",
-                    Version = "native"
+                    Version = "native",
+                    ApiVersion = PluginApiLevel.CurrentApiLevel
                 },
                 Context = null,
                 IsNative = true,

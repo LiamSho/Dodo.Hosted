@@ -7,6 +7,10 @@
       "type": "string",
       "description": "插件标识符"
     },
+    "api_version": {
+      "type": "integer",
+      "description": "插件适配 API 版本"
+    },
     "name": {
       "type": "string",
       "description": "插件名称"
@@ -30,6 +34,7 @@
   },
   "required": [
     "identifier",
+    "api_version",
     "name",
     "version",
     "description",

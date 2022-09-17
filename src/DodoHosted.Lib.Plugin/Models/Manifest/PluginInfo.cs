@@ -12,7 +12,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace DodoHosted.Lib.Plugin.Models;
+namespace DodoHosted.Lib.Plugin.Models.Manifest;
 
 /// <summary>
 /// 插件信息
@@ -54,4 +54,10 @@ public record PluginInfo
     /// </summary>
     [JsonPropertyName("entry_assembly")]
     public required string EntryAssembly { get; init; }
+    
+    /// <summary>
+    /// API 版本
+    /// </summary>
+    [JsonPropertyName("api_version")]
+    public required int ApiVersion { get; init; }
 }
