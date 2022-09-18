@@ -20,7 +20,7 @@ public static class HelpMessageCard
 {
     public static async Task<CardMessage> GetCommandHelpMessage(
         this CommandNode node,
-        ICommandParameterResolver commandParameterResolver,
+        IParameterResolver parameterResolver,
         PluginBase.PermissionCheck permissionChecker)
     {
         var card = new CardMessage
@@ -58,7 +58,7 @@ public static class HelpMessageCard
                 var attrs = new List<string>
                 {
                     cmdOption.Required ? "`必填`" : "`可选`",
-                    $"`{commandParameterResolver.GetDisplayParameterTypeName(type)}`"
+                    $"`{parameterResolver.GetDisplayParameterTypeName(type)}`"
                 };
 
                 card.AddComponent(new Header(title));

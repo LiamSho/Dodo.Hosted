@@ -10,12 +10,12 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Lib.Plugin.Interfaces;
+namespace DodoHosted.Lib.Plugin.Exceptions;
 
-public interface ICommandParameterResolver
+/// <summary>
+/// 指令参数错误
+/// </summary>
+public class ParameterResolverException : Exception
 {
-    object?[] GetMethodInvokeParameter(CommandNode node, PluginManifest manifest, CommandParsed commandParsed, PluginBase.Context context);
-    bool ValidateOptionParameterType(Type type);
-    bool ValidateServiceParameterType(Type type, bool native = false);
-    string GetDisplayParameterTypeName(Type type);
+    public ParameterResolverException(string message) : base(message) { }
 }

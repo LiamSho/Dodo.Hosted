@@ -21,7 +21,7 @@ public sealed class HelpCommand : ICommandExecutor
     public async Task<bool> GetAllCommands(
         PluginBase.Context context,
         [CmdInject] IPluginManager pluginManager,
-        [CmdInject] ICommandParameterResolver commandParameterResolver,
+        [CmdInject] IParameterResolver parameterResolver,
         [CmdOption("name", "n", "指令的名称，为空时显示所有可用指令", false)] string? commandName,
         [CmdOption("path", "p", "指令的路径，使用 `,` 分隔，为空时显示所有可用指令", false)] string? commandPath)
     {
@@ -53,7 +53,7 @@ public sealed class HelpCommand : ICommandExecutor
         }
 
         var commandNodeHelpCard = await node.GetCommandHelpMessage(
-            commandParameterResolver,
+            parameterResolver,
             context.Functions.PermissionCheck);
         await context.Functions.ReplyCard.Invoke(commandNodeHelpCard);
         

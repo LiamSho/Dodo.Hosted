@@ -42,8 +42,8 @@ public static class  CommandMethodInvoker
             }
         }
 
-        var commandParameterHelper = context.Provider.GetRequiredService<ICommandParameterResolver>();
-        var parameters = commandParameterHelper.GetMethodInvokeParameter(node, pluginManifest, commandParsed, context);
+        var commandParameterHelper = context.Provider.GetRequiredService<IParameterResolver>();
+        var parameters = commandParameterHelper.GetCommandInvokeParameter(node, pluginManifest, commandParsed, context);
         if (node.ContextParamOrder != -1)
         {
             parameters[(int)node.ContextParamOrder!] = context;

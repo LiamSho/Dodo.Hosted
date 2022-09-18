@@ -14,18 +14,7 @@ namespace DodoHosted.Lib.Plugin;
 
 public sealed class DefaultPluginInstance : DodoHostedPlugin
 {
-    public override Task OnLoad()
-    {
-        return Task.CompletedTask;
-    }
-
-    public override Task OnDestroy()
-    {
-        return Task.CompletedTask;
-    }
-
-    public override int ConfigurationVersion()
-    {
-        return 0;
-    }
+    public override Task OnLoad() => Task.CompletedTask;
+    public override Task OnDestroy() => Task.CompletedTask;
+    public override int ConfigurationVersion() => 0;
 }

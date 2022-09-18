@@ -17,15 +17,18 @@ using MongoDB.Driver;
 
 namespace DodoHosted.Lib.Plugin.Services;
 
-public class CommandParameterResolver : ICommandParameterResolver
+public class ParameterResolver : IParameterResolver
 {
-    public object?[] GetMethodInvokeParameter(
+    public object?[] GetCommandInvokeParameter(
         CommandNode node,
         PluginManifest manifest,
         CommandParsed commandParsed,
         PluginBase.Context context)
     {
-        var length = node.Options.Count + node.ServiceOptions.Count + (node.ContextParamOrder is null ? 0 : 1);
+        var length =
+            node.Options.Count +
+            node.ServiceOptions.Count +
+            (node.ContextParamOrder is null ? 0 : 1);
         var parameters = new object?[length];
         
         var options = node.Options;
@@ -40,7 +43,7 @@ public class CommandParameterResolver : ICommandParameterResolver
             {
                 if (attr.Required)
                 {
-                    throw new CommandParameterException($"缺少必填参数 {attr.Name}");
+                    throw new ParameterResolverException($"缺少必填参数 {attr.Name}");
                 }
                 
                 parameters[order] = null;
@@ -57,7 +60,7 @@ public class CommandParameterResolver : ICommandParameterResolver
             var service = GetServiceParameterValue(context.Provider, manifest, type);
             parameters[order] = service;
         }
-        
+
         return parameters;
     }
     
@@ -94,7 +97,7 @@ public class CommandParameterResolver : ICommandParameterResolver
         if (optionType is null)
         {
             throw new InternalProcessException(
-                nameof(CommandParameterResolver),
+                nameof(ParameterResolver),
                 nameof(GetDisplayParameterTypeName),
                 $"未知类型 {type.FullName}");
         }
@@ -143,13 +146,13 @@ public class CommandParameterResolver : ICommandParameterResolver
 
                 if (collectionType is null)
                 {
-                    throw new InternalProcessException(nameof(CommandParameterResolver), nameof(GetServiceParameterValue), "无法获取泛型参数");
+                    throw new InternalProcessException(nameof(ParameterResolver), nameof(GetServiceParameterValue), "无法获取泛型参数");
                 }
 
                 var contains = registered.ContainsKey(collectionType);
                 if (contains is false)
                 {
-                    throw new CommandParameterException("未注册的 MongoDb 集合");
+                    throw new ParameterResolverException("未注册的 MongoDb 集合");
                 }
                 
                 var collectionName = registered[collectionType];
@@ -169,7 +172,7 @@ public class CommandParameterResolver : ICommandParameterResolver
             new(typeof(IPluginManager), (provider, _, _) => provider.GetRequiredService<IPluginManager>(), true),
             new(typeof(ICommandManager), (provider, _, _) => provider.GetRequiredService<ICommandManager>(), true),
             new(typeof(IEventManager), (provider, _, _) => provider.GetRequiredService<IEventManager>(), true),
-            new(typeof(ICommandParameterResolver), (provider, _, _) => provider.GetRequiredService<ICommandParameterResolver>(), true)
+            new(typeof(IParameterResolver), (provider, _, _) => provider.GetRequiredService<IParameterResolver>(), true)
         };
 
     private static object GetPrimitiveTypeValue(Type type, string str)
@@ -181,7 +184,7 @@ public class CommandParameterResolver : ICommandParameterResolver
         }
         catch (Exception)
         {
-            throw new CommandParameterException($"无法将 {str} 转换为指定类型 {type.FullName}");
+            throw new ParameterResolverException($"无法将 {str} 转换为指定类型 {type.FullName}");
         }
     }
 
@@ -191,7 +194,7 @@ public class CommandParameterResolver : ICommandParameterResolver
         if (optionType is null)
         {
             throw new InternalProcessException(
-                nameof(CommandParameterResolver),
+                nameof(ParameterResolver),
                 nameof(GetOptionParameterValue),
                 $"未知类型 {type.FullName}");
         }
@@ -205,7 +208,7 @@ public class CommandParameterResolver : ICommandParameterResolver
         if (serviceType is null)
         {
             throw new InternalProcessException(
-                nameof(CommandParameterResolver),
+                nameof(ParameterResolver),
                 nameof(GetServiceParameterValue),
                 $"未知类型 {type.FullName}");
         }

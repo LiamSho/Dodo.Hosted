@@ -16,20 +16,9 @@ namespace DodoHosted.Lib.Plugin;
 
 public sealed class BuiltinInstance : DodoHostedPlugin
 {
-    public override Task OnLoad()
-    {
-        return Task.CompletedTask;
-    }
-
-    public override Task OnDestroy()
-    {
-        return Task.CompletedTask;
-    }
-
-    public override int ConfigurationVersion()
-    {
-        return 1;
-    }
+    public override Task OnLoad() => Task.CompletedTask;
+    public override Task OnDestroy() => Task.CompletedTask;
+    public override int ConfigurationVersion() => 1;
 
     public override Dictionary<Type, string> RegisterMongoDbCollection()
     {

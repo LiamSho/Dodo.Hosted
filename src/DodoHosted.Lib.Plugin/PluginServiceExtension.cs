@@ -22,7 +22,7 @@ public static class PluginServiceExtension
         serviceCollection.AddSingleton<IPluginLifetimeManager, PluginLifetimeManager>();
         serviceCollection.AddSingleton<ICommandManager, CommandManager>();
         serviceCollection.AddSingleton<IEventManager, EventManager>();
-        serviceCollection.AddSingleton<ICommandParameterResolver, CommandParameterResolver>();
+        serviceCollection.AddSingleton<IParameterResolver, ParameterResolver>();
 
         serviceCollection.AddHostedService<PluginSystemHosted>();
 
