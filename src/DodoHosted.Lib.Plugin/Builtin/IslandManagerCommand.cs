@@ -27,10 +27,9 @@ public sealed class IslandManagerCommand : ICommandExecutor
 {
     public async Task<bool> SetLoggerChannel(
         PluginBase.Context context,
+        [CmdInject] IMongoCollection<IslandSettings> collection,
         [CmdOption("channel", "c", "日志频道")] DodoChannelId channel)
     {
-        var collection = GetIslandSettingsCollection(context);
-
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
             .FirstOrDefaultAsync();
@@ -48,10 +47,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         return true;
     }
     
-    public async Task<bool> EnableLoggerChannel(PluginBase.Context context)
+    public async Task<bool> EnableLoggerChannel(
+        PluginBase.Context context,
+        [CmdInject] IMongoCollection<IslandSettings> collection)
     {
-        var collection = GetIslandSettingsCollection(context);
-
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
             .FirstOrDefaultAsync();
@@ -69,10 +68,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         return true;
     }
     
-    public async Task<bool> DisableLoggerChannel(PluginBase.Context context)
+    public async Task<bool> DisableLoggerChannel(
+        PluginBase.Context context,
+        [CmdInject] IMongoCollection<IslandSettings> collection)
     {
-        var collection = GetIslandSettingsCollection(context);
-
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
             .FirstOrDefaultAsync();
@@ -90,10 +89,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         return true;
     }
 
-    public async Task<bool> RenewWebApiToken(PluginBase.Context context)
+    public async Task<bool> RenewWebApiToken(
+        PluginBase.Context context,
+        [CmdInject] IMongoCollection<IslandSettings> collection)
     {
-        var collection = GetIslandSettingsCollection(context);
-
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
             .FirstOrDefaultAsync();
@@ -111,9 +110,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         return true;
     }
 
-    public async Task<bool> GetSettings(PluginBase.Context context)
+    public async Task<bool> GetSettings(
+        PluginBase.Context context,
+        [CmdInject] IMongoCollection<IslandSettings> collection)
     {
-        var collection = GetIslandSettingsCollection(context);
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
             .FirstOrDefaultAsync();
@@ -162,10 +162,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         return true;
     }
 
-    public async Task<bool> GetWebApiToken(PluginBase.Context context)
+    public async Task<bool> GetWebApiToken(
+        PluginBase.Context context,
+        [CmdInject] IMongoCollection<IslandSettings> collection)
     {
-        var collection = GetIslandSettingsCollection(context);
-        
         var token = collection.AsQueryable()
             .FirstOrDefault(x => x.IslandId == context.EventInfo.IslandId)?.WebApiToken;
 
@@ -285,13 +285,6 @@ public sealed class IslandManagerCommand : ICommandExecutor
                 .Then("reaction", "删除消息反应", "reaction", DeleteReaction));
     }
 
-    private static IMongoCollection<IslandSettings> GetIslandSettingsCollection(PluginBase.Context context)
-    {
-         return context.Provider
-             .GetRequiredService<IMongoDatabase>()
-             .GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS); 
-    }
-    
     private static string FormatLength(string str, int maxLength, char placeHolder = ' ')
     {
         var s = str;
