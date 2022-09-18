@@ -10,8 +10,13 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Text;
+using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
+using DoDo.Open.Sdk.Models.Roles;
+using DodoHosted.Base.Card.BaseComponent;
+using DodoHosted.Base.Card.CardComponent;
+using DodoHosted.Base.Card.Enums;
+using DodoHosted.Lib.Plugin.Cards;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
@@ -61,7 +66,12 @@ public sealed class PermissionManagerCommand : ICommandExecutor
             return false;
         }
 
-        await context.Functions.Reply.Invoke($"权限节点添加成功：`{result}`");
+        var (roles, channels) =
+            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+        var card = result.GetPermissionSingleCard("添加权限节点", roles, channels);
+        card.Card.Theme = CardTheme.Green;
+
+        await context.Functions.ReplyCard.Invoke(card);
         return true;
     }
 
@@ -107,7 +117,11 @@ public sealed class PermissionManagerCommand : ICommandExecutor
             return false;
         }
 
-        await context.Functions.Reply.Invoke($"修改成功：\n- 初始值：`{ori}`\n- 修改后：`{upt}`");
+        var (roles, channels) =
+            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+        var card = PermissionManagerMessageCard.GetPermissionChangeResultCard(ori, upt!, roles.ToList(), channels.ToList());
+        
+        await context.Functions.ReplyCard.Invoke(card);
         return true;
     }
 
@@ -119,9 +133,6 @@ public sealed class PermissionManagerCommand : ICommandExecutor
     {
         var dryRun = isDryRun ?? false;
         
-        var messageBuilder = new StringBuilder();
-        messageBuilder.AppendLine(dryRun ? "`DRY-RUN` 将删除以下权限记录：" : "以下权限记录已删除：");
-
         var guidParsed = Guid.TryParse(nodeId, out var parsedGuid);
         if (guidParsed is false)
         {
@@ -130,16 +141,18 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         }
         
         var removePermissionSchema = await pm.RemovePermissionSchemaById(context.EventInfo.IslandId, parsedGuid, dryRun);
-        if (removePermissionSchema is not null)
+
+        var (roles, channels) =
+            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+        var card = removePermissionSchema.GetPermissionSingleCard("移除的权限", roles, channels);
+        if (dryRun)
         {
-            messageBuilder.AppendLine("- `NULL`");
-        }
-        else
-        {
-            messageBuilder.AppendLine($"- {removePermissionSchema}");
+            card.AddComponent(new Remark(new Text("运行模式：***DRY RUN***")));
         }
 
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        card.Card.Theme = dryRun ? CardTheme.Orange : CardTheme.Purple;
+
+        await context.Functions.ReplyCard.Invoke(card);
         return true;
     }
 
@@ -151,20 +164,19 @@ public sealed class PermissionManagerCommand : ICommandExecutor
     {
         var dryRun = isDryRun ?? false;
         
-        var messageBuilder = new StringBuilder();
-        messageBuilder.AppendLine(dryRun ? "`DRY-RUN` 将删除以下权限记录：" : "以下权限记录已删除：");
-
         var removePermissionSchema = await pm.RemovePermissionSchemasByNode(context.EventInfo.IslandId, node, dryRun);
-        if (removePermissionSchema.Count == 0)
+        
+        var (roles, channels) =
+            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+        var card = removePermissionSchema.GetPermissionListCard("移除的权限列表", roles, channels);
+        if (dryRun)
         {
-            messageBuilder.AppendLine("- `NULL`");
-        }
-        else
-        {
-            messageBuilder.AppendLine($"- {removePermissionSchema}");
+            card.AddComponent(new Remark(new Text("运行模式：***DRY RUN***")));
         }
 
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        card.Card.Theme = dryRun ? CardTheme.Orange : CardTheme.Purple;
+
+        await context.Functions.ReplyCard.Invoke(card);
         return true;
     }
     
@@ -177,20 +189,24 @@ public sealed class PermissionManagerCommand : ICommandExecutor
     {
         var dryRun = isDryRun ?? false;
         
-        var messageBuilder = new StringBuilder();
-        messageBuilder.AppendLine(dryRun ? "`DRY-RUN` 将删除以下权限记录：" : "以下权限记录已删除：");
-
         var removePermissionSchema = await pm.RemovePermissionSchemasBySearch(context.EventInfo.IslandId, channelId.Value, roleId, dryRun);
         if (removePermissionSchema.Count == 0)
         {
-            messageBuilder.AppendLine("- `NULL`");
-        }
-        else
-        {
-            messageBuilder.AppendLine($"- {removePermissionSchema}");
+            await context.Functions.Reply.Invoke("未找到匹配的权限记录");
+            return true;
         }
 
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        var (roles, channels) =
+            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+        var card = removePermissionSchema.GetPermissionListCard("移除的权限列表", roles, channels);
+        if (dryRun)
+        {
+            card.AddComponent(new Remark(new Text("运行模式：***DRY RUN***")));
+        }
+
+        card.Card.Theme = dryRun ? CardTheme.Orange : CardTheme.Purple;
+
+        await context.Functions.ReplyCard.Invoke(card);
         return true;
     }
 
@@ -198,7 +214,8 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         PluginBase.Context context,
         [CmdInject] IPermissionManager pm,
         [CmdOption("channel", "c", "适用频道", false)] DodoChannelIdWithWildcard? channelId,
-        [CmdOption("role", "r", "权限组 ID，可为 `*`", false)] string? roleId)
+        [CmdOption("role", "r", "权限组 ID，可为 `*`", false)] string? roleId,
+        [CmdOption("page", "p", "页码", false)] int? page)
     {
         if (roleId is not null)
         {
@@ -208,29 +225,32 @@ public sealed class PermissionManagerCommand : ICommandExecutor
                 return false;
             }
         }
-        
-        var perms = await pm.GetPermissionSchemas(context.EventInfo.IslandId, channelId?.Value, roleId);
 
-        if (perms.Count == 0)
+        const int PageSize = 10;
+
+        var p = Math.Max(page ?? 1, 1);
+
+        var allPerms = await pm.GetPermissionSchemas(context.EventInfo.IslandId, channelId?.Value, roleId);
+        var perms = allPerms
+            .OrderBy(x => x.Id)
+            .Skip(PageSize * (p - 1))
+            .Take(PageSize)
+            .ToArray();
+        
+        var pages = (int)Math.Ceiling(allPerms.Count / (double)PageSize);
+
+        if (perms.Length == 0)
         {
-            await context.Functions.Reply.Invoke("找不到符合检索条件的权限组");
+            var msg = p == 1 ? "找不到符合检索条件的权限组" : $"没有更多的内容了，最大页码 {pages}";
+            await context.Functions.Reply.Invoke(msg);
             return true;
         }
-        
-        var messageBuilder = new StringBuilder();
-        messageBuilder.AppendLine("检索到的权限组：");
 
-        foreach (var perm in perms)
-        {
-            messageBuilder.AppendLine($"- Id: `{perm.Id}`，" +
-                                      $"Node: `{perm.Node}`，" +
-                                      $"Channel: `{perm.Channel}`，" +
-                                      $"Role: `{perm.Role}`，" +
-                                      $"Value: `{perm.Value}`");
-        }
+        var (roles, channels) =
+            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+        var card = perms.GetPermissionListCard("权限列表", roles, channels, pages, p);
 
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
-
+        await context.Functions.ReplyCard.Invoke(card);
         return true;
     }
 
@@ -259,14 +279,13 @@ public sealed class PermissionManagerCommand : ICommandExecutor
             return false;
         }
         
+        var (roles, channels) =
+            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+        
         var result = await pm.DescribeSchemaCheck(node, memberRoles, context.EventInfo.IslandId, channelId.Value);
-
-        var resultString = result?.Value == "allow" ? "Allow" : "Deny";
-
-        var __ = result is null
-            ? await context.Functions.Reply.Invoke($"权限检查结果：`{resultString}`\n匹配规则：`NULL`")
-            : await context.Functions.Reply.Invoke($"权限检查结果：`{resultString}`\n匹配规则：`{result}`");
-
+        var card = result.GetPermissionCheckResultCard(roles, channels);
+        
+        await context.Functions.ReplyCard.Invoke(card);
         return true;
     }
 
@@ -281,5 +300,19 @@ public sealed class PermissionManagerCommand : ICommandExecutor
                 .Then("search", "根据频道与身份组检索进行移除", string.Empty, RemovePermissionBySearch))
             .Then("list", "列出权限节点", "list", ListPermissions)
             .Then("check", "测试用户权限检查", "check", CheckPermission);
+    }
+
+    private async Task<(IEnumerable<GetRoleListOutput>, IEnumerable<GetChannelListOutput>)> GetBasicInfos(OpenApiService openApiService, string islandId)
+    {
+        var roles = await openApiService.GetRoleListAsync(new GetRoleListInput
+        {
+            IslandId = islandId
+        }, true);
+        var channels = await openApiService.GetChannelListAsync(new GetChannelListInput
+        {
+            IslandId = islandId
+        }, true);
+
+        return (roles, channels);
     }
 }

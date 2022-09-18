@@ -14,7 +14,7 @@ using DodoHosted.Base.Card;
 using DodoHosted.Base.Card.CardComponent;
 using DodoHosted.Base.Card.Enums;
 
-namespace DodoHosted.Lib.Plugin.Helper;
+namespace DodoHosted.Lib.Plugin.Cards;
 
 public static class HelpMessageCard
 {
@@ -23,16 +23,12 @@ public static class HelpMessageCard
         IParameterResolver parameterResolver,
         PluginBase.PermissionCheck permissionChecker)
     {
-        var card = new CardMessage
+        var card = new CardMessage(new Card
         {
-            Content = string.Empty,
-            Card = new Card
-            {
-                Title = "指令帮助",
-                Theme = CardTheme.Default,
-                Components = new List<ICardComponent>()
-            }
-        };
+            Title = "指令帮助",
+            Theme = CardTheme.Default,
+            Components = new List<ICardComponent>()
+        });
         
         if (await permissionChecker.Invoke(node.PermissionNode) is false)
         {

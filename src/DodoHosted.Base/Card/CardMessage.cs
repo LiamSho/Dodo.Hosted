@@ -56,4 +56,13 @@ public record CardMessage
     {
         Card.Components.Add(component);
     }
+    
+    /// <summary>
+    /// 向组件容器中新增多个组件
+    /// </summary>
+    /// <param name="components"></param>
+    public void AddComponents(IEnumerable<ICardComponent> components)
+    {
+        Card.Components.AddRange(components);
+    }
 }

@@ -10,6 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Lib.Plugin.Cards;
+
 namespace DodoHosted.Lib.Plugin.Builtin;
 
 #pragma warning disable CA1822

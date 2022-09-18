@@ -11,8 +11,9 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Runtime.InteropServices;
-using System.Text;
 using DoDo.Open.Sdk.Models.Islands;
+using DodoHosted.Base.Card.Enums;
+using DodoHosted.Lib.Plugin.Cards;
 using MongoDB.Driver;
 
 #pragma warning disable CA1822
@@ -25,34 +26,39 @@ public sealed class SystemCommand : ICommandExecutor
 {
     public async Task<bool> GetGcInfo(PluginBase.Context context)
     {
-        var messageBuilder = new StringBuilder();
-
         var gcInfo = GC.GetGCMemoryInfo();
-        
-        messageBuilder.AppendLine($"Max Generation: `{GC.MaxGeneration}`");
-        messageBuilder.AppendLine($"Finalization Pending Count: `{gcInfo.FinalizationPendingCount}`");
-        messageBuilder.AppendLine($"Pinned Objects Count: `{gcInfo.PinnedObjectsCount}`");
-        messageBuilder.AppendLine($"Total Heap Size: `{ToMegabytes(gcInfo.HeapSizeBytes)} MB`");
-        messageBuilder.AppendLine($"Committed Heap Size: `{ToMegabytes(gcInfo.TotalCommittedBytes)} MB`");
-        messageBuilder.AppendLine($"Memory Load: `{ToMegabytes(gcInfo.MemoryLoadBytes)}` MB");
-        messageBuilder.AppendLine($"Total Allocated Memory: `{ToMegabytes(GC.GetTotalMemory(false))} MB`");
-        
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+
+        var infos = new Dictionary<string, string>
+        {
+            { "Max Generation", GC.MaxGeneration.ToString() },
+            { "Finalization Pending Count", gcInfo.FinalizationPendingCount.ToString() },
+            { "Pinned Objects Count", gcInfo.PinnedObjectsCount.ToString() },
+            { "Total Heap Size", $"{ToMegabytes(gcInfo.HeapSizeBytes)} MB" },
+            { "Committed Heap Size", $"{ToMegabytes(gcInfo.TotalCommittedBytes)} MB" },
+            { "Memory Load", $"{ToMegabytes(gcInfo.MemoryLoadBytes)} MB" },
+            { "Total Allocated Memory", $"{ToMegabytes(GC.GetTotalMemory(false))} MB" }
+        };
+
+        var card = SystemMessageCard.GetInfoListCard("Garbage Collector Info", CardTheme.Indigo, infos);
+        await context.Functions.ReplyCard.Invoke(card);
         
         return true;
     }
 
     public async Task<bool> GetSystemInfo(PluginBase.Context context)
     {
-        var messageBuilder = new StringBuilder();
+        var infos = new Dictionary<string, string>
+        {
+            { "System Time", $"{DateTimeOffset.UtcNow.AddHours(8):u}" },
+            { "DodoHosted Version", HostEnvs.DodoHostedVersion },
+            { "Containerized", HostEnvs.DodoHostedInContainer.ToString() },
+            { ".NET Runtime Framework", RuntimeInformation.FrameworkDescription },
+            { ".NET Runtime Identifier", RuntimeInformation.RuntimeIdentifier }
+        };
         
-        messageBuilder.AppendLine($"System Time: `{DateTimeOffset.UtcNow.AddHours(8).ToString("u")}`");
-        messageBuilder.AppendLine($"DodoHosted Version: `{HostEnvs.DodoHostedVersion}`");
-        messageBuilder.AppendLine($"Containerized: `{HostEnvs.DodoHostedInContainer.ToString()}`");
-        messageBuilder.AppendLine($".NET Runtime Framework: `{RuntimeInformation.FrameworkDescription}`");
-        messageBuilder.AppendLine($".NET Runtime Identifier: `{RuntimeInformation.RuntimeIdentifier}`");
+        var card = SystemMessageCard.GetInfoListCard("System Info", CardTheme.Indigo, infos);
         
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        await context.Functions.ReplyCard.Invoke(card);
         
         return true;
     }
@@ -63,26 +69,33 @@ public sealed class SystemCommand : ICommandExecutor
         [CmdInject] OpenApiService openApiService)
     {
         var islands = await openApiService.GetIslandListAsync(new GetIslandListInput());
-                
+        
         if (islands is null)
         {
             await context.Functions.Reply.Invoke("获取群组列表失败");
             return false;
         }
 
-        var messageBuilder = new StringBuilder();
+        var infos = new List<Dictionary<string, string>>();
         
         foreach (var island in islands)
         {
             var config = await collection.Find(x => x.IslandId == island.IslandId).FirstOrDefaultAsync();
             var allowWebApi = config is null ? "未配置" : config.AllowUseWebApi ? "✅" : "❌";
             var enableChannelLogger = config is null ? "未配置" : config.EnableChannelLogger ? "✅" : "❌";
-            messageBuilder.AppendLine($"- {island.IslandName} `{island.IslandId}`");
-            messageBuilder.AppendLine($"  $ Web API: {allowWebApi}");
-            messageBuilder.AppendLine($"  $ Channel Logger: {enableChannelLogger}");
+
+            infos.Add(new Dictionary<string, string>
+            {
+                { "Island Name", island.IslandName },
+                { "Island Id", island.IslandId },
+                { "Web API Status", allowWebApi },
+                { "Channel Logger", enableChannelLogger },
+            });
         }
         
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        var card = SystemMessageCard.GetInfoListCard("Islands Infos", CardTheme.Indigo, infos.ToArray());
+        
+        await context.Functions.ReplyCard.Invoke(card);
         
         return true;
     }
@@ -104,28 +117,38 @@ public sealed class SystemCommand : ICommandExecutor
     public async Task<bool> GetPluginList(
         PluginBase.Context context,
         [CmdOption("native", "n", "显示 Native 类型", false)] bool? native,
+        [CmdOption("page", "p", "页码", false)] int? page,
         [CmdInject] IPluginManager pm)
     {
-        var plugins = pm.GetPlugins(native ?? false).ToArray();
+        var p = Math.Max(page ?? 1, 1);
+
+        const int PageSize = 5;
+        
+        var plugins = pm.GetPlugins(native ?? false)
+            .OrderBy(x => x.PluginInfo.Identifier)
+            .Skip(PageSize * (p - 1))
+            .Take(PageSize)
+            .ToArray();
+        var maxCount = pm.GetPlugins(native ?? false).Count();
+        var maxPage = (int)Math.Ceiling(maxCount / (double)PageSize);
 
         if (plugins.Length == 0)
         {
-            await context.Functions.Reply.Invoke("没有已载入的插件");
+            if (p == 1)
+            {
+                await context.Functions.Reply.Invoke("没有已载入的插件");
+            }
+            else
+            {
+                await context.Functions.Reply.Invoke("没有更多插件了");
+            }
+
             return true;
         }
-        
-        var messageBuilder = new StringBuilder();
-        foreach (var p in plugins)
-        {
-            messageBuilder.AppendLine($"- `{p.PluginInfo.Identifier}`");
-            messageBuilder.AppendLine($"    $ 名称: {p.PluginInfo.Name}");
-            messageBuilder.AppendLine($"    $ 作者: {p.PluginInfo.Author}");
-            messageBuilder.AppendLine($"    $ 描述: {p.PluginInfo.Description}");
-            messageBuilder.AppendLine($"    $ 版本: {p.PluginInfo.Version}");
-        }
-        
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
-        
+
+        var card = SystemMessageCard.GetPluginsInfoCard($"Plugins Infos ({p}/{maxPage})", CardTheme.Indigo, plugins);
+        await context.Functions.ReplyCard.Invoke(card);
+
         return true;
     }
 
@@ -140,26 +163,9 @@ public sealed class SystemCommand : ICommandExecutor
             await context.Functions.Reply.Invoke($"插件 `{identifier}` 不存在");
             return false;
         }
-        
-        var messageBuilder = new StringBuilder();
-        messageBuilder.AppendLine($"- 标识符：{manifest.PluginInfo.Identifier}");
-        messageBuilder.AppendLine($"- 名称：{manifest.PluginInfo.Name}");
-        messageBuilder.AppendLine($"- 作者：{manifest.PluginInfo.Author}");
-        messageBuilder.AppendLine($"- 描述：{manifest.PluginInfo.Description}");
-        messageBuilder.AppendLine($"- 版本：{manifest.PluginInfo.Version}");
-        messageBuilder.AppendLine($"- 事件处理器 ({manifest.Worker.EventHandlers.Length} 个):");
-        foreach (var handler in manifest.Worker.EventHandlers)
-        {
-            messageBuilder.AppendLine($"    $ `{handler.EventHandlerType.Name}`");
-        }
-                
-        messageBuilder.AppendLine($"- 指令处理器 ({manifest.Worker.CommandExecutors.Length} 个):");
-        foreach (var command in manifest.Worker.CommandExecutors)
-        {
-            messageBuilder.AppendLine($"    $ `{command.RootNode.Value}`");
-        }
 
-        await context.Functions.Reply.Invoke(messageBuilder.ToString());
+        var card = SystemMessageCard.GetPluginInfoDetailCard("Plugin Detail", CardTheme.Indigo, manifest);
+        await context.Functions.ReplyCard.Invoke(card);
         
         return true;
     }

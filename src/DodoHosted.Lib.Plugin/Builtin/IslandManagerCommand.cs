@@ -10,11 +10,11 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using System.Text;
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Models.Resources;
 using DoDo.Open.Sdk.Models.Roles;
+using DodoHosted.Lib.Plugin.Cards;
 using MongoDB.Driver;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
@@ -36,8 +36,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         
         if (settings is null)
         {
-            await context.Functions.Reply.Invoke("修改失败，找不到记录");
-            return false;
+            throw new InternalProcessException(
+                nameof(IslandManagerCommand),
+                nameof(SetLoggerChannel),
+                $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
         }
 
         settings.LoggerChannelId = channel.Value;
@@ -57,8 +59,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         
         if (settings is null)
         {
-            await context.Functions.Reply.Invoke("修改失败，找不到记录");
-            return false;
+            throw new InternalProcessException(
+                nameof(IslandManagerCommand),
+                nameof(EnableLoggerChannel),
+                $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
         }
 
         settings.EnableChannelLogger = true;
@@ -78,8 +82,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         
         if (settings is null)
         {
-            await context.Functions.Reply.Invoke("修改失败，找不到记录");
-            return false;
+            throw new InternalProcessException(
+                nameof(IslandManagerCommand),
+                nameof(DisableLoggerChannel),
+                $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
         }
 
         settings.EnableChannelLogger = false;
@@ -99,8 +105,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
         
         if (settings is null)
         {
-            await context.Functions.Reply.Invoke("修改失败，找不到记录");
-            return false;
+            throw new InternalProcessException(
+                nameof(IslandManagerCommand),
+                nameof(RenewWebApiToken),
+                $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
         }
 
         settings.WebApiToken = TokenHelper.GenerateToken();
@@ -117,17 +125,18 @@ public sealed class IslandManagerCommand : ICommandExecutor
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
             .FirstOrDefaultAsync();
+
+        if (settings is null)
+        {
+            throw new InternalProcessException(
+                nameof(IslandManagerCommand),
+                nameof(GetSettings),
+                $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
+        }
+
+        var card = await settings.GetIslandSettingsCard(context.OpenApiService);
+        await context.Functions.ReplyCard.Invoke(card);
         
-        var logChannel = string.IsNullOrEmpty(settings.LoggerChannelId)
-                     ? "`NULL`"
-                     : $"<#{settings.LoggerChannelId}> `ID: {settings.LoggerChannelId}`";
-        
-        var islandSettingMessageBuilder = new StringBuilder();
-        islandSettingMessageBuilder.AppendLine("群组配置信息：");
-        islandSettingMessageBuilder.AppendLine($"- 启用日志频道：`{settings.EnableChannelLogger}`");
-        islandSettingMessageBuilder.AppendLine($"- 日志频道：{logChannel}");
-        
-        await context.Functions.Reply.Invoke(islandSettingMessageBuilder.ToString());
         return true;
     }
 
@@ -140,24 +149,10 @@ public sealed class IslandManagerCommand : ICommandExecutor
             await context.Functions.Reply.Invoke("找不到群组身份组信息");
             return false;
         }
-                 
-        var roleMessageBuilder = new StringBuilder();
-        roleMessageBuilder.AppendLine("群组身份组信息：");
 
-        var idMaxLength = roles.Select(x => x.RoleId.Length).Max();
-        var positionMaxLength = roles.Select(x => x.Position.ToString().Length).Max();
-        var maxPosition = roles.Select(x => x.Position).Max();
-                 
-        foreach (var role in roles.OrderByDescending(x => x.Position))
-        {
-            var descPosition = maxPosition - role.Position + 1;
-            roleMessageBuilder.AppendLine($"- {FormatLength(descPosition.ToString(), positionMaxLength, '0')} " +
-                                          $"`{FormatLength(role.RoleId, idMaxLength)}` " +
-                                          $"{FormatLength(role.RoleColor, 7)} " +
-                                          $"`{role.RoleName}`");
-        }
-                 
-        await context.Functions.Reply.Invoke(roleMessageBuilder.ToString());
+        var card = roles.GetRolesCard();
+        
+        await context.Functions.ReplyCard.Invoke(card);
 
         return true;
     }
@@ -174,7 +169,7 @@ public sealed class IslandManagerCommand : ICommandExecutor
             await context.Functions.Reply.Invoke("找不到记录");
             return false;
         }
-                 
+        
         await context.Functions.Reply.Invoke($"Web API Token: `{token}`", true);
         return true;
     }
@@ -185,7 +180,7 @@ public sealed class IslandManagerCommand : ICommandExecutor
         [CmdOption("user", "u", "发送只有某个用户看到的的消息", false)] DodoMemberId? user,
         [CmdOption("reply", "r", "回复消息 ID", false)] string? replyId)
     {
-        await context.OpenApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
+        var result = await context.OpenApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
         {
             ChannelId = channel.Value,
             MessageBody = new MessageBodyText
@@ -196,6 +191,17 @@ public sealed class IslandManagerCommand : ICommandExecutor
                 user.Value.Valid ? user.Value.Value : null,
             ReferencedMessageId = replyId
         }, true);
+        
+        if (result is null)
+        {
+            await context.Functions.Reply.Invoke("发送失败");
+            return false;
+        }
+
+        var replyMsg = user is null
+            ? $"发送成功，频道：{channel.Ref}, 消息 ID：`{result.MessageId}`"
+            : $"私聊 {user.Value.Ref} 的消息发送成功，频道：{channel.Ref}, 消息 ID：`{result.MessageId}`";
+        await context.Functions.Reply.Invoke(replyMsg);
         
         return true;
     }
@@ -209,7 +215,7 @@ public sealed class IslandManagerCommand : ICommandExecutor
         var response = await context.OpenApiService
             .SetResourcePictureUploadAsync(new SetResourceUploadInput { FilePath = url }, true);
         
-        await context.OpenApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyPicture>
+        var result = await context.OpenApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyPicture>
         {
             ChannelId = channel.Value,
             MessageBody = new MessageBodyPicture
@@ -223,7 +229,18 @@ public sealed class IslandManagerCommand : ICommandExecutor
                 user.Value.Valid ? user.Value.Value : null,
             ReferencedMessageId = replyId
         }, true);
-        
+
+        if (result is null)
+        {
+            await context.Functions.Reply.Invoke("发送失败");
+            return false;
+        }
+
+        var replyMsg = user is null
+            ? $"发送成功，频道：{channel.Ref}, 消息 ID：`{result.MessageId}`"
+            : $"私聊 {user.Value.Ref} 的消息发送成功，频道：{channel.Ref}, 消息 ID：`{result.MessageId}`";
+        await context.Functions.Reply.Invoke(replyMsg);
+
         return true;
     }
 
@@ -231,11 +248,13 @@ public sealed class IslandManagerCommand : ICommandExecutor
         [CmdOption("id", "i", "消息 ID")] string msgId,
         [CmdOption("emoji", "e", "反应 Emoji")] DodoEmoji emoji)
     {
-        await context.OpenApiService.SetChannelMessageReactionAddAsync(new SetChannelMessageReactionAddInput
+        var result = await context.OpenApiService.SetChannelMessageReactionAddAsync(new SetChannelMessageReactionAddInput
         {
             MessageId = msgId, Emoji = new MessageModelEmoji { Id = emoji.EmojiId.ToString(), Type = 1 }
         }, true);
 
+        await context.Functions.Reply.Invoke(result ? $"在消息 `{msgId}` 添加 `{emoji.Emoji}` 反应成功" : "添加失败");
+        
         return true;
     }
     
@@ -243,11 +262,13 @@ public sealed class IslandManagerCommand : ICommandExecutor
         [CmdOption("id", "i", "消息 ID")] string msgId,
         [CmdOption("reason", "r", "删除原因", false)] string? reason)
     {
-        await context.OpenApiService.SetChannelMessageWithdrawAsync(new SetChannelMessageWithdrawInput
+        var result = await context.OpenApiService.SetChannelMessageWithdrawAsync(new SetChannelMessageWithdrawInput
         {
             MessageId = msgId, Reason = reason
         }, true);
 
+        await context.Functions.Reply.Invoke(result ? $"删除消息 `{msgId}` 成功，原因：「{reason}」" : "移除失败");
+        
         return true;
     }
     
@@ -255,11 +276,13 @@ public sealed class IslandManagerCommand : ICommandExecutor
         [CmdOption("id", "i", "消息 ID")] string msgId,
         [CmdOption("emoji", "e", "反应 Emoji")] DodoEmoji emoji)
     {
-        await context.OpenApiService.SetChannelMessageReactionRemoveAsync(new SetChannelMessageReactionRemoveInput
+        var result = await context.OpenApiService.SetChannelMessageReactionRemoveAsync(new SetChannelMessageReactionRemoveInput
         {
             MessageId = msgId, Emoji = new MessageModelEmoji { Id = emoji.EmojiId.ToString(), Type = 1 }
         }, true);
-
+        
+        await context.Functions.Reply.Invoke(result ? $"从消息 `{msgId}` 移除 `{emoji.Emoji}` 反应成功" : "移除失败");
+        
         return true;
     }
 
@@ -283,16 +306,5 @@ public sealed class IslandManagerCommand : ICommandExecutor
             .Then("delete", "删除消息", "message.delete", builder: x => x
                 .Then("message", "删除消息", "message", DeleteMessage)
                 .Then("reaction", "删除消息反应", "reaction", DeleteReaction));
-    }
-
-    private static string FormatLength(string str, int maxLength, char placeHolder = ' ')
-    {
-        var s = str;
-        while (s.Length < maxLength)
-        {
-            s = placeHolder + s;
-        }
-
-        return s;
     }
 }
