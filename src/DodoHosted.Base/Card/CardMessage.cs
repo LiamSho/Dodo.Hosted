@@ -10,6 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace DodoHosted.Base.Card;
@@ -19,6 +20,22 @@ namespace DodoHosted.Base.Card;
 /// </summary>
 public record CardMessage
 {
+    public CardMessage() { }
+    
+    [SetsRequiredMembers]
+    public CardMessage(Card card)
+    {
+        Content = string.Empty;
+        Card = card;
+    }
+
+    [SetsRequiredMembers]
+    public CardMessage(string content, Card card)
+    {
+        Content = content;
+        Card = card;
+    }
+    
     /// <summary>
     /// 附加文本，支持Markdown语法、菱形语法
     /// </summary>

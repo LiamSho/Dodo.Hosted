@@ -16,6 +16,7 @@ public struct DodoMemberId
 {
     public string Value { get; }
     public bool Valid { get; }
+    public string Ref => $"<@!{Value}>";
 
     public DodoMemberId(string value)
     {

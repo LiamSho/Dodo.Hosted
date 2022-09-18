@@ -17,6 +17,8 @@ public struct DodoChannelId
     public string Value { get; }
     public bool Valid { get; }
 
+    public string Ref => $"<#{Value}>";
+
     public DodoChannelId(string value)
     {
         var extractChannelId = Extract(value);
