@@ -20,7 +20,7 @@ public record PluginManifest
     /// <summary>
     /// 插件入口 Assembly
     /// </summary>
-    public required Assembly PluginEntryAssembly { get; init; }
+    public required Assembly[] PluginAssemblies { get; init; }
     
     /// <summary>
     /// 插件 Assembly 加载上下文

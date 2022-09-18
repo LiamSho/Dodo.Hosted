@@ -36,7 +36,7 @@ internal static class PluginLoadHelper
 
         ZipFile.ExtractToDirectory(bundle.FullName, pluginCacheDirectory.FullName);
 
-        return new DirectoryInfo(pluginCacheDirectoryPath);
+        return pluginCacheDirectory;
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ internal static class PluginLoadHelper
     /// <param name="source"></param>
     /// <param name="pluginInfo"></param>
     /// <returns></returns>
-    internal static (PluginAssemblyLoadContext, Assembly) LoadPluginAssembly(this DirectoryInfo source, PluginInfo pluginInfo)
+    internal static (PluginAssemblyLoadContext, Assembly[]) LoadPluginAssembly(this DirectoryInfo source, PluginInfo pluginInfo)
     {
         var entryAssembly = source
             .GetFiles($"{pluginInfo.EntryAssembly}.dll", SearchOption.TopDirectoryOnly)
@@ -98,11 +98,16 @@ internal static class PluginLoadHelper
             throw new PluginAssemblyLoadException($"找不到 {pluginInfo.EntryAssembly}.dll");
         }
 
-        var context = new PluginAssemblyLoadContext(source.FullName);
-
+        var context = new PluginAssemblyLoadContext(entryAssembly.FullName);
         var assembly = context.LoadFromAssemblyPath(entryAssembly.FullName);
 
-        return (context, assembly);
+        var refs = assembly.GetReferencedAssemblies()
+            .Where(x => x.FullName.StartsWith("DodoHosted") is false);
+
+        var assemblies = refs.Select(x => context.LoadFromAssemblyName(x)).ToList();
+        assemblies.Add(assembly);
+
+        return (context, assemblies.ToArray());
     }
 
     /// <summary>
@@ -115,14 +120,14 @@ internal static class PluginLoadHelper
     internal static PluginWorker LoadPluginWorkers(this IEnumerable<Type> pluginTypes, IServiceProvider provider, bool native = false)
     {
         var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("PluginWorkerLoader");
-        var commandParameterHelper = provider.GetRequiredService<ICommandParameterResolver>();
+        var commandParameterHelper = provider.GetRequiredService<IParameterResolver>();
         
         var types = pluginTypes.ToArray();
 
         var eventHandlers = types.FetchEventHandlers(logger);
         var commandExecutors = types.FetchCommandExecutors(logger);
         var hostedServices = types.FetchHostedService(logger, provider);
-
+        
         foreach (var executor in commandExecutors)
         {
             var maxDepth = executor.RootNode.MaxDepth;

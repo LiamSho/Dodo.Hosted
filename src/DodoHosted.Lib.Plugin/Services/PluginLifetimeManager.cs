@@ -66,10 +66,10 @@ public class PluginLifetimeManager : IPluginLifetimeManager
             var pluginCacheDirectory = bundle.ExtractPluginBundle(pluginInfo, _pluginCacheDirectory);
             
             // 载入程序集
-            var (context, assembly) = pluginCacheDirectory.LoadPluginAssembly(pluginInfo);
+            var (context, assemblies) = pluginCacheDirectory.LoadPluginAssembly(pluginInfo);
 
             // 插件程序集类型
-            var pluginAssemblyTypes = assembly.GetTypes();
+            var pluginAssemblyTypes = assemblies.SelectMany(x => x.GetTypes()).ToArray();
 
             // 载入插件实例
             var pluginInstance = pluginAssemblyTypes.FetchPluginInstance();
@@ -86,7 +86,7 @@ public class PluginLifetimeManager : IPluginLifetimeManager
             // 添加插件
             var pluginManifest = new PluginManifest
             {
-                PluginEntryAssembly = assembly,
+                PluginAssemblies = assemblies,
                 Context = context,
                 PluginInfo = pluginInfo,
                 IsNative = false,
@@ -199,7 +199,7 @@ public class PluginLifetimeManager : IPluginLifetimeManager
                 Context = null,
                 IsNative = true,
                 DodoHostedPlugin = instance,
-                PluginEntryAssembly = assembly,
+                PluginAssemblies = new []{ assembly },
                 PluginScope = scope,
                 Worker = worker
             };
