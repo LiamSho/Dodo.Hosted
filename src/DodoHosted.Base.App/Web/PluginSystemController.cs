@@ -24,15 +24,14 @@ namespace DodoHosted.Base.App.Web;
 [Route("plugin")]
 public class PluginSystemController : ControllerBase
 {
-    public delegate void PluginWebOperationHandler(string identifier, string island, HttpRequest body);
-    public static event PluginWebOperationHandler? PluginWebOperationEvent;
-    
-    [HttpPost("{pluginIdentifier}")]
+    [HttpPost("{pluginIdentifier}/{name}")]
     public async Task<IActionResult> PluginOperation(
         [FromRoute] string pluginIdentifier,
+        [FromRoute] string name,
         [FromHeader(Name = "dodo-hosted-api-token")] string? token,
         [FromHeader(Name = "dodo-hosted-island")] string? islandId,
         [FromServices] IHttpContextAccessor httpContextAccessor,
+        [FromServices] IWebRequestManager webRequestManager,
         [FromServices] IMongoDatabase mongoDatabase,
         [FromServices] OpenApiService openApiService,
         [FromServices] IChannelLogger channelLogger)
@@ -71,9 +70,10 @@ public class PluginSystemController : ControllerBase
         {
             realIslandId = island.IslandId;
         }
-        
-        PluginWebOperationEvent?.Invoke(pluginIdentifier, realIslandId, httpContextAccessor.HttpContext!.Request);
-        
-        return NoContent();
+
+        var response = await webRequestManager.HandleRequestAsync
+            (pluginIdentifier, realIslandId, name, httpContextAccessor.HttpContext.Request);
+
+        return response;
     }
 }

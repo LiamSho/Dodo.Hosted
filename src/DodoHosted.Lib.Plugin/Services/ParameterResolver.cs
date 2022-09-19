@@ -64,7 +64,7 @@ public class ParameterResolver : IParameterResolver
         return parameters;
     }
 
-    public object?[] GetEventHandlerConstructorInvokeParameter(
+    public object?[] GetHandlerConstructorInvokeParameter(
         ConstructorInfo constructorInfo,
         PluginManifest manifest,
         IServiceProvider serviceProvider)

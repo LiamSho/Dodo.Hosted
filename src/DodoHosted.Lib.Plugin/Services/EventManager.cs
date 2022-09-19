@@ -67,7 +67,7 @@ public class EventManager : IEventManager
             {
                 var scope = _provider.CreateScope();
                 var plugin = _pluginManager.GetPlugin(eventHandler.PluginIdentifier);
-                var constructorParameters = _parameterResolver.GetEventHandlerConstructorInvokeParameter
+                var constructorParameters = _parameterResolver.GetHandlerConstructorInvokeParameter
                     (eventHandler.EventHandlerConstructor, plugin!, scope.ServiceProvider);
 
                 var ins = eventHandler.EventHandlerConstructor.Invoke(constructorParameters);
@@ -93,12 +93,7 @@ public class EventManager : IEventManager
     /// <inheritdoc />
     public void Initialize()
     {
-        var webRequestTypeFullName = typeof(DodoHostedWebRequestEvent).FullName ?? string.Empty;
         DodoEventProcessor.DodoEvent += EventListener;
-        PluginSystemController.PluginWebOperationEvent += async (identifier, island, body) =>
-        {
-            await RunEvent(new DodoHostedWebRequestEvent(island, body), webRequestTypeFullName, identifier == "*" ? null : identifier);
-        };
     }
     
     private static readonly string s_textMessage = typeof(DodoChannelMessageEvent<MessageBodyText>).FullName!;

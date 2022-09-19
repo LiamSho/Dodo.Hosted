@@ -103,8 +103,8 @@ public class PluginLifetimeManager : IPluginLifetimeManager
                 throw new PluginAssemblyLoadException($"插件 {pluginInfo.Identifier} 添加失败");
             }
             
-            _logger.LogInformation("已载入插件 {PluginInfo}，事件处理器 {EventHandlerCount} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个",
-                pluginInfo, worker.EventHandlers.Length, worker.CommandExecutors.Length, worker.HostedServices.Length);
+            _logger.LogInformation("已载入插件 {PluginInfo}，事件处理器 {EventHandlerCount} 个，Web 事件处理器 {WebEventHandler} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个",
+                pluginInfo, worker.EventHandlers.Length, worker.WebHandlers.Length, worker.CommandExecutors.Length, worker.HostedServices.Length);
         }
         catch (Exception ex)
         {
@@ -211,8 +211,8 @@ public class PluginLifetimeManager : IPluginLifetimeManager
                 throw new PluginAssemblyLoadException($"Native 类型 {name} 添加失败");
             }
             
-            _logger.LogInformation("已载入 Native Assembly: {NativeAssemblyName}，事件处理器 {EventHandlerCount} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个", 
-                assembly.FullName, worker.EventHandlers.Length, worker.CommandExecutors.Length, worker.HostedServices.Length);
+            _logger.LogInformation("已载入 Native Assembly: {NativeAssemblyName}，事件处理器 {EventHandlerCount} 个，Web 事件处理器 {WebEventHandler} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个", 
+                assembly.FullName, worker.EventHandlers.Length, worker.WebHandlers.Length, worker.CommandExecutors.Length, worker.HostedServices.Length);
         }
     }
 

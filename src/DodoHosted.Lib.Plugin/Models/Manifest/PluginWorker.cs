@@ -28,4 +28,9 @@ public class PluginWorker
     /// 插件所含后台服务
     /// </summary>
     public required HostedServiceManifest[] HostedServices { get; init; }
+    
+    /// <summary>
+    /// 插件所含 Web Handler
+    /// </summary>
+    public required WebHandlerManifest[] WebHandlers { get; init; }
 }

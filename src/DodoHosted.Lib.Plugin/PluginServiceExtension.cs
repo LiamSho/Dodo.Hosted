@@ -24,6 +24,8 @@ public static class PluginServiceExtension
         serviceCollection.AddSingleton<IEventManager, EventManager>();
         serviceCollection.AddSingleton<IParameterResolver, ParameterResolver>();
 
+        serviceCollection.AddSingleton<IWebRequestManager, WebRequestManager>();
+        
         serviceCollection.AddHostedService<PluginSystemHosted>();
 
         return serviceCollection;

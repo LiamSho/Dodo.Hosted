@@ -13,32 +13,27 @@
 namespace DodoHosted.Lib.Plugin.Models.Manifest;
 
 /// <summary>
-/// Event Handler 清单
+/// Web 请求 Handler 清单
 /// </summary>
-public record EventHandlerManifest
+public record WebHandlerManifest
 {
     /// <summary>
-    /// 继承 <see cref="IEventHandler{T}"/> 的类型
+    /// Web Handler 类型
     /// </summary>
-    public required Type EventHandlerType { get; init; }
+    public required Type WebHandlerType { get; init; }
     
     /// <summary>
-    /// <see cref="IEventHandler{T}"/> 的泛型类型
+    /// Web Handler 名称
     /// </summary>
-    public required Type EventType { get; init; }
+    public required string Name { get; init; }
     
     /// <summary>
-    /// <see cref="EventType"/> 的字符串描述
+    /// <see cref="WebHandlerType"/> 构造函数
     /// </summary>
-    public required string EventTypeString { get; init; }
+    public required ConstructorInfo WebHandlerConstructor { get; init; }
     
     /// <summary>
-    /// <see cref="EventHandlerType"/> 构造函数
-    /// </summary>
-    public required ConstructorInfo EventHandlerConstructor { get; init; }
-    
-    /// <summary>
-    /// <see cref="IEventHandler{T}.Handle"/> 方法
+    /// <see cref="IPluginWebHandler.HandleAsync"/> 方法
     /// </summary>
     public required MethodInfo HandlerMethod { get; init; }
     

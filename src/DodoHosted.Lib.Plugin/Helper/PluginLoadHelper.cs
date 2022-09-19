@@ -127,6 +127,7 @@ internal static class PluginLoadHelper
         var types = pluginTypes.ToArray();
 
         var eventHandlers = types.FetchEventHandlers(id, logger);
+        var webHandlers = types.FetchWebHandlers(id, logger);
         var commandExecutors = types.FetchCommandExecutors(id, logger);
         var hostedServices = types.FetchHostedService(id, logger, provider);
         
@@ -177,6 +178,22 @@ internal static class PluginLoadHelper
                 }
             }
         }
+
+        foreach (var webHandler in webHandlers)
+        {
+            var constructorParameterTypes = webHandler.WebHandlerConstructor
+                .GetParameters()
+                .Select(x => x.ParameterType);
+
+            foreach (var type in constructorParameterTypes)
+            {
+                var result = parameterResolver.ValidateServiceParameterType(type, native);
+                if (result is false)
+                {
+                    throw new PluginAssemblyLoadException($"Web 执行器服务参数 {type.FullName} 不支持");
+                }
+            }
+        }
         
         foreach (var service in hostedServices)
         {
@@ -188,7 +205,8 @@ internal static class PluginLoadHelper
         {
             CommandExecutors = commandExecutors,
             EventHandlers = eventHandlers,
-            HostedServices = hostedServices
+            HostedServices = hostedServices,
+            WebHandlers = webHandlers
         };
     }
 
@@ -276,11 +294,11 @@ internal static class PluginLoadHelper
             }
             if (method is null)
             {
-                throw new PluginAssemblyLoadException($"找不到到事件处理器 {type.FullName} 的 Handle 方法");
+                throw new PluginAssemblyLoadException($"找不到事件处理器 {type.FullName} 的 Handle 方法");
             }
             if (eventType is null)
             {
-                throw new PluginAssemblyLoadException($"找不到到事件处理器 {type.FullName} 的事件类型");
+                throw new PluginAssemblyLoadException($"找不到事件处理器 {type.FullName} 的事件类型");
             }
             
             logger.LogInformation("已载入事件处理器 {LoadedEventHandler}", type.FullName);
@@ -293,6 +311,56 @@ internal static class PluginLoadHelper
                 EventHandlerType = type,
                 HandlerMethod = method,
                 PluginIdentifier = id
+            });
+        }
+
+        return manifests.ToArray();
+    }
+
+    private static WebHandlerManifest[] FetchWebHandlers(this IEnumerable<Type> types, string id, ILogger logger)
+    {
+        var webHandlerTypes = types
+            .Where(x => x.IsSealed)
+            .Where(x => x != typeof(IPluginWebHandler))
+            .Where(x => x.IsAssignableTo(typeof(IPluginWebHandler)));
+
+        var manifests = new List<WebHandlerManifest>();
+        foreach (var webHandlerType in webHandlerTypes)
+        {
+            var attr = webHandlerType.GetCustomAttribute<NameAttribute>();
+            var name = attr?.Name ?? webHandlerType.Name;
+
+            if (attr is null)
+            {
+                logger.LogWarning("{WebHandlerTypeName} 缺少 NameAttribute，默认使用类型名作为名称", webHandlerType.FullName);
+            }
+
+            var interfaceType = webHandlerType.GetInterfaces().First(x => x == typeof(IPluginWebHandler));
+
+            var constructor = webHandlerType.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(x => x.GetParameters().All(y =>
+                    y.GetCustomAttribute<InjectAttribute>() is not null));
+            
+            var method = interfaceType.GetMethod("Handle");
+            
+            if (constructor is null)
+            {
+                throw new PluginAssemblyLoadException($"找不到 Web 事件处理器 {webHandlerType.FullName} 的合法构造函数");
+            }
+            if (method is null)
+            {
+                throw new PluginAssemblyLoadException($"找不到 Web 事件处理器 {webHandlerType.FullName} 的 Handle 方法");
+            }
+            
+            logger.LogInformation("已载入 Web 事件处理器 {LoadedWebHandlerName} -> {LoadedWebHandlerType}", name, webHandlerType.FullName);
+            
+            manifests.Add(new WebHandlerManifest
+            {
+                HandlerMethod = method,
+                Name = name,
+                PluginIdentifier = id,
+                WebHandlerConstructor = constructor,
+                WebHandlerType = webHandlerType
             });
         }
 

@@ -10,8 +10,15 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using Microsoft.AspNetCore.Http;
+namespace DodoHosted.Base.App.Web;
 
-namespace DodoHosted.Base.Events;
+[AttributeUsage(AttributeTargets.Class)]
+public class NameAttribute : Attribute
+{
+    public string Name { get; }
 
-public record DodoHostedWebRequestEvent(string Island, HttpRequest Request) : IDodoHostedEvent;
+    public NameAttribute(string name)
+    {
+        Name = name;
+    }
+}

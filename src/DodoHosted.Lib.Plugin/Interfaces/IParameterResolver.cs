@@ -17,7 +17,7 @@ namespace DodoHosted.Lib.Plugin.Interfaces;
 public interface IParameterResolver
 {
     object?[] GetCommandInvokeParameter(CommandNode node, PluginManifest manifest, CommandParsed commandParsed, IServiceProvider serviceProvider);
-    object?[] GetEventHandlerConstructorInvokeParameter(ConstructorInfo constructorInfo, PluginManifest manifest, IServiceProvider serviceProvider);
+    object?[] GetHandlerConstructorInvokeParameter(ConstructorInfo constructorInfo, PluginManifest manifest, IServiceProvider serviceProvider);
     bool ValidateOptionParameterType(Type type);
     bool ValidateServiceParameterType(Type type, bool native = false);
     string GetDisplayParameterTypeName(Type type);
