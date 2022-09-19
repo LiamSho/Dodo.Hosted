@@ -11,7 +11,6 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Reflection;
-using DodoHosted.Base.App.Command.Attributes;
 using DodoHosted.Base.App.Exceptions;
 
 namespace DodoHosted.Base.App.Command;

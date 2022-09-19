@@ -10,11 +10,14 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.Context;
+
 namespace DodoHosted.Lib.Plugin.Interfaces;
 
 public interface IParameterResolver
 {
-    object?[] GetCommandInvokeParameter(CommandNode node, PluginManifest manifest, CommandParsed commandParsed, PluginBase.Context context);
+    object?[] GetCommandInvokeParameter(CommandNode node, PluginManifest manifest, CommandParsed commandParsed, IServiceProvider serviceProvider);
+    object?[] GetEventHandlerConstructorInvokeParameter(ConstructorInfo constructorInfo, PluginManifest manifest, IServiceProvider serviceProvider);
     bool ValidateOptionParameterType(Type type);
     bool ValidateServiceParameterType(Type type, bool native = false);
     string GetDisplayParameterTypeName(Type type);

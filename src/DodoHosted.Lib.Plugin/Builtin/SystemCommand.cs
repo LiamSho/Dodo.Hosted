@@ -12,7 +12,9 @@
 
 using System.Runtime.InteropServices;
 using DoDo.Open.Sdk.Models.Islands;
+using DodoHosted.Base.App.Attributes;
 using DodoHosted.Base.Card.Enums;
+using DodoHosted.Base.Context;
 using DodoHosted.Lib.Plugin.Cards;
 using MongoDB.Driver;
 
@@ -24,7 +26,7 @@ namespace DodoHosted.Lib.Plugin.Builtin;
 
 public sealed class SystemCommand : ICommandExecutor
 {
-    public async Task<bool> GetGcInfo(PluginBase.Context context)
+    public async Task<bool> GetGcInfo(CommandContext context)
     {
         var gcInfo = GC.GetGCMemoryInfo();
 
@@ -40,12 +42,12 @@ public sealed class SystemCommand : ICommandExecutor
         };
 
         var card = SystemMessageCard.GetInfoListCard("Garbage Collector Info", CardTheme.Indigo, infos);
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         
         return true;
     }
 
-    public async Task<bool> GetSystemInfo(PluginBase.Context context)
+    public async Task<bool> GetSystemInfo(CommandContext context)
     {
         var infos = new Dictionary<string, string>
         {
@@ -58,21 +60,21 @@ public sealed class SystemCommand : ICommandExecutor
         
         var card = SystemMessageCard.GetInfoListCard("System Info", CardTheme.Indigo, infos);
         
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         
         return true;
     }
 
     public async Task<bool> GetIslandsInfo(
-        PluginBase.Context context,
-        [CmdInject] IMongoCollection<IslandSettings> collection,
-        [CmdInject] OpenApiService openApiService)
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection,
+        [Inject] OpenApiService openApiService)
     {
         var islands = await openApiService.GetIslandListAsync(new GetIslandListInput());
         
         if (islands is null)
         {
-            await context.Functions.Reply.Invoke("获取群组列表失败");
+            await context.Reply.Invoke("获取群组列表失败");
             return false;
         }
 
@@ -95,30 +97,32 @@ public sealed class SystemCommand : ICommandExecutor
         
         var card = SystemMessageCard.GetInfoListCard("Islands Infos", CardTheme.Indigo, infos.ToArray());
         
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         
         return true;
     }
 
     public async Task<bool> EnableIslandWebApi(
-        PluginBase.Context context,
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection, 
         [CmdOption("island", "l", "群组 ID")] string islandId)
     {
-        return await SetIslandWebApiStatus(context, islandId, true);
+        return await SetIslandWebApiStatus(collection, context.Reply, islandId, true);
     }
     
     public async Task<bool> DisableIslandWebApi(
-        PluginBase.Context context,
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection, 
         [CmdOption("island", "l", "群组 ID")] string islandId)
     {
-        return await SetIslandWebApiStatus(context, islandId, false);
+        return await SetIslandWebApiStatus(collection, context.Reply, islandId, false);
     }
 
     public async Task<bool> GetPluginList(
-        PluginBase.Context context,
+        CommandContext context,
         [CmdOption("native", "n", "显示 Native 类型", false)] bool? native,
         [CmdOption("page", "p", "页码", false)] int? page,
-        [CmdInject] IPluginManager pm)
+        [Inject] IPluginManager pm)
     {
         var p = Math.Max(page ?? 1, 1);
 
@@ -136,75 +140,75 @@ public sealed class SystemCommand : ICommandExecutor
         {
             if (p == 1)
             {
-                await context.Functions.Reply.Invoke("没有已载入的插件");
+                await context.Reply.Invoke("没有已载入的插件");
             }
             else
             {
-                await context.Functions.Reply.Invoke("没有更多插件了");
+                await context.Reply.Invoke("没有更多插件了");
             }
 
             return true;
         }
 
         var card = SystemMessageCard.GetPluginsInfoCard($"Plugins Infos ({p}/{maxPage})", CardTheme.Indigo, plugins);
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
 
         return true;
     }
 
     public async Task<bool> GetPluginInfo(
-        PluginBase.Context context,
+        CommandContext context,
         [CmdOption("identifier", "i", "插件标识符")] string identifier,
-        [CmdInject] IPluginManager pm)
+        [Inject] IPluginManager pm)
     {
         var manifest = pm.GetPlugin(identifier);
         if (manifest is null)
         {
-            await context.Functions.Reply.Invoke($"插件 `{identifier}` 不存在");
+            await context.Reply.Invoke($"插件 `{identifier}` 不存在");
             return false;
         }
 
         var card = SystemMessageCard.GetPluginInfoDetailCard("Plugin Detail", CardTheme.Indigo, manifest);
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         
         return true;
     }
     
     public async Task<bool> LoadPlugin(
-        PluginBase.Context context,
+        CommandContext context,
         [CmdOption("package", "p", "插件包文件名（不含扩展名）")] string packageName,
-        [CmdInject] IPluginLifetimeManager pluginLifetimeManager)
+        [Inject] IPluginLifetimeManager pluginLifetimeManager)
     {
         await pluginLifetimeManager.LoadPlugin($"{packageName}.zip");
-        await context.Functions.Reply.Invoke("已执行插件加载任务");
+        await context.Reply.Invoke("已执行插件加载任务");
         
         return true;
     }
     
     public async Task<bool> UnloadPlugin(
-        PluginBase.Context context,
+        CommandContext context,
         [CmdOption("identifier", "i", "插件标识符")] string identifier,
-        [CmdInject] IPluginLifetimeManager pluginLifetimeManager)
+        [Inject] IPluginLifetimeManager pluginLifetimeManager)
     {
         var result = pluginLifetimeManager.UnloadPlugin(identifier);
         if (result)
         {
-            await context.Functions.Reply.Invoke("插件卸载成功");
+            await context.Reply.Invoke("插件卸载成功");
             return false;
         }
 
-        await context.Functions.Reply.Invoke("插件卸载失败");
+        await context.Reply.Invoke("插件卸载失败");
         
         return true;
     }
     
-    public async Task<bool> ReloadPlugin(PluginBase.Context context,
-        [CmdInject] IPluginLifetimeManager pluginLifetimeManager)
+    public async Task<bool> ReloadPlugin(CommandContext context,
+        [Inject] IPluginLifetimeManager pluginLifetimeManager)
     {
         pluginLifetimeManager.UnloadPlugins();
         await pluginLifetimeManager.LoadPlugins();
 
-        await context.Functions.Reply.Invoke("已执行重载任务");
+        await context.Reply.Invoke("已执行重载任务");
         
         return true;
     }
@@ -230,21 +234,18 @@ public sealed class SystemCommand : ICommandExecutor
     {
         return ((double)size / 1024 / 1024).ToString("F");
     }
-    private static async Task<bool> SetIslandWebApiStatus(PluginBase.Context context, string islandId, bool type)
+    private static async Task<bool> SetIslandWebApiStatus(IMongoCollection<IslandSettings> collection, ContextBase.Reply reply, string islandId, bool type)
     {
-        var mongoCollection = context.Provider.GetRequiredService<IMongoDatabase>()
-            .GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
-
-        var settings = await mongoCollection.Find(x => x.IslandId == islandId).FirstOrDefaultAsync();
+        var settings = await collection.Find(x => x.IslandId == islandId).FirstOrDefaultAsync();
         if (settings is null)
         {
-            await context.Functions.Reply.Invoke("群组不存在");
+            await reply.Invoke("群组不存在");
             return false;
         }
 
         settings.AllowUseWebApi = type;
-        await mongoCollection.ReplaceOneAsync(x => x.IslandId == islandId, settings);
-        await context.Functions.Reply.Invoke("已更新群组设置");
+        await collection.ReplaceOneAsync(x => x.IslandId == islandId, settings);
+        await reply.Invoke("已更新群组设置");
 
         return true;
     }

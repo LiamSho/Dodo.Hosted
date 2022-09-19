@@ -10,6 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.Context;
+
 namespace DodoHosted.Lib.Plugin.Helper;
 
 public static class  CommandMethodInvoker
@@ -18,7 +20,8 @@ public static class  CommandMethodInvoker
         this CommandManifest cmdManifest,
         PluginManifest pluginManifest,
         CommandParsed commandParsed,
-        PluginBase.Context context)
+        IServiceProvider serviceProvider,
+        CommandContext context)
     {
         var node = cmdManifest.RootNode;
         // ReSharper disable once LoopCanBeConvertedToQuery
@@ -29,21 +32,21 @@ public static class  CommandMethodInvoker
         
         if (node?.Method is null)
         {
-            await context.Functions.Reply.Invoke($"找不到指令，请输入 {HostEnvs.CommandPrefix}help -n {cmdManifest.RootNode.Value} 查看帮助");
+            await context.Reply.Invoke($"找不到指令，请输入 {HostEnvs.CommandPrefix}help -n {cmdManifest.RootNode.Value} 查看帮助");
             return CommandExecutionResult.Unknown;
         }
 
         if (string.IsNullOrEmpty(node.PermissionNode) is false)
         {
-            if (await context.Functions.PermissionCheck.Invoke(node.PermissionNode) is false)
+            if (await context.PermissionCheck.Invoke(node.PermissionNode) is false)
             {
-                await context.Functions.Reply.Invoke("你没有权限执行此指令");
+                await context.Reply.Invoke("你没有权限执行此指令");
                 return CommandExecutionResult.Unauthorized;
             }
         }
 
-        var commandParameterHelper = context.Provider.GetRequiredService<IParameterResolver>();
-        var parameters = commandParameterHelper.GetCommandInvokeParameter(node, pluginManifest, commandParsed, context);
+        var commandParameterHelper = serviceProvider.GetRequiredService<IParameterResolver>();
+        var parameters = commandParameterHelper.GetCommandInvokeParameter(node, pluginManifest, commandParsed, serviceProvider);
         if (node.ContextParamOrder != -1)
         {
             parameters[(int)node.ContextParamOrder!] = context;

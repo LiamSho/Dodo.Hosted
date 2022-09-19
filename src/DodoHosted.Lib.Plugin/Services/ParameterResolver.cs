@@ -23,7 +23,7 @@ public class ParameterResolver : IParameterResolver
         CommandNode node,
         PluginManifest manifest,
         CommandParsed commandParsed,
-        PluginBase.Context context)
+        IServiceProvider serviceProvider)
     {
         var length =
             node.Options.Count +
@@ -57,8 +57,25 @@ public class ParameterResolver : IParameterResolver
 
         foreach (var (order, type) in serviceOptions)
         {
-            var service = GetServiceParameterValue(context.Provider, manifest, type);
+            var service = GetServiceParameterValue(serviceProvider, manifest, type);
             parameters[order] = service;
+        }
+
+        return parameters;
+    }
+
+    public object?[] GetEventHandlerConstructorInvokeParameter(
+        ConstructorInfo constructorInfo,
+        PluginManifest manifest,
+        IServiceProvider serviceProvider)
+    {
+        var parameterInfos = constructorInfo.GetParameters();
+        var parameters = new object?[parameterInfos.Length];
+
+        foreach (var parameterInfo in parameterInfos)
+        {
+            var p = GetServiceParameterValue(serviceProvider, manifest, parameterInfo.ParameterType);
+            parameters[parameterInfo.Position] = p;
         }
 
         return parameters;

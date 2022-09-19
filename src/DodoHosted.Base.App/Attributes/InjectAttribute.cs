@@ -10,11 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Command;
+namespace DodoHosted.Base.App.Attributes;
 
-namespace DodoHosted.Open.Plugin;
-
-public interface ICommandExecutor
-{
-    CommandTreeBuilder GetBuilder();
-}
+[AttributeUsage(AttributeTargets.Parameter)]
+public class InjectAttribute : Attribute { }

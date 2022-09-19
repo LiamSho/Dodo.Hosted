@@ -13,9 +13,11 @@
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Roles;
+using DodoHosted.Base.App.Attributes;
 using DodoHosted.Base.Card.BaseComponent;
 using DodoHosted.Base.Card.CardComponent;
 using DodoHosted.Base.Card.Enums;
+using DodoHosted.Base.Context;
 using DodoHosted.Lib.Plugin.Cards;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
@@ -27,8 +29,9 @@ namespace DodoHosted.Lib.Plugin.Builtin;
 public sealed class PermissionManagerCommand : ICommandExecutor
 {
     public async Task<bool> AddPermission(
-        PluginBase.Context context,
-        [CmdInject] IPermissionManager pm,
+        CommandContext context,
+        [Inject] IPermissionManager pm,
+        [Inject] OpenApiService openApiService,
         [CmdOption("node", "n", "权限节点")] string node,
         [CmdOption("channel", "c", "适用频道")] DodoChannelIdWithWildcard channelId,
         [CmdOption("role", "r", "权限组 ID，可为 `*`")] string roleId,
@@ -39,7 +42,7 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         {
             if (node.EndsWith("*") is false)
             {
-                await context.Functions.Reply.Invoke("Node 不合法");
+                await context.Reply.Invoke("Node 不合法");
                 return false;
             }
         }
@@ -47,14 +50,14 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         // 检查 Role
         if (roleId != "*" && long.TryParse(roleId, out _) is false)
         {
-            await context.Functions.Reply.Invoke("Role 不合法");
+            await context.Reply.Invoke("Role 不合法");
             return false;
         }
          
         // 检查 Value
         if (value is not ("allow" or "deny"))
         { 
-            await context.Functions.Reply.Invoke("Value 不合法");
+            await context.Reply.Invoke("Value 不合法");
             return false;
         }
 
@@ -62,22 +65,23 @@ public sealed class PermissionManagerCommand : ICommandExecutor
 
         if (result is null)
         {
-            await context.Functions.Reply.Invoke("添加权限节点失败，可能已经存在值相同的同名节点");
+            await context.Reply.Invoke("添加权限节点失败，可能已经存在值相同的同名节点");
             return false;
         }
 
         var (roles, channels) =
-            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+            await GetBasicInfos(openApiService, context.EventInfo.IslandId);
         var card = result.GetPermissionSingleCard("添加权限节点", roles, channels);
         card.Card.Theme = CardTheme.Green;
 
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         return true;
     }
 
     public async Task<bool> SetPermission(
-        PluginBase.Context context,
-        [CmdInject] IPermissionManager pm,
+        CommandContext context,
+        [Inject] IPermissionManager pm,
+        [Inject] OpenApiService openApiService,
         [CmdOption("id", "i", "权限节点的 GUID")] string nodeId,
         [CmdOption("channel", "c", "适用频道", false)] DodoChannelIdWithWildcard? channelId,
         [CmdOption("role", "r", "权限组 ID，可为 `*`", false)] string? roleId,
@@ -86,7 +90,7 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         var guidParsed = Guid.TryParse(nodeId, out var parsedGuid);
         if (guidParsed is false)
         {
-            await context.Functions.Reply.Invoke("Guid 不合法");
+            await context.Reply.Invoke("Guid 不合法");
             return false;
         }
         
@@ -94,7 +98,7 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         {
             if (roleId != "*" && long.TryParse(roleId, out _) is false)
             {
-                await context.Functions.Reply.Invoke("Role 不合法");
+                await context.Reply.Invoke("Role 不合法");
                 return false;
             }  
         }
@@ -103,7 +107,7 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         {
             if (value is not ("allow" or "deny"))
             {
-                await context.Functions.Reply.Invoke("Value 不合法");
+                await context.Reply.Invoke("Value 不合法");
                 return false;
             }
         }
@@ -113,21 +117,22 @@ public sealed class PermissionManagerCommand : ICommandExecutor
 
         if (ori is null)
         {
-            await context.Functions.Reply.Invoke($"找不到 ID 为 `{nodeId}` 的记录");
+            await context.Reply.Invoke($"找不到 ID 为 `{nodeId}` 的记录");
             return false;
         }
 
         var (roles, channels) =
-            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+            await GetBasicInfos(openApiService, context.EventInfo.IslandId);
         var card = PermissionManagerMessageCard.GetPermissionChangeResultCard(ori, upt!, roles.ToList(), channels.ToList());
         
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         return true;
     }
 
     public async Task<bool> RemovePermissionById(
-        PluginBase.Context context,
-        [CmdInject] IPermissionManager pm,
+        CommandContext context,
+        [Inject] IPermissionManager pm,
+        [Inject] OpenApiService openApiService,
         [CmdOption("id", "i", "权限节点的 GUID")] string nodeId,
         [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
     {
@@ -136,14 +141,14 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         var guidParsed = Guid.TryParse(nodeId, out var parsedGuid);
         if (guidParsed is false)
         {
-            await context.Functions.Reply.Invoke("Guid 不合法");
+            await context.Reply.Invoke("Guid 不合法");
             return false;
         }
         
         var removePermissionSchema = await pm.RemovePermissionSchemaById(context.EventInfo.IslandId, parsedGuid, dryRun);
 
         var (roles, channels) =
-            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+            await GetBasicInfos(openApiService, context.EventInfo.IslandId);
         var card = removePermissionSchema.GetPermissionSingleCard("移除的权限", roles, channels);
         if (dryRun)
         {
@@ -152,13 +157,14 @@ public sealed class PermissionManagerCommand : ICommandExecutor
 
         card.Card.Theme = dryRun ? CardTheme.Orange : CardTheme.Purple;
 
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         return true;
     }
 
     public async Task<bool> RemovePermissionByNode(
-        PluginBase.Context context,
-        [CmdInject] IPermissionManager pm,
+        CommandContext context,
+        [Inject] IPermissionManager pm,
+        [Inject] OpenApiService openApiService,
         [CmdOption("node", "n", "权限节点")] string node,
         [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
     {
@@ -167,7 +173,7 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         var removePermissionSchema = await pm.RemovePermissionSchemasByNode(context.EventInfo.IslandId, node, dryRun);
         
         var (roles, channels) =
-            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+            await GetBasicInfos(openApiService, context.EventInfo.IslandId);
         var card = removePermissionSchema.GetPermissionListCard("移除的权限列表", roles, channels);
         if (dryRun)
         {
@@ -176,13 +182,14 @@ public sealed class PermissionManagerCommand : ICommandExecutor
 
         card.Card.Theme = dryRun ? CardTheme.Orange : CardTheme.Purple;
 
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         return true;
     }
     
     public async Task<bool> RemovePermissionBySearch(
-        PluginBase.Context context,
-        [CmdInject] IPermissionManager pm,
+        CommandContext context,
+        [Inject] IPermissionManager pm,
+        [Inject] OpenApiService openApiService,
         [CmdOption("channel", "c", "适用频道")] DodoChannelIdWithWildcard channelId,
         [CmdOption("role", "r", "权限组 ID，可为 `*`")] string roleId,
         [CmdOption("dry-run", "d", "Dry Run", false)] bool? isDryRun)
@@ -192,12 +199,12 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         var removePermissionSchema = await pm.RemovePermissionSchemasBySearch(context.EventInfo.IslandId, channelId.Value, roleId, dryRun);
         if (removePermissionSchema.Count == 0)
         {
-            await context.Functions.Reply.Invoke("未找到匹配的权限记录");
+            await context.Reply.Invoke("未找到匹配的权限记录");
             return true;
         }
 
         var (roles, channels) =
-            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+            await GetBasicInfos(openApiService, context.EventInfo.IslandId);
         var card = removePermissionSchema.GetPermissionListCard("移除的权限列表", roles, channels);
         if (dryRun)
         {
@@ -206,13 +213,14 @@ public sealed class PermissionManagerCommand : ICommandExecutor
 
         card.Card.Theme = dryRun ? CardTheme.Orange : CardTheme.Purple;
 
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         return true;
     }
 
     public async Task<bool> ListPermissions(
-        PluginBase.Context context,
-        [CmdInject] IPermissionManager pm,
+        CommandContext context,
+        [Inject] IPermissionManager pm,
+        [Inject] OpenApiService openApiService,
         [CmdOption("channel", "c", "适用频道", false)] DodoChannelIdWithWildcard? channelId,
         [CmdOption("role", "r", "权限组 ID，可为 `*`", false)] string? roleId,
         [CmdOption("page", "p", "页码", false)] int? page)
@@ -221,7 +229,7 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         {
             if (roleId != "*" && long.TryParse(roleId, out _) is false)
             {
-                await context.Functions.Reply.Invoke("Role 不合法");
+                await context.Reply.Invoke("Role 不合法");
                 return false;
             }
         }
@@ -242,21 +250,22 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         if (perms.Length == 0)
         {
             var msg = p == 1 ? "找不到符合检索条件的权限组" : $"没有更多的内容了，最大页码 {pages}";
-            await context.Functions.Reply.Invoke(msg);
+            await context.Reply.Invoke(msg);
             return true;
         }
 
         var (roles, channels) =
-            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+            await GetBasicInfos(openApiService, context.EventInfo.IslandId);
         var card = perms.GetPermissionListCard("权限列表", roles, channels, pages, p);
 
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         return true;
     }
 
     public async Task<bool> CheckPermission(
-        PluginBase.Context context,
-        [CmdInject] IPermissionManager pm,
+        CommandContext context,
+        [Inject] IPermissionManager pm,
+        [Inject] OpenApiService openApiService,
         [CmdOption("node", "n", "权限节点")] string node,
         [CmdOption("channel", "c", "适用频道")] DodoChannelId channelId, 
         [CmdOption("user", "u", "用户")] DodoMemberId memberId)
@@ -264,28 +273,28 @@ public sealed class PermissionManagerCommand : ICommandExecutor
         // 检查 Node
         if (node.Contains('*'))
         {
-            await context.Functions.Reply.Invoke("Node 不可包含 `*`");
+            await context.Reply.Invoke("Node 不可包含 `*`");
             return false;
         }
         
-        var memberRoles = await context.OpenApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
+        var memberRoles = await openApiService.GetMemberRoleListAsync(new GetMemberRoleListInput
         {
             IslandId = context.EventInfo.IslandId, DodoId = memberId.Value
         });
         
         if (memberRoles is null)
         {
-            await context.Functions.Reply.Invoke("获取用户身份组列表失败");
+            await context.Reply.Invoke("获取用户身份组列表失败");
             return false;
         }
         
         var (roles, channels) =
-            await GetBasicInfos(context.OpenApiService, context.EventInfo.IslandId);
+            await GetBasicInfos(openApiService, context.EventInfo.IslandId);
         
         var result = await pm.DescribeSchemaCheck(node, memberRoles, context.EventInfo.IslandId, channelId.Value);
         var card = result.GetPermissionCheckResultCard(roles, channels);
         
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
         return true;
     }
 

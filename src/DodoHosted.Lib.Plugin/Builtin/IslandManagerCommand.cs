@@ -14,6 +14,8 @@ using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Models.Resources;
 using DoDo.Open.Sdk.Models.Roles;
+using DodoHosted.Base.App.Attributes;
+using DodoHosted.Base.Context;
 using DodoHosted.Lib.Plugin.Cards;
 using MongoDB.Driver;
 
@@ -26,8 +28,8 @@ namespace DodoHosted.Lib.Plugin.Builtin;
 public sealed class IslandManagerCommand : ICommandExecutor
 {
     public async Task<bool> SetLoggerChannel(
-        PluginBase.Context context,
-        [CmdInject] IMongoCollection<IslandSettings> collection,
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection,
         [CmdOption("channel", "c", "日志频道")] DodoChannelId channel)
     {
         var settings = await collection
@@ -45,13 +47,13 @@ public sealed class IslandManagerCommand : ICommandExecutor
         settings.LoggerChannelId = channel.Value;
         await collection.FindOneAndReplaceAsync(x => x.IslandId == context.EventInfo.IslandId, settings);
         
-        await context.Functions.Reply.Invoke("修改成功");
+        await context.Reply.Invoke("修改成功");
         return true;
     }
     
     public async Task<bool> EnableLoggerChannel(
-        PluginBase.Context context,
-        [CmdInject] IMongoCollection<IslandSettings> collection)
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection)
     {
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
@@ -68,13 +70,13 @@ public sealed class IslandManagerCommand : ICommandExecutor
         settings.EnableChannelLogger = true;
         await collection.FindOneAndReplaceAsync(x => x.IslandId == context.EventInfo.IslandId, settings);
         
-        await context.Functions.Reply.Invoke("修改成功");
+        await context.Reply.Invoke("修改成功");
         return true;
     }
     
     public async Task<bool> DisableLoggerChannel(
-        PluginBase.Context context,
-        [CmdInject] IMongoCollection<IslandSettings> collection)
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection)
     {
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
@@ -91,13 +93,13 @@ public sealed class IslandManagerCommand : ICommandExecutor
         settings.EnableChannelLogger = false;
         await collection.FindOneAndReplaceAsync(x => x.IslandId == context.EventInfo.IslandId, settings);
         
-        await context.Functions.Reply.Invoke("修改成功");
+        await context.Reply.Invoke("修改成功");
         return true;
     }
 
     public async Task<bool> RenewWebApiToken(
-        PluginBase.Context context,
-        [CmdInject] IMongoCollection<IslandSettings> collection)
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection)
     {
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
@@ -114,13 +116,14 @@ public sealed class IslandManagerCommand : ICommandExecutor
         settings.WebApiToken = TokenHelper.GenerateToken();
         await collection.FindOneAndReplaceAsync(x => x.IslandId == context.EventInfo.IslandId, settings);
         
-        await context.Functions.Reply.Invoke("修改成功");
+        await context.Reply.Invoke("修改成功");
         return true;
     }
 
     public async Task<bool> GetSettings(
-        PluginBase.Context context,
-        [CmdInject] IMongoCollection<IslandSettings> collection)
+        CommandContext context,
+        [Inject] OpenApiService openApiService,
+        [Inject] IMongoCollection<IslandSettings> collection)
     {
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
@@ -134,53 +137,54 @@ public sealed class IslandManagerCommand : ICommandExecutor
                 $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
         }
 
-        var card = await settings.GetIslandSettingsCard(context.OpenApiService);
-        await context.Functions.ReplyCard.Invoke(card);
+        var card = await settings.GetIslandSettingsCard(openApiService);
+        await context.ReplyCard.Invoke(card);
         
         return true;
     }
 
-    public async Task<bool> GetRoles(PluginBase.Context context)
+    public async Task<bool> GetRoles(CommandContext context, [Inject] OpenApiService openApiService)
     {
-        var roles = await context.OpenApiService
+        var roles = await openApiService
             .GetRoleListAsync(new GetRoleListInput { IslandId = context.EventInfo.IslandId }, true);
         if (roles is null)
         {
-            await context.Functions.Reply.Invoke("找不到群组身份组信息");
+            await context.Reply.Invoke("找不到群组身份组信息");
             return false;
         }
 
         var card = roles.GetRolesCard();
         
-        await context.Functions.ReplyCard.Invoke(card);
+        await context.ReplyCard.Invoke(card);
 
         return true;
     }
 
     public async Task<bool> GetWebApiToken(
-        PluginBase.Context context,
-        [CmdInject] IMongoCollection<IslandSettings> collection)
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection)
     {
         var token = collection.AsQueryable()
             .FirstOrDefault(x => x.IslandId == context.EventInfo.IslandId)?.WebApiToken;
 
         if (token is null)
         {
-            await context.Functions.Reply.Invoke("找不到记录");
+            await context.Reply.Invoke("找不到记录");
             return false;
         }
         
-        await context.Functions.Reply.Invoke($"Web API Token: `{token}`", true);
+        await context.Reply.Invoke($"Web API Token: `{token}`", true);
         return true;
     }
 
-    public async Task<bool> SendText(PluginBase.Context context,
+    public async Task<bool> SendText(CommandContext context,
+        [Inject] OpenApiService openApiService,
         [CmdOption("channel", "c", "发送目标频道")] DodoChannelId channel,
         [CmdOption("message", "m", "要发送的消息")] string message,
         [CmdOption("user", "u", "发送只有某个用户看到的的消息", false)] DodoMemberId? user,
         [CmdOption("reply", "r", "回复消息 ID", false)] string? replyId)
     {
-        var result = await context.OpenApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
+        var result = await openApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyText>
         {
             ChannelId = channel.Value,
             MessageBody = new MessageBodyText
@@ -194,28 +198,29 @@ public sealed class IslandManagerCommand : ICommandExecutor
         
         if (result is null)
         {
-            await context.Functions.Reply.Invoke("发送失败");
+            await context.Reply.Invoke("发送失败");
             return false;
         }
 
         var replyMsg = user is null
             ? $"发送成功，频道：{channel.Ref}, 消息 ID：`{result.MessageId}`"
             : $"私聊 {user.Value.Ref} 的消息发送成功，频道：{channel.Ref}, 消息 ID：`{result.MessageId}`";
-        await context.Functions.Reply.Invoke(replyMsg);
+        await context.Reply.Invoke(replyMsg);
         
         return true;
     }
     
-    public async Task<bool> SendImage(PluginBase.Context context,
+    public async Task<bool> SendImage(CommandContext context,
+        [Inject] OpenApiService openApiService,
         [CmdOption("channel", "c", "发送目标频道")] DodoChannelId channel,
         [CmdOption("image", "i", "要发送的图片链接")] string url,
         [CmdOption("user", "u", "发送只有某个用户看到的的消息", false)] DodoMemberId? user,
         [CmdOption("reply", "r", "回复消息 ID", false)] string? replyId)
     {
-        var response = await context.OpenApiService
+        var response = await openApiService
             .SetResourcePictureUploadAsync(new SetResourceUploadInput { FilePath = url }, true);
         
-        var result = await context.OpenApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyPicture>
+        var result = await openApiService.SetChannelMessageSendAsync(new SetChannelMessageSendInput<MessageBodyPicture>
         {
             ChannelId = channel.Value,
             MessageBody = new MessageBodyPicture
@@ -232,56 +237,59 @@ public sealed class IslandManagerCommand : ICommandExecutor
 
         if (result is null)
         {
-            await context.Functions.Reply.Invoke("发送失败");
+            await context.Reply.Invoke("发送失败");
             return false;
         }
 
         var replyMsg = user is null
             ? $"发送成功，频道：{channel.Ref}, 消息 ID：`{result.MessageId}`"
             : $"私聊 {user.Value.Ref} 的消息发送成功，频道：{channel.Ref}, 消息 ID：`{result.MessageId}`";
-        await context.Functions.Reply.Invoke(replyMsg);
+        await context.Reply.Invoke(replyMsg);
 
         return true;
     }
 
-    public async Task<bool> SendReaction(PluginBase.Context context,
+    public async Task<bool> SendReaction(CommandContext context,
+        [Inject] OpenApiService openApiService,
         [CmdOption("id", "i", "消息 ID")] string msgId,
         [CmdOption("emoji", "e", "反应 Emoji")] DodoEmoji emoji)
     {
-        var result = await context.OpenApiService.SetChannelMessageReactionAddAsync(new SetChannelMessageReactionAddInput
+        var result = await openApiService.SetChannelMessageReactionAddAsync(new SetChannelMessageReactionAddInput
         {
             MessageId = msgId, Emoji = new MessageModelEmoji { Id = emoji.EmojiId.ToString(), Type = 1 }
         }, true);
 
-        await context.Functions.Reply.Invoke(result ? $"在消息 `{msgId}` 添加 `{emoji.Emoji}` 反应成功" : "添加失败");
+        await context.Reply.Invoke(result ? $"在消息 `{msgId}` 添加 `{emoji.Emoji}` 反应成功" : "添加失败");
         
         return true;
     }
     
-    public async Task<bool> DeleteMessage(PluginBase.Context context,
+    public async Task<bool> DeleteMessage(CommandContext context,
+        [Inject] OpenApiService openApiService,
         [CmdOption("id", "i", "消息 ID")] string msgId,
         [CmdOption("reason", "r", "删除原因", false)] string? reason)
     {
-        var result = await context.OpenApiService.SetChannelMessageWithdrawAsync(new SetChannelMessageWithdrawInput
+        var result = await openApiService.SetChannelMessageWithdrawAsync(new SetChannelMessageWithdrawInput
         {
             MessageId = msgId, Reason = reason
         }, true);
 
-        await context.Functions.Reply.Invoke(result ? $"删除消息 `{msgId}` 成功，原因：「{reason}」" : "移除失败");
+        await context.Reply.Invoke(result ? $"删除消息 `{msgId}` 成功，原因：「{reason}」" : "移除失败");
         
         return true;
     }
     
-    public async Task<bool> DeleteReaction(PluginBase.Context context,
+    public async Task<bool> DeleteReaction(CommandContext context,
+        [Inject] OpenApiService openApiService,
         [CmdOption("id", "i", "消息 ID")] string msgId,
         [CmdOption("emoji", "e", "反应 Emoji")] DodoEmoji emoji)
     {
-        var result = await context.OpenApiService.SetChannelMessageReactionRemoveAsync(new SetChannelMessageReactionRemoveInput
+        var result = await openApiService.SetChannelMessageReactionRemoveAsync(new SetChannelMessageReactionRemoveInput
         {
             MessageId = msgId, Emoji = new MessageModelEmoji { Id = emoji.EmojiId.ToString(), Type = 1 }
         }, true);
         
-        await context.Functions.Reply.Invoke(result ? $"从消息 `{msgId}` 移除 `{emoji.Emoji}` 反应成功" : "移除失败");
+        await context.Reply.Invoke(result ? $"从消息 `{msgId}` 移除 `{emoji.Emoji}` 反应成功" : "移除失败");
         
         return true;
     }

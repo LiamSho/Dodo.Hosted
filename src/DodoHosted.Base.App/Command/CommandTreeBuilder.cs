@@ -11,10 +11,11 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Reflection;
-using DodoHosted.Base.App.Command.Attributes;
+using DodoHosted.Base.App.Attributes;
 using DodoHosted.Base.App.Exceptions;
+using DodoHosted.Base.Context;
 
-namespace DodoHosted.Base.App.Command.Builder;
+namespace DodoHosted.Base.App.Command;
 
 public class CommandTreeBuilder
 {
@@ -109,13 +110,13 @@ public class CommandTreeBuilder
         // 无 Attribute 的参数只能有 PluginBase.Context 一个
         var noAttrParams = parameters
             .Where(x => x.GetCustomAttribute<CmdOptionAttribute>() is null &&
-                            x.GetCustomAttribute<CmdInjectAttribute>() is null)
+                            x.GetCustomAttribute<InjectAttribute>() is null)
             .Select(x => x.ParameterType)
             .ToArray();
         var paramValid = noAttrParams.Length switch
         {
             0 => true,
-            1 => noAttrParams.First() == typeof(PluginBase.Context),
+            1 => noAttrParams.First() == typeof(CommandContext),
             _ => false
         };
         
@@ -125,7 +126,7 @@ public class CommandTreeBuilder
         }
 
         // 获取 Context 位置
-        var contextParam = parameters.FirstOrDefault(x => x.ParameterType == typeof(PluginBase.Context));
+        var contextParam = parameters.FirstOrDefault(x => x.ParameterType == typeof(CommandContext));
         contextParamOrder = contextParam?.Position ?? -1;
 
         // 获取参数选项
@@ -174,7 +175,7 @@ public class CommandTreeBuilder
     private static Dictionary<int, Type> GetServiceOptions(IEnumerable<ParameterInfo> parameters)
     {
         var serviceOptions = parameters
-            .Where(x => x.GetCustomAttribute<CmdInjectAttribute>() is not null)
+            .Where(x => x.GetCustomAttribute<InjectAttribute>() is not null)
             .ToDictionary(x => x.Position, y => y.ParameterType);
 
         return serviceOptions;

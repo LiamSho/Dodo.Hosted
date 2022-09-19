@@ -10,11 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Command;
+namespace DodoHosted.Base.Context.Model;
 
-namespace DodoHosted.Open.Plugin;
-
-public interface ICommandExecutor
-{
-    CommandTreeBuilder GetBuilder();
-}
+public record EventInfo(string IslandId, string ChannelId, string MessageId, string EventId, long EventTimeStamp);

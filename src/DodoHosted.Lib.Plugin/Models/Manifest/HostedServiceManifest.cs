@@ -41,4 +41,9 @@ public record HostedServiceManifest
     /// 取消令牌源
     /// </summary>
     public CancellationTokenSource CancellationTokenSource { get; } = new();
+    
+    /// <summary>
+    /// <see cref="PluginInfo.Identifier"/>
+    /// </summary>
+    public required string PluginIdentifier { get; init; }
 }

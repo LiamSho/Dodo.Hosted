@@ -13,6 +13,8 @@
 using System.Text.RegularExpressions;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base.App.Models;
+using DodoHosted.Base.Context;
+using DodoHosted.Base.Context.Model;
 using DodoHosted.Base.Enums;
 using DodoHosted.Base.Events;
 
@@ -142,10 +144,10 @@ public static class CommandParser
         return new CommandParsed { CommandName = cmdName, Path = path.ToArray(), Arguments = arguments };
     }
 
-    public static PluginBase.UserInfo GetUserInfo(this DodoChannelMessageEvent<MessageBodyText> messageEvent)
+    public static UserInfo GetUserInfo(this DodoChannelMessageEvent<MessageBodyText> messageEvent)
     {
         var eventBody = messageEvent.Message.Data.EventBody;
-        var userInfo = new PluginBase.UserInfo(
+        var userInfo = new UserInfo(
             eventBody.Personal.NickName,
             eventBody.Personal.AvatarUrl,
             (Sex)eventBody.Personal.Sex,
@@ -157,10 +159,10 @@ public static class CommandParser
         return userInfo;
     }
 
-    public static PluginBase.EventInfo GetEventInfo(this DodoChannelMessageEvent<MessageBodyText> messageEvent)
+    public static EventInfo GetEventInfo(this DodoChannelMessageEvent<MessageBodyText> messageEvent)
     {
         var eventBody = messageEvent.Message.Data.EventBody;
-        var eventInfo = new PluginBase.EventInfo(
+        var eventInfo = new EventInfo(
             eventBody.IslandId,
             eventBody.ChannelId,
             eventBody.MessageId,

@@ -11,7 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using DodoHosted.Base;
-using Microsoft.Extensions.Logging;
+using DodoHosted.Base.Context;
 
 namespace DodoHosted.Open.Plugin;
 
@@ -22,14 +22,12 @@ namespace DodoHosted.Open.Plugin;
 /// <remarks>
 /// 实现类不能包涵泛型参数
 /// </remarks>
-public interface IDodoHostedPluginEventHandler<in T> where T : IDodoHostedEvent
+public interface IEventHandler<in T> where T : IDodoHostedEvent
 {
     /// <summary>
     /// 处理 Event
     /// </summary>
-    /// <param name="event">Event 消息体</param>
-    /// <param name="provider">用于访问 DI 容器的 ServiceProvider，对于每次请求，都会使用一个新的 Scope</param>
-    /// <param name="logger">日志记录器</param>
+    /// <param name="eventContext">Event Context</param>
     /// <returns></returns>
-    Task Handle(T @event, IServiceProvider provider, ILogger logger);
+    Task Handle(T eventContext);
 }

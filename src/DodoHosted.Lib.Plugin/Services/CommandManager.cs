@@ -15,6 +15,7 @@ using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base.Card;
+using DodoHosted.Base.Context;
 using DodoHosted.Base.Events;
 
 namespace DodoHosted.Lib.Plugin.Services;
@@ -59,7 +60,7 @@ public class CommandManager : ICommandManager
         _logger.LogTrace("接收到指令：{TraceCommandMessageReceived}，发送者：{TraceCommandSender}", message, userInfo.NickName);
 
         // Reply 委托
-        PluginBase.Reply reply = async delegate(string content, bool privateMessage)
+        ContextBase.Reply reply = async delegate(string content, bool privateMessage)
         {
             var replySw = Stopwatch.StartNew();
             _logger.LogTrace("回复{TracePrivateMessage}消息 {TraceReplyTargetId}", privateMessage ? "私密" : "非私密", content);
@@ -166,13 +167,11 @@ public class CommandManager : ICommandManager
             await permissionManager.CheckPermission(node, senderRoles, eventInfo.IslandId, eventInfo.ChannelId);
 
         // 指令执行上下文
-        var context = new PluginBase.Context(
-            new PluginBase.Functions(reply, ReplyCard, PermissionCheck),
-            userInfo, eventInfo, _openApiService, scope.ServiceProvider);
+        var context = new CommandContext(reply, ReplyCard, PermissionCheck, userInfo, eventInfo, messageEvent);
         
         try
         {
-            result = await cmdInfo.Invoke(pluginManifest!, parsed, context);
+            result = await cmdInfo.Invoke(pluginManifest!, parsed, scope.ServiceProvider, context);
         }
         catch (Exception ex)
         {

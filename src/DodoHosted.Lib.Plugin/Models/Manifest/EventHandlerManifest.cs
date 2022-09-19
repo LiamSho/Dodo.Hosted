@@ -18,12 +18,12 @@ namespace DodoHosted.Lib.Plugin.Models.Manifest;
 public record EventHandlerManifest
 {
     /// <summary>
-    /// 继承 <see cref="IDodoHostedPluginEventHandler{T}"/> 的类型
+    /// 继承 <see cref="IEventHandler{T}"/> 的类型
     /// </summary>
     public required Type EventHandlerType { get; init; }
     
     /// <summary>
-    /// <see cref="IDodoHostedPluginEventHandler{T}"/> 的泛型类型
+    /// <see cref="IEventHandler{T}"/> 的泛型类型
     /// </summary>
     public required Type EventType { get; init; }
     
@@ -35,10 +35,15 @@ public record EventHandlerManifest
     /// <summary>
     /// <see cref="EventHandlerType"/> 实例
     /// </summary>
-    public required object EventHandler { get; init; }
+    public required ConstructorInfo EventHandlerConstructor { get; init; }
     
     /// <summary>
-    /// <see cref="IDodoHostedPluginEventHandler{T}.Handle"/> 方法
+    /// <see cref="IEventHandler{T}.Handle"/> 方法
     /// </summary>
     public required MethodInfo HandlerMethod { get; init; }
+    
+    /// <summary>
+    /// <see cref="PluginInfo.Identifier"/>
+    /// </summary>
+    public required string PluginIdentifier { get; init; }
 }

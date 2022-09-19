@@ -10,11 +10,12 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Command;
+using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base.Context.Model;
+using DodoHosted.Base.Events;
 
-namespace DodoHosted.Open.Plugin;
+namespace DodoHosted.Base.Context;
 
-public interface ICommandExecutor
-{
-    CommandTreeBuilder GetBuilder();
-}
+public record CommandContext(
+    ContextBase.Reply Reply, ContextBase.ReplyCard ReplyCard, ContextBase.PermissionCheck PermissionCheck,
+    UserInfo UserInfo, EventInfo EventInfo, DodoChannelMessageEvent<MessageBodyText> EventData);

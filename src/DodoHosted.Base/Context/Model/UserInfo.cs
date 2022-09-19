@@ -10,7 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Base.App.Command.Attributes;
+using DodoHosted.Base.Enums;
 
-[AttributeUsage(AttributeTargets.Parameter)]
-public class CmdInjectAttribute : Attribute { }
+namespace DodoHosted.Base.Context.Model;
+
+public record UserInfo(string NickName, string AvatarUrl, Sex Sex, string MemberNickName, int MemberLevel, DateTimeOffset JoinTime, string DodoId);

@@ -10,6 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.App.Attributes;
+using DodoHosted.Base.Context;
 using DodoHosted.Lib.Plugin.Cards;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
@@ -21,18 +23,18 @@ namespace DodoHosted.Lib.Plugin.Builtin;
 public sealed class HelpCommand : ICommandExecutor
 {
     public async Task<bool> GetAllCommands(
-        PluginBase.Context context,
-        [CmdInject] IPluginManager pluginManager,
-        [CmdInject] IParameterResolver parameterResolver,
+        CommandContext context,
+        [Inject] IPluginManager pluginManager,
+        [Inject] IParameterResolver parameterResolver,
         [CmdOption("name", "n", "指令的名称，为空时显示所有可用指令", false)] string? commandName,
         [CmdOption("path", "p", "指令的路径，使用 `,` 分隔，为空时显示所有可用指令", false)] string? commandPath)
     {
         if (commandName is null)
         {
             var allCommandHelpCard = await pluginManager.GetCommandManifests()
-                .GetCommandListMessage(context.Functions.PermissionCheck);
+                .GetCommandListMessage(context.PermissionCheck);
 
-            await context.Functions.ReplyCard.Invoke(allCommandHelpCard);
+            await context.ReplyCard.Invoke(allCommandHelpCard);
             return true;
         }
         
@@ -40,7 +42,7 @@ public sealed class HelpCommand : ICommandExecutor
             .FirstOrDefault(x => x.RootNode.Value == commandName);
         if (manifest is null)
         {
-            await context.Functions.Reply.Invoke($"找不到名为 {commandName} 的指令");
+            await context.Reply.Invoke($"找不到名为 {commandName} 的指令");
             return false;
         }
 
@@ -50,14 +52,14 @@ public sealed class HelpCommand : ICommandExecutor
 
         if (node is null)
         {
-            await context.Functions.Reply.Invoke("找不到指定路径的指令");
+            await context.Reply.Invoke("找不到指定路径的指令");
             return false;
         }
 
         var commandNodeHelpCard = await node.GetCommandHelpMessage(
             parameterResolver,
-            context.Functions.PermissionCheck);
-        await context.Functions.ReplyCard.Invoke(commandNodeHelpCard);
+            context.PermissionCheck);
+        await context.ReplyCard.Invoke(commandNodeHelpCard);
         
         return true;
     }

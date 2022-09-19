@@ -26,4 +26,9 @@ public record CommandManifest
     /// 指令方法
     /// </summary>
     public required CommandNode RootNode { get; set; }
+    
+    /// <summary>
+    /// <see cref="PluginInfo.Identifier"/>
+    /// </summary>
+    public required string PluginIdentifier { get; init; }
 }

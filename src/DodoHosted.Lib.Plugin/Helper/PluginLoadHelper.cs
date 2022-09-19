@@ -12,6 +12,7 @@
 
 using System.IO.Compression;
 using System.Text.Json;
+using DodoHosted.Base.App.Attributes;
 
 namespace DodoHosted.Lib.Plugin.Helper;
 
@@ -115,18 +116,19 @@ internal static class PluginLoadHelper
     /// </summary>
     /// <param name="pluginTypes"></param>
     /// <param name="provider"></param>
+    /// <param name="id"></param>
     /// <param name="native"></param>
     /// <returns></returns>
-    internal static PluginWorker LoadPluginWorkers(this IEnumerable<Type> pluginTypes, IServiceProvider provider, bool native = false)
+    internal static PluginWorker LoadPluginWorkers(this IEnumerable<Type> pluginTypes, IServiceProvider provider, string id, bool native = false)
     {
         var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("PluginWorkerLoader");
-        var commandParameterHelper = provider.GetRequiredService<IParameterResolver>();
+        var parameterResolver = provider.GetRequiredService<IParameterResolver>();
         
         var types = pluginTypes.ToArray();
 
-        var eventHandlers = types.FetchEventHandlers(logger);
-        var commandExecutors = types.FetchCommandExecutors(logger);
-        var hostedServices = types.FetchHostedService(logger, provider);
+        var eventHandlers = types.FetchEventHandlers(id, logger);
+        var commandExecutors = types.FetchCommandExecutors(id, logger);
+        var hostedServices = types.FetchHostedService(id, logger, provider);
         
         foreach (var executor in commandExecutors)
         {
@@ -141,7 +143,7 @@ internal static class PluginLoadHelper
                 {
                     foreach (var (_, (type, attr)) in node.Options)
                     {
-                        var result = commandParameterHelper.ValidateOptionParameterType(type);
+                        var result = parameterResolver.ValidateOptionParameterType(type);
                         if (result is false)
                         {
                             throw new PluginAssemblyLoadException($"指令参数 {attr.Name} 的类型 {type.FullName} 不支持");
@@ -150,12 +152,28 @@ internal static class PluginLoadHelper
 
                     foreach (var (_, type) in node.ServiceOptions)
                     {
-                        var result = commandParameterHelper.ValidateServiceParameterType(type, native);
+                        var result = parameterResolver.ValidateServiceParameterType(type, native);
                         if (result is false)
                         {
                             throw new PluginAssemblyLoadException($"指令服务参数 {type.FullName} 不支持");
                         }
                     }
+                }
+            }
+        }
+
+        foreach (var eventHandler in eventHandlers)
+        {
+            var constructorParameterTypes = eventHandler.EventHandlerConstructor
+                .GetParameters()
+                .Select(x => x.ParameterType);
+
+            foreach (var type in constructorParameterTypes)
+            {
+                var result = parameterResolver.ValidateServiceParameterType(type, native);
+                if (result is false)
+                {
+                    throw new PluginAssemblyLoadException($"事件执行器服务参数 {type.FullName} 不支持");
                 }
             }
         }
@@ -218,39 +236,43 @@ internal static class PluginLoadHelper
         GC.Collect();
         GC.WaitForPendingFinalizers();
     }
-    
+
     /// <summary>
     /// 载入所有的事件处理器
     /// </summary>
     /// <param name="types">Plugin Assembly 中所有的类型</param>
+    /// <param name="id">Plugin Identifier</param>
     /// <param name="logger"></param>
     /// <returns><see cref="EventHandlerManifest"/> 清单</returns>
     /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    private static EventHandlerManifest[] FetchEventHandlers(this IEnumerable<Type> types, ILogger logger)
+    private static EventHandlerManifest[] FetchEventHandlers(this IEnumerable<Type> types, string id, ILogger logger)
     {
         var eventHandlerTypes = types
             .Where(x => x.IsSealed)
-            .Where(x => x != typeof(IDodoHostedPluginEventHandler<>))
+            .Where(x => x != typeof(IEventHandler<>))
             .Where(x => x
                 .GetInterfaces()
                 .Any(i =>
                     i.IsGenericType &&
-                    i.GetGenericTypeDefinition() == typeof(IDodoHostedPluginEventHandler<>)))
+                    i.GetGenericTypeDefinition() == typeof(IEventHandler<>)))
             .Where(x => x.ContainsGenericParameters is false);
 
         var manifests = new List<EventHandlerManifest>();
         foreach (var type in eventHandlerTypes)
         {
             var interfaceType = type.GetInterfaces()
-                .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDodoHostedPluginEventHandler<>));
-                
-            var handler = Activator.CreateInstance(type);
+                .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventHandler<>));
+
+            var constructor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(x => x.GetParameters().All(y =>
+                    y.GetCustomAttribute<InjectAttribute>() is not null));
+            
             var method = interfaceType.GetMethod("Handle");
             var eventType = interfaceType.GetGenericArguments().FirstOrDefault();
 
-            if (handler is null)
+            if (constructor is null)
             {
-                throw new PluginAssemblyLoadException($"无法创建事件处理器 {type.FullName} 的实例");
+                throw new PluginAssemblyLoadException($"找不到事件处理器 {type.FullName} 的合法构造函数");
             }
             if (method is null)
             {
@@ -265,11 +287,12 @@ internal static class PluginLoadHelper
             
             manifests.Add(new EventHandlerManifest
             {
-                EventHandler = handler,
+                EventHandlerConstructor = constructor,
                 EventType = eventType,
                 EventTypeString = eventType.FullName!,
                 EventHandlerType = type,
-                HandlerMethod = method
+                HandlerMethod = method,
+                PluginIdentifier = id
             });
         }
 
@@ -280,10 +303,11 @@ internal static class PluginLoadHelper
     /// 载入所有的指令处理器
     /// </summary>
     /// <param name="types">Plugin Assembly 中所有的类型</param>
+    /// <param name="id">Plugin Identifier</param>
     /// <param name="logger"></param>
     /// <returns><see cref="CommandManifest"/> 清单</returns>
     /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    private static CommandManifest[] FetchCommandExecutors(this IEnumerable<Type> types, ILogger logger)
+    private static CommandManifest[] FetchCommandExecutors(this IEnumerable<Type> types, string id, ILogger logger)
     {
         var commandExecutorTypes = types
             .Where(x => x.IsSealed)
@@ -310,22 +334,24 @@ internal static class PluginLoadHelper
             manifests.Add(new CommandManifest
             {
                 CommandExecutor = ins,
-                RootNode = root
+                RootNode = root,
+                PluginIdentifier = id
             });
         }
 
         return manifests.ToArray();
     }
-    
+
     /// <summary>
     /// 载入所有的后台服务
     /// </summary>
     /// <param name="types">Plugin Assembly 中所有的类型</param>
+    /// <param name="id">Plugin Identifier</param>
     /// <param name="logger"></param>
     /// <param name="provider"></param>
     /// <returns><see cref="HostedServiceManifest"/> 清单</returns>
     /// <exception cref="PluginAssemblyLoadException">载入失败</exception>
-    private static HostedServiceManifest[] FetchHostedService(this IEnumerable<Type> types, ILogger logger, IServiceProvider provider)
+    private static HostedServiceManifest[] FetchHostedService(this IEnumerable<Type> types, string id, ILogger logger, IServiceProvider provider)
     {
         var hostedServiceTypes = types
             .Where(x => x.IsSealed)
@@ -350,7 +376,8 @@ internal static class PluginLoadHelper
             {
                 Job = ins,
                 Scope = provider.CreateScope(),
-                Name = ins.HostedServiceName
+                Name = ins.HostedServiceName,
+                PluginIdentifier = id
             });
         }
 

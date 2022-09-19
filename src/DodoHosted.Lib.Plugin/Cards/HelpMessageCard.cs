@@ -13,6 +13,7 @@
 using DodoHosted.Base.Card;
 using DodoHosted.Base.Card.CardComponent;
 using DodoHosted.Base.Card.Enums;
+using DodoHosted.Base.Context;
 
 namespace DodoHosted.Lib.Plugin.Cards;
 
@@ -21,7 +22,7 @@ public static class HelpMessageCard
     public static async Task<CardMessage> GetCommandHelpMessage(
         this CommandNode node,
         IParameterResolver parameterResolver,
-        PluginBase.PermissionCheck permissionChecker)
+        ContextBase.PermissionCheck permissionChecker)
     {
         var card = new CardMessage(new Card
         {
@@ -79,7 +80,7 @@ public static class HelpMessageCard
         return card;
     }
 
-    public static async Task<CardMessage> GetCommandListMessage(this IEnumerable<CommandManifest> manifests, PluginBase.PermissionCheck permissionChecker)
+    public static async Task<CardMessage> GetCommandListMessage(this IEnumerable<CommandManifest> manifests, ContextBase.PermissionCheck permissionChecker)
     {
         var card = new CardMessage
         {

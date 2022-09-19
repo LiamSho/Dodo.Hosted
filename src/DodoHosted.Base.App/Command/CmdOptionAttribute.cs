@@ -10,7 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Base.App.Command.Attributes;
+namespace DodoHosted.Base.App.Command;
 
 /// <summary>
 /// 指令参数 Attribute

@@ -81,7 +81,7 @@ public class PluginLifetimeManager : IPluginLifetimeManager
             await pluginInstance.OnLoad();
             
             // 载入插件工作类型
-            var worker = pluginAssemblyTypes.LoadPluginWorkers(_provider);
+            var worker = pluginAssemblyTypes.LoadPluginWorkers(_provider, pluginInfo.Identifier);
 
             // 添加插件
             var pluginManifest = new PluginManifest
@@ -180,7 +180,7 @@ public class PluginLifetimeManager : IPluginLifetimeManager
 
             await instance.OnLoad();
             
-            var worker = types.LoadPluginWorkers(_provider, true);
+            var worker = types.LoadPluginWorkers(_provider, $"native-{name}", true);
 
             var scope = _provider.CreateScope();
 
