@@ -394,8 +394,8 @@ public sealed class IslandManagerCommand : ICommandExecutor
         return new CommandTreeBuilder("island", "群组管理", "system.island")
             .Then("logger", "群组日志记录器", "settings", builder: x => x
                 .Then("channel", "设置日志频道", "modify", SetLoggerChannel)
-                .Then("enable", "设置日志频道", "modify", EnableLoggerChannel)
-                .Then("disable", "设置日志频道", "modify", DisableLoggerChannel))
+                .Then("enable", "开启日志频道", "modify", EnableLoggerChannel)
+                .Then("disable", "关闭日志频道", "modify", DisableLoggerChannel))
             .Then("web", "群组 WebAPI 配置", "web", builder: x => x
                 .Then("renew", "更新 WebAPI Token", string.Empty, RenewWebApiToken)
                 .Then("add", "新增 WebAPI Token", string.Empty, AddWebApiToken)
