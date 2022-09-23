@@ -10,8 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using Microsoft.Extensions.Logging;
-
 namespace DodoHosted.Open.Plugin;
 
 /// <summary>

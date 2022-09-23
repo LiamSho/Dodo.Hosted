@@ -12,7 +12,7 @@
 
 using DodoHosted.Base.Card;
 
-namespace DodoHosted.Base.Context;
+namespace DodoHosted.Base.App.Context;
 
 public static class ContextBase
 {

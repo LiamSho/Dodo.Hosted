@@ -10,9 +10,8 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.App.Context.Model;
 using DodoHosted.Base.App.Models;
-using DodoHosted.Base.Context;
-using DodoHosted.Base.Context.Model;
 
 namespace DodoHosted.Base.App.Context;
 

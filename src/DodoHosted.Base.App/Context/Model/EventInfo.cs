@@ -10,6 +10,6 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Base.Context.Model;
+namespace DodoHosted.Base.App.Context.Model;
 
 public record EventInfo(string IslandId, string ChannelId, string MessageId, string EventId, long EventTimeStamp);

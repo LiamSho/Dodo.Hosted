@@ -12,9 +12,8 @@
 
 using System.Text.RegularExpressions;
 using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base.App.Context.Model;
 using DodoHosted.Base.App.Models;
-using DodoHosted.Base.Context;
-using DodoHosted.Base.Context.Model;
 using DodoHosted.Base.Enums;
 using DodoHosted.Base.Events;
 

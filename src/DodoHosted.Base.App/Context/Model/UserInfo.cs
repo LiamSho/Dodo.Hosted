@@ -12,6 +12,6 @@
 
 using DodoHosted.Base.Enums;
 
-namespace DodoHosted.Base.Context.Model;
+namespace DodoHosted.Base.App.Context.Model;
 
 public record UserInfo(string NickName, string AvatarUrl, Sex Sex, string MemberNickName, int MemberLevel, DateTimeOffset JoinTime, string DodoId);

@@ -13,7 +13,6 @@
 using DoDo.Open.Sdk.Models.Members;
 using DodoHosted.Base.App.Entities;
 using DodoHosted.Base.App.Interfaces;
-using DodoHosted.Base.App.Models;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
