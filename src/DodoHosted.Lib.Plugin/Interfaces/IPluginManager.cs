@@ -20,16 +20,20 @@ public interface IPluginManager
     bool Exist(string id);
     PluginModule? RemovePlugin(string id);
     IEnumerable<PluginModule> RemovePlugins();
+    
     PluginModule? GetPlugin(string id);
     IEnumerable<PluginModule> GetPlugins();
     IEnumerable<PluginModule> GetPlugins(Func<PluginModule, bool> predicate);
     IEnumerable<PluginModule> GetPlugins(bool native);
+    
     CommandNode? GetCommandNode(string command);
     IEnumerable<CommandNode> GetCommandNodes();
     IEnumerable<CommandNode> GetCommandNodes(string id);
     IEnumerable<CommandNode> GetCommandNodes(Func<CommandNode, bool> predicate);
+    
     CommandExecutorModule? GetCommandExecutorModule(string command);
     IEnumerable<CommandExecutorModule> GetCommandExecutorModules();
+    
     EventHandlerModule? GetEventHandlerModule(string id);
     IEnumerable<EventHandlerModule> GetEventHandlerModules();
     IEnumerable<EventHandlerModule> GetEventHandlerModules(Func<EventHandlerModule, bool> predicate);

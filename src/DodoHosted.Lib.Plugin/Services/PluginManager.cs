@@ -28,7 +28,6 @@ public class PluginManager : IPluginManager
         var _ = _plugins.TryRemove(id, out var manifest);
         return manifest;
     }
-
     public IEnumerable<PluginModule> RemovePlugins()
     {
         var plugins = GetPlugins().ToArray();
@@ -52,7 +51,6 @@ public class PluginManager : IPluginManager
     {
         return _plugins.Values.Where(predicate);
     }
-
     public IEnumerable<PluginModule> GetPlugins(bool native)
     {
         return GetPlugins(x => x.IsNative == native);
@@ -65,20 +63,17 @@ public class PluginManager : IPluginManager
             .Select(x => x.GetCommandNode(command))
             .FirstOrDefault(x => x is not null);
     }
-
     public IEnumerable<CommandNode> GetCommandNodes()
     {
         return _plugins.Values
             .Select(x => x.CommandExecutorModule)
             .SelectMany(x => x.GetCommandNodes());
     }
-
     public IEnumerable<CommandNode> GetCommandNodes(string id)
     {
         var plugin = GetPlugin(id);
         return plugin is null ? Enumerable.Empty<CommandNode>() : plugin.CommandExecutorModule.GetCommandNodes();
     }
-
     public IEnumerable<CommandNode> GetCommandNodes(Func<CommandNode, bool> predicate)
     {
         return GetCommandNodes().Where(predicate);
@@ -89,7 +84,6 @@ public class PluginManager : IPluginManager
         return _plugins.Values.FirstOrDefault(x => x.CommandExecutorModule.GetCommandNode(command) is not null)?
             .CommandExecutorModule;
     }
-
     public IEnumerable<CommandExecutorModule> GetCommandExecutorModules()
     {
         return _plugins.Values.Select(x => x.CommandExecutorModule);
@@ -100,12 +94,10 @@ public class PluginManager : IPluginManager
         var plugin = GetPlugin(id);
         return plugin?.EventHandlerModule;
     }
-    
     public IEnumerable<EventHandlerModule> GetEventHandlerModules()
     {
         return _plugins.Values.Select(x => x.EventHandlerModule);
     }
-
     public IEnumerable<EventHandlerModule> GetEventHandlerModules(Func<EventHandlerModule, bool> predicate)
     {
         return GetEventHandlerModules().Where(predicate);

@@ -71,7 +71,7 @@ public class PluginLoadingManager : IPluginLoadingManager
             var (context, assemblies) = pluginCacheDirectory.LoadPluginAssembly(pluginInfo);
 
             // 插件程序集类型
-            var module = new PluginModule(context, assemblies, pluginInfo, _provider);
+            var module = new PluginModule(context, assemblies, pluginInfo, _provider, bundle.FullName);
 
             var success = _pluginManager.AddPlugin(module);
 
@@ -170,7 +170,7 @@ public class PluginLoadingManager : IPluginLoadingManager
                 ApiVersion = PluginApiLevel.CurrentApiLevel
             };
             
-            var module = new PluginModule(null, new[] { assembly }, pluginInfo, _provider, true);
+            var module = new PluginModule(null, new[] { assembly }, pluginInfo, _provider, string.Empty, true);
 
             var success = _pluginManager.AddPlugin(module);
 
@@ -201,5 +201,36 @@ public class PluginLoadingManager : IPluginLoadingManager
         {
             nativeModule.Unload();
         }
+    }
+
+    public async Task<(Dictionary<string, PluginInfo>, Dictionary<string, Exception>)> GetUnloadedPlugins()
+    {
+        var bundles = _pluginDirectory.GetFiles("*.zip", SearchOption.TopDirectoryOnly);
+        var loadedBundles = _pluginManager
+            .GetPlugins(x => x.IsNative is false)
+            .Select(x => x.BundlePath);
+
+        var unloadedBundles = bundles
+            .Select(x => x.FullName)
+            .Except(loadedBundles)
+            .Select(x => new FileInfo(x));
+
+        var unloadedPluginInfos = new Dictionary<string, PluginInfo>();
+        var failedReadPluginInfos = new Dictionary<string, Exception>();
+
+        foreach (var bundle in unloadedBundles)
+        {
+            try
+            {
+                var pluginInfo = await bundle.ReadPluginInfo();
+                unloadedPluginInfos.Add(bundle.Name, pluginInfo);
+            }
+            catch (Exception ex)
+            {
+                failedReadPluginInfos.Add(bundle.Name, ex);
+            }
+        }
+        
+        return (unloadedPluginInfos, failedReadPluginInfos);
     }
 }

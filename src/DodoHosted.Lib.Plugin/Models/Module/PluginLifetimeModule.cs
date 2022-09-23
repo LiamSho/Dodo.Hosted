@@ -39,5 +39,7 @@ public class PluginLifetimeModule : IDisposable
     public void Dispose()
     {
         _serviceScope.Dispose();
+        
+        GC.SuppressFinalize(this);
     }
 }

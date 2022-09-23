@@ -26,6 +26,7 @@ public class PluginModule
     
     public PluginInfo PluginInfo { get; }
     public bool IsNative { get; }
+    public string BundlePath { get; }
     
     private readonly IServiceScope _pluginScope;
     
@@ -34,10 +35,12 @@ public class PluginModule
         IEnumerable<Assembly> assemblies,
         PluginInfo pluginInfo,
         IServiceProvider serviceProvider,
+        string bundlePath,
         bool isNative = false)
     {
         AssemblyLoadContext = assemblyLoadContext;
         PluginInfo = pluginInfo;
+        BundlePath = bundlePath;
         
         var types = assemblies.SelectMany(x => x.GetTypes()).ToArray();
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();

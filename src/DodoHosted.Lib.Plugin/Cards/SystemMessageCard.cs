@@ -58,6 +58,28 @@ public static class SystemMessageCard
         return card;
     }
 
+    public static CardMessage GetUnloadedPluginInfoCard(string title, CardTheme theme, Dictionary<string, PluginInfo> unloadedPlugin, Dictionary<string, Exception> failed)
+    {
+        var pluginInfoCardComponents = unloadedPlugin.Count != 0
+            ? unloadedPlugin
+                .Select(x => GetUnloadedPluginInfoComponents(x.Key, x.Value))
+                .Aggregate((x, y) => x.Append(new Divider()).Concat(y))
+                .ToList()
+            : new List<ICardComponent>
+            {
+                new TextFiled("No More Unloaded Plugin Infos")
+            };
+        
+        if (failed.Count != 0)
+        {
+            pluginInfoCardComponents.Add(new Divider());
+        }
+        
+        pluginInfoCardComponents.AddRange(failed.Select(x => new TextFiled($"`{x.Key}` {x.Value.Message}")));
+        
+        return new CardMessage(new Card { Title = title, Theme = theme, Components = pluginInfoCardComponents });
+    }
+    
     private static IEnumerable<ICardComponent> GetInfoListComponents(this Dictionary<string, string> info)
     {
         return info.Select(x => (ICardComponent)new MultilineText(new Text(x.Key), new Text(x.Value)));
@@ -73,10 +95,25 @@ public static class SystemMessageCard
             { "Description", module.PluginInfo.Description },
             { "Plugin Version", module.PluginInfo.Version },
             { "API Version", module.PluginInfo.ApiVersion.ToString() },
+            { "Bundle Name", module.IsNative ? "Native" : new FileInfo(module.BundlePath).Name },
             { "Event Handler Count", module.EventHandlerModule.Count().ToString() },
             { "Command Executor Count", module.CommandExecutorModule.Count().ToString() },
             { "Hosted Service Count", module.HostedServiceModule.Count().ToString() },
             { "Web Handler Count", module.WebHandlerModule.Count().ToString() }
+        });
+    }
+    
+    private static IEnumerable<ICardComponent> GetUnloadedPluginInfoComponents(string bundleName, PluginInfo pluginInfo)
+    {
+        return GetInfoListComponents(new Dictionary<string, string>
+        {
+            { "Identifier", pluginInfo.Identifier },
+            { "Name", pluginInfo.Name },
+            { "Author", pluginInfo.Author },
+            { "Description", pluginInfo.Description },
+            { "Plugin Version", pluginInfo.Version },
+            { "API Version", pluginInfo.ApiVersion.ToString() },
+            { "Bundle Name", bundleName }
         });
     }
 }

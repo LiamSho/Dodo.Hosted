@@ -21,4 +21,5 @@ public interface IPluginLoadingManager
     void UnloadPlugins();
     void LoadNativeTypes();
     void UnloadNativeTypes();
+    Task<(Dictionary<string, PluginInfo>, Dictionary<string, Exception>)> GetUnloadedPlugins();
 }

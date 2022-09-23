@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using DoDo.Open.Sdk.Models.Islands;
 using DodoHosted.Base.App.Attributes;
 using DodoHosted.Base.App.Context;
+using DodoHosted.Base.Card;
 using DodoHosted.Base.Card.Enums;
 using DodoHosted.Lib.Plugin.Cards;
 using MongoDB.Driver;
@@ -161,39 +162,82 @@ public sealed class SystemCommand : ICommandExecutor
 
     public async Task<bool> GetPluginList(
         CommandContext context,
-        [CmdOption("native", "n", "显示 Native 类型", false)] bool? native,
+        [CmdOption("type", "t", "显示类型，可以为 `enabled` `native` `unloaded`，可以使用第一个字母作为简称，默认为 `enabled`", false)] string? type,
         [CmdOption("page", "p", "页码", false)] int? page,
-        [Inject] IPluginManager pm)
+        [Inject] IPluginManager pm,
+        [Inject] IPluginLoadingManager plm)
     {
+        var displayType = type ?? "enabled";
         var p = Math.Max(page ?? 1, 1);
-
         const int PageSize = 5;
-        
-        var plugins = pm.GetPlugins(native ?? false)
-            .OrderBy(x => x.PluginInfo.Identifier)
-            .Skip(PageSize * (p - 1))
-            .Take(PageSize)
-            .ToArray();
-        var maxCount = pm.GetPlugins(native ?? false).Count();
-        var maxPage = (int)Math.Ceiling(maxCount / (double)PageSize);
 
-        if (plugins.Length == 0)
+        CardMessage cardMessage;
+
+        switch (displayType)
         {
-            if (p == 1)
-            {
-                await context.Reply.Invoke("没有已载入的插件");
-            }
-            else
-            {
-                await context.Reply.Invoke("没有更多插件了");
-            }
+            case "enabled" or "e" or "native" or "n":
+                var native = displayType is "native" or "n";
+                var plugins = pm
+                    .GetPlugins(native)
+                    .OrderBy(x => x.PluginInfo.Identifier)
+                    .Skip(PageSize * (p - 1))
+                    .Take(PageSize)
+                    .ToArray();
+                var maxCount = pm.GetPlugins(native).Count();
+                var maxPage = (int)Math.Ceiling(maxCount / (double)PageSize);
 
-            return true;
+                if (plugins.Length == 0)
+                {
+                    if (p == 1)
+                    {
+                        await context.Reply.Invoke("没有已载入的插件");
+                    }
+                    else
+                    {
+                        await context.Reply.Invoke("没有更多插件了");
+                    }
+
+                    return true;
+                }
+                cardMessage = SystemMessageCard.GetPluginsInfoCard($"Plugins Infos ({p}/{maxPage})", CardTheme.Indigo, plugins);
+                break;
+            case "unloaded" or "u":
+                var (unloadedPluginInfos, failedReadPlugins) = await plm.GetUnloadedPlugins();
+                var count = unloadedPluginInfos.Count;
+                unloadedPluginInfos = unloadedPluginInfos
+                    .OrderBy(x => x.Key)
+                    .Skip(PageSize * (p - 1))
+                    .Take(PageSize)
+                    .ToDictionary(x => x.Key, y => y.Value);
+                
+                if (unloadedPluginInfos.Count == 0 && failedReadPlugins.Count == 0)
+                {
+                    if (p == 1)
+                    {
+                        await context.Reply.Invoke("没有未载入的插件");
+                    }
+                    else
+                    {
+                        await context.Reply.Invoke("没有更多未载入的插件了");
+                    }
+
+                    return true;
+                }
+                var allPage = (int)Math.Ceiling(count / (double)PageSize);
+                var showingPage = Math.Min(allPage, p);
+                
+                cardMessage = SystemMessageCard.GetUnloadedPluginInfoCard(
+                    $"Unloaded Plugins Infos ({showingPage}/{allPage})",
+                    CardTheme.Yellow,
+                    unloadedPluginInfos,
+                    failedReadPlugins);
+                break;
+            default:
+                await context.Reply.Invoke("未知的显示类型");
+                return false;
         }
 
-        var card = SystemMessageCard.GetPluginsInfoCard($"Plugins Infos ({p}/{maxPage})", CardTheme.Indigo, plugins);
-        await context.ReplyCard.Invoke(card);
-
+        await context.ReplyCard.Invoke(cardMessage);
         return true;
     }
 
