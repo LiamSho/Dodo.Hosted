@@ -10,29 +10,66 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.App.Attributes;
+using DodoHosted.Lib.Plugin.Extensions;
+using DodoHosted.Lib.Plugin.Models.Module;
 using MongoDB.Driver;
 
-// ReSharper disable InvertIf
-// ReSharper disable SuggestBaseTypeForParameter
+namespace DodoHosted.Lib.Plugin.Helper;
 
-namespace DodoHosted.Lib.Plugin.Services;
-
-public class ParameterResolver : IParameterResolver
+public class DynamicDependencyResolver : IDynamicDependencyResolver
 {
-    public object?[] GetCommandInvokeParameter(
-        CommandNode node,
-        PluginManifest manifest,
-        CommandParsed commandParsed,
-        IServiceProvider serviceProvider)
+    private readonly PluginConfigurationModule _pluginConfigurationModule;
+
+    public DynamicDependencyResolver(PluginConfigurationModule pluginConfigurationModule)
     {
-        var length =
-            node.Options.Count +
-            node.ServiceOptions.Count +
-            (node.ContextParamOrder is null ? 0 : 1);
-        var parameters = new object?[length];
-        
+        _pluginConfigurationModule = pluginConfigurationModule;
+    }
+
+    public static string GetDisplayParameterTypeName(Type type)
+    {
+        var optionType = GetOptionTypeDescriptor(type);
+
+        if (optionType is null)
+        {
+            throw new InternalProcessException(
+                nameof(DynamicDependencyResolver),
+                nameof(GetDisplayParameterTypeName),
+                $"未知类型 {type.FullName}");
+        }
+
+        return optionType.TypeClassName;
+    }
+
+    public T GetDynamicObject<T>(Type type, IServiceProvider serviceProvider)
+    {
+        var constructorInfo = type
+            .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(x => x.GetParameters().All(p =>
+                p.GetCustomAttribute<InjectAttribute>() is not null));
+
+        if (constructorInfo is null)
+        {
+            throw new Exception();
+        }
+
+        var parameters = new object?[constructorInfo.GetParameters().Length];
+        SetInjectableParameterValues(constructorInfo.GetParameters(), serviceProvider, ref parameters);
+        var instance = constructorInfo.Invoke(parameters);
+
+        if (instance is not T t)
+        {
+            throw new Exception();
+        }
+
+        return t;
+    }
+    
+    #region Parameter Resolver
+    
+    public void SetCommandOptionParameterValues(CommandNode node, CommandParsed commandParsed, ref object?[] parameters)
+    {
         var options = node.Options;
-        var serviceOptions = node.ServiceOptions;
         
         foreach (var (order, (type, attr)) in options)
         {
@@ -54,80 +91,45 @@ public class ParameterResolver : IParameterResolver
                 parameters[order] = converted;
             }
         }
-
-        foreach (var (order, type) in serviceOptions)
-        {
-            var service = GetServiceParameterValue(serviceProvider, manifest, type);
-            parameters[order] = service;
-        }
-
-        return parameters;
     }
-
-    public object?[] GetHandlerConstructorInvokeParameter(
-        ConstructorInfo constructorInfo,
-        PluginManifest manifest,
-        IServiceProvider serviceProvider)
+    public void SetInjectableParameterValues(IEnumerable<ParameterInfo> parameterInfos, IServiceProvider serviceProvider, ref object?[] parameters)
     {
-        var parameterInfos = constructorInfo.GetParameters();
-        var parameters = new object?[parameterInfos.Length];
-
-        foreach (var parameterInfo in parameterInfos)
+        var injectableParameters = parameterInfos
+            .Where(x => x.GetCustomAttribute<InjectAttribute>() is not null);
+        
+        foreach (var parameterInfo in injectableParameters)
         {
-            var p = GetServiceParameterValue(serviceProvider, manifest, parameterInfo.ParameterType);
+            var p = GetServiceParameterValue(serviceProvider, parameterInfo.ParameterType);
             parameters[parameterInfo.Position] = p;
         }
-
-        return parameters;
-    }
-    
-    public bool ValidateOptionParameterType(Type type)
-    {
-        var optionType = GetOptionTypeDescriptor(type);
-        return optionType is not null;
-    }
-    
-    public bool ValidateServiceParameterType(Type type, bool native = false)
-    {
-        var serviceType = GetServiceTypeDescriptor(type);
-
-        if (serviceType is null)
-        {
-            return false;
-        }
-        
-        if (serviceType.NativeOnly)
-        {
-            if (native is false)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
-    public string GetDisplayParameterTypeName(Type type)
+    #endregion
+
+    #region Base Static Members
+
+    private static CommandOptionTypeDescriptor? GetOptionTypeDescriptor(Type type)
     {
-        var optionType = GetOptionTypeDescriptor(type);
+        var nonNullableType = Nullable.GetUnderlyingType(type) ?? type;
+        var name = nonNullableType.Name.Split('`')[0];
+        var optionType = s_optionTypes.FirstOrDefault(x => x.TypeClassName == name);
 
-        if (optionType is null)
-        {
-            throw new InternalProcessException(
-                nameof(ParameterResolver),
-                nameof(GetDisplayParameterTypeName),
-                $"未知类型 {type.FullName}");
-        }
+        return optionType;
+    }
+    private static CommandServiceTypeDescriptor? GetServiceTypeDescriptor(MemberInfo memberInfo)
+    {
+        var name = memberInfo.Name.Split('`')[0];
+        var serviceType = s_serviceTypes.FirstOrDefault(x => x.TypeClassName == name);
 
-        return optionType.TypeClassName;
+        return serviceType;
     }
     
     private static readonly MethodInfo s_createLoggerMethod = typeof(LoggerFactoryExtensions)
         .GetMethod("CreateLogger", 1, new[] { typeof(ILoggerFactory) })!;
     private static readonly MethodInfo s_getCollectionMethod = typeof(IMongoDatabase)
         .GetMethod("GetCollection", 1, new[] { typeof(string), typeof(MongoCollectionSettings) })!;
-    
-    private readonly IReadOnlyCollection<CommandOptionTypeDescriptor> _optionTypes =
+        
+    private static readonly IReadOnlyCollection<CommandOptionTypeDescriptor> s_optionTypes =
         new List<CommandOptionTypeDescriptor>
         {
             new(typeof(string), "字符串", x => GetPrimitiveTypeValue(typeof(string), x)),
@@ -141,7 +143,7 @@ public class ParameterResolver : IParameterResolver
             new(typeof(DodoEmoji), "Emoji", x => new DodoEmoji(x))
         };
 
-    private readonly IReadOnlyCollection<CommandServiceTypeDescriptor> _serviceTypes =
+    private static readonly IReadOnlyCollection<CommandServiceTypeDescriptor> s_serviceTypes =
         new List<CommandServiceTypeDescriptor>
         {
             new(typeof(IMongoDatabase), (provider, _, _) => provider.GetRequiredService<IMongoDatabase>()),
@@ -156,14 +158,14 @@ public class ParameterResolver : IParameterResolver
                 
                 return genericMethod.Invoke(null, new object[] { factory })!;
             }),
-            new(typeof(IMongoCollection<>), (provider, manifest, type) =>
+            new(typeof(IMongoCollection<>), (provider, plugin, type) =>
             {
-                var registered = manifest.DodoHostedPlugin.RegisterMongoDbCollection();
+                var registered = plugin.Instance.RegisterMongoDbCollection();
                 var collectionType = type.GetGenericArguments().FirstOrDefault();
 
                 if (collectionType is null)
                 {
-                    throw new InternalProcessException(nameof(ParameterResolver), nameof(GetServiceParameterValue), "无法获取泛型参数");
+                    throw new InternalProcessException(nameof(DynamicDependencyResolver), nameof(s_serviceTypes), "无法获取泛型参数");
                 }
 
                 var contains = registered.ContainsKey(collectionType);
@@ -178,20 +180,19 @@ public class ParameterResolver : IParameterResolver
                 var genericMethod = s_getCollectionMethod.MakeGenericMethod(collectionType);
                 return genericMethod.Invoke(database, new object?[] { collectionName, null })!;
             }),
-            new(typeof(PluginConfigurationManager), (provider, manifest, _) =>
+            new(typeof(PluginConfigurationManager), (provider, plugin, _) =>
             {
                 var mongo = provider.GetRequiredService<IMongoDatabase>();
-                var configurationVersion = manifest.DodoHostedPlugin.ConfigurationVersion();
-                return new PluginConfigurationManager(mongo, manifest.PluginInfo.Identifier, configurationVersion);
+                var configurationVersion = plugin.Instance.ConfigurationVersion();
+                return new PluginConfigurationManager(mongo, plugin.PluginInfo.Identifier, configurationVersion);
             }),
             
-            new(typeof(IPluginLifetimeManager), (provider, _, _) => provider.GetRequiredService<IPluginLifetimeManager>(), true),
+            new(typeof(IPluginLoadingManager), (provider, _, _) => provider.GetRequiredService<IPluginLoadingManager>(), true),
             new(typeof(IPluginManager), (provider, _, _) => provider.GetRequiredService<IPluginManager>(), true),
             new(typeof(ICommandManager), (provider, _, _) => provider.GetRequiredService<ICommandManager>(), true),
-            new(typeof(IEventManager), (provider, _, _) => provider.GetRequiredService<IEventManager>(), true),
-            new(typeof(IParameterResolver), (provider, _, _) => provider.GetRequiredService<IParameterResolver>(), true)
+            new(typeof(IEventManager), (provider, _, _) => provider.GetRequiredService<IEventManager>(), true)
         };
-
+    
     private static object GetPrimitiveTypeValue(Type type, string str)
     {
         try
@@ -204,57 +205,33 @@ public class ParameterResolver : IParameterResolver
             throw new ParameterResolverException($"无法将 {str} 转换为指定类型 {type.FullName}");
         }
     }
-
+    
+    #endregion
+    
     private object GetOptionParameterValue(Type type, string raw)
     {
         var optionType = GetOptionTypeDescriptor(type);
         if (optionType is null)
         {
             throw new InternalProcessException(
-                nameof(ParameterResolver),
+                nameof(DynamicDependencyResolver),
                 nameof(GetOptionParameterValue),
                 $"未知类型 {type.FullName}");
         }
 
         return optionType.GetValue.Invoke(raw);
     }
-
-    private object GetServiceParameterValue(IServiceProvider provider, PluginManifest manifest, Type type)
+    private object GetServiceParameterValue(IServiceProvider provider, Type type)
     {
         var serviceType = GetServiceTypeDescriptor(type);
         if (serviceType is null)
         {
             throw new InternalProcessException(
-                nameof(ParameterResolver),
+                nameof(DynamicDependencyResolver),
                 nameof(GetServiceParameterValue),
                 $"未知类型 {type.FullName}");
         }
 
-        return serviceType.GetValue.Invoke(provider, manifest, type);
-    }
-    
-    private CommandOptionTypeDescriptor? GetOptionTypeDescriptor(Type type)
-    {
-        // 获取非空类型
-        var nonNullableType = Nullable.GetUnderlyingType(type) ?? type;
-        
-        // 获取类型名称
-        var name = nonNullableType.Name.Split('`')[0];
-        
-        // 获取类型定义
-        var optionType = _optionTypes.FirstOrDefault(x => x.TypeClassName == name);
-
-        return optionType;
-    }
-    
-    private CommandServiceTypeDescriptor? GetServiceTypeDescriptor(Type type)
-    {
-        // 获取类型名称
-        var name = type.Name.Split('`')[0];
-        
-        // 获取类型定义
-        var serviceType = _serviceTypes.FirstOrDefault(x => x.TypeClassName == name);
-
-        return serviceType;
+        return serviceType.GetValue.Invoke(provider, _pluginConfigurationModule, type);
     }
 }

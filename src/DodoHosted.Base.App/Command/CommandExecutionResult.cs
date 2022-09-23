@@ -10,25 +10,27 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Lib.Plugin.Models.Manifest;
+namespace DodoHosted.Base.App.Command;
 
-/// <summary>
-/// 指令清单
-/// </summary>
-public record CommandManifest
+public enum CommandExecutionResult
 {
     /// <summary>
-    /// 指令执行器
+    /// 执行成功
     /// </summary>
-    public required ICommandExecutor CommandExecutor { get; set; }
+    Success,
     
     /// <summary>
-    /// 指令方法
+    /// 执行失败，发送此项会向用户发送指令执行失败的消息
     /// </summary>
-    public required CommandNode RootNode { get; set; }
+    Failed,
     
     /// <summary>
-    /// <see cref="PluginInfo.Identifier"/>
+    /// 未知的指令，返回此项会向用户发送当前指令的帮助文档
     /// </summary>
-    public required string PluginIdentifier { get; init; }
+    Unknown,
+    
+    /// <summary>
+    /// 权限不足，发送此项将会在日志频道记录消息
+    /// </summary>
+    Unauthorized,
 }

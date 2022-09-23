@@ -12,7 +12,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace DodoHosted.Lib.Plugin.Models.Manifest;
+namespace DodoHosted.Lib.Plugin.Models;
 
 /// <summary>
 /// 插件信息

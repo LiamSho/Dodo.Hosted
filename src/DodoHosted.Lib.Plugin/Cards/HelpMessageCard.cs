@@ -21,7 +21,6 @@ public static class HelpMessageCard
 {
     public static async Task<CardMessage> GetCommandHelpMessage(
         this CommandNode node,
-        IParameterResolver parameterResolver,
         ContextBase.PermissionCheck permissionChecker)
     {
         var card = new CardMessage(new Card
@@ -55,7 +54,7 @@ public static class HelpMessageCard
                 var attrs = new List<string>
                 {
                     cmdOption.Required ? "`必填`" : "`可选`",
-                    $"`{parameterResolver.GetDisplayParameterTypeName(type)}`"
+                    $"`{DynamicDependencyResolver.GetDisplayParameterTypeName(type)}`"
                 };
 
                 card.AddComponent(new Header(title));
@@ -80,7 +79,7 @@ public static class HelpMessageCard
         return card;
     }
 
-    public static async Task<CardMessage> GetCommandListMessage(this IEnumerable<CommandManifest> manifests, ContextBase.PermissionCheck permissionChecker)
+    public static async Task<CardMessage> GetCommandListMessage(this IEnumerable<CommandNode> nodes, ContextBase.PermissionCheck permissionChecker)
     {
         var card = new CardMessage
         {
@@ -93,15 +92,15 @@ public static class HelpMessageCard
             }
         };
 
-        foreach (var manifest in manifests)
+        foreach (var node in nodes)
         {
-            if (await permissionChecker.Invoke(manifest.RootNode.PermissionNode) is false)
+            if (await permissionChecker.Invoke(node.PermissionNode) is false)
             {
                 continue;
             }
             
-            card.AddComponent(new Header($"{HostEnvs.CommandPrefix}{manifest.RootNode.Value}"));
-            card.AddComponent(new TextFiled(manifest.RootNode.Description));
+            card.AddComponent(new Header($"{HostEnvs.CommandPrefix}{node.Value}"));
+            card.AddComponent(new TextFiled(node.Description));
         }
 
         if (card.Card.Components.Count == 0)

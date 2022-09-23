@@ -10,15 +10,15 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Command;
+namespace DodoHosted.Lib.Plugin.Interfaces;
 
-namespace DodoHosted.Open.Plugin;
-
-public interface ICommandExecutor
+public interface IPluginLoadingManager
 {
-    /// <summary>
-    /// 获取命令树构造器
-    /// </summary>
-    /// <returns></returns>
-    CommandTreeBuilder GetBuilder();
+    Task LoadPlugin(FileInfo bundle);
+    Task LoadPlugin(string bundle);
+    Task LoadPlugins();
+    bool UnloadPlugin(string pluginIdentifier);
+    void UnloadPlugins();
+    void LoadNativeTypes();
+    void UnloadNativeTypes();
 }

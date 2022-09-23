@@ -11,7 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using DodoHosted.Base.App.Attributes;
-using DodoHosted.Base.Context;
+using DodoHosted.Base.App.Context;
 using DodoHosted.Lib.Plugin.Cards;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
@@ -25,30 +25,28 @@ public sealed class HelpCommand : ICommandExecutor
     public async Task<bool> GetAllCommands(
         CommandContext context,
         [Inject] IPluginManager pluginManager,
-        [Inject] IParameterResolver parameterResolver,
         [CmdOption("name", "n", "指令的名称，为空时显示所有可用指令", false)] string? commandName,
         [CmdOption("path", "p", "指令的路径，使用 `,` 分隔，为空时显示所有可用指令", false)] string? commandPath)
     {
         if (commandName is null)
         {
-            var allCommandHelpCard = await pluginManager.GetCommandManifests()
+            var allCommandHelpCard = await pluginManager.GetCommandNodes()
                 .GetCommandListMessage(context.PermissionCheck);
 
             await context.ReplyCard.Invoke(allCommandHelpCard);
             return true;
         }
-        
-        var manifest = pluginManager.GetCommandManifests()
-            .FirstOrDefault(x => x.RootNode.Value == commandName);
-        if (manifest is null)
+
+        var commandNode = pluginManager.GetCommandNode(commandName);
+        if (commandNode is null)
         {
             await context.Reply.Invoke($"找不到名为 {commandName} 的指令");
             return false;
         }
 
         var node = commandPath is null
-            ? manifest.RootNode
-            : manifest.RootNode.GetNode(commandPath.Split(","));
+            ? commandNode
+            : commandNode.GetNode(commandPath.Split(","));
 
         if (node is null)
         {
@@ -57,7 +55,6 @@ public sealed class HelpCommand : ICommandExecutor
         }
 
         var commandNodeHelpCard = await node.GetCommandHelpMessage(
-            parameterResolver,
             context.PermissionCheck);
         await context.ReplyCard.Invoke(commandNodeHelpCard);
         

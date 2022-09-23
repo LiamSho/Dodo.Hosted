@@ -16,25 +16,25 @@ namespace DodoHosted.Lib.Plugin;
 
 public class PluginSystemHosted : IHostedService
 {
-    private readonly IPluginLifetimeManager _pluginLifetimeManager;
+    private readonly IPluginLoadingManager _pluginLoadingManager;
 
-    public PluginSystemHosted(IPluginLifetimeManager pluginLifetimeManager, IEventManager eventManager)
+    public PluginSystemHosted(IPluginLoadingManager pluginLoadingManager, IEventManager eventManager)
     {
-        _pluginLifetimeManager = pluginLifetimeManager;
+        _pluginLoadingManager = pluginLoadingManager;
         
         eventManager.Initialize();
     }
     
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await _pluginLifetimeManager.LoadPlugins();
-        await _pluginLifetimeManager.LoadNativeTypes();
+        await _pluginLoadingManager.LoadPlugins();
+        _pluginLoadingManager.LoadNativeTypes();
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _pluginLifetimeManager.UnloadPlugins();
-        _pluginLifetimeManager.UnloadNativeTypes();
+        _pluginLoadingManager.UnloadPlugins();
+        _pluginLoadingManager.UnloadNativeTypes();
         return Task.CompletedTask;
     }
 }

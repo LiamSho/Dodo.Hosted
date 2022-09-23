@@ -10,15 +10,15 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using System.Reflection;
 using DodoHosted.Base.App.Command;
+using DodoHosted.Base.App.Models;
 
-namespace DodoHosted.Open.Plugin;
+namespace DodoHosted.Base.App.Interfaces;
 
-public interface ICommandExecutor
+public interface IDynamicDependencyResolver
 {
-    /// <summary>
-    /// 获取命令树构造器
-    /// </summary>
-    /// <returns></returns>
-    CommandTreeBuilder GetBuilder();
+    T GetDynamicObject<T>(Type type, IServiceProvider serviceProvider);
+    void SetCommandOptionParameterValues(CommandNode node, CommandParsed commandParsed, ref object?[] parameters);
+    void SetInjectableParameterValues(IEnumerable<ParameterInfo> parameterInfos, IServiceProvider serviceProvider, ref object?[] parameters);
 }

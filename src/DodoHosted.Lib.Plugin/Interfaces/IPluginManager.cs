@@ -10,23 +10,27 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Lib.Plugin.Models.Module;
+
 namespace DodoHosted.Lib.Plugin.Interfaces;
 
 public interface IPluginManager
 {
-    bool AddPlugin(PluginManifest manifest);
+    bool AddPlugin(PluginModule module);
     bool Exist(string id);
-    PluginManifest? RemovePlugin(string id);
-    IEnumerable<PluginManifest> RemovePlugins();
-    PluginManifest? GetPlugin(string id);
-    IEnumerable<PluginManifest> GetPlugins();
-    IEnumerable<PluginManifest> GetPlugins(Func<PluginManifest, bool> predicate);
-    IEnumerable<PluginManifest> GetPlugins(bool native);
-    CommandManifest? GetCommandManifest(string command);
-    IEnumerable<CommandManifest> GetCommandManifests();
-    IEnumerable<CommandManifest> GetCommandManifests(string id);
-    IEnumerable<CommandManifest> GetCommandManifests(Func<CommandManifest, bool> predicate);
-    IEnumerable<EventHandlerManifest> GetEventHandlerManifests();
-    IEnumerable<EventHandlerManifest> GetEventHandlerManifests(string id);
-    IEnumerable<EventHandlerManifest> GetEventHandlerManifests(Func<EventHandlerManifest, bool> predicate);
+    PluginModule? RemovePlugin(string id);
+    IEnumerable<PluginModule> RemovePlugins();
+    PluginModule? GetPlugin(string id);
+    IEnumerable<PluginModule> GetPlugins();
+    IEnumerable<PluginModule> GetPlugins(Func<PluginModule, bool> predicate);
+    IEnumerable<PluginModule> GetPlugins(bool native);
+    CommandNode? GetCommandNode(string command);
+    IEnumerable<CommandNode> GetCommandNodes();
+    IEnumerable<CommandNode> GetCommandNodes(string id);
+    IEnumerable<CommandNode> GetCommandNodes(Func<CommandNode, bool> predicate);
+    CommandExecutorModule? GetCommandExecutorModule(string command);
+    IEnumerable<CommandExecutorModule> GetCommandExecutorModules();
+    EventHandlerModule? GetEventHandlerModule(string id);
+    IEnumerable<EventHandlerModule> GetEventHandlerModules();
+    IEnumerable<EventHandlerModule> GetEventHandlerModules(Func<EventHandlerModule, bool> predicate);
 }

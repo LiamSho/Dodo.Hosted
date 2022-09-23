@@ -10,11 +10,21 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Lib.Plugin;
+namespace DodoHosted.Lib.Plugin.Extensions;
 
-public sealed class DefaultPluginInstance : DodoHostedPlugin
+public static class DictionaryExtension
 {
-    public override Task OnLoad() => Task.CompletedTask;
-    public override Task OnDestroy() => Task.CompletedTask;
-    public override int ConfigurationVersion() => 0;
+    public static bool TryGetValueByMultipleKey<T, K>(this IReadOnlyDictionary<T, K> dictionary, IEnumerable<T> keys, out K? value) where T : notnull
+    {
+        foreach (var key in keys)
+        {
+            if (dictionary.TryGetValue(key, out value))
+            {
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
 }

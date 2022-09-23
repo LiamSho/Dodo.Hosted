@@ -10,27 +10,19 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Lib.Plugin;
+namespace DodoHosted.Open.Plugin;
 
-public enum CommandExecutionResult
+public abstract class DodoHostedPluginLifetime
 {
     /// <summary>
-    /// 执行成功
+    /// 插件载入
     /// </summary>
-    Success,
+    /// <returns></returns>
+    public abstract Task OnLoad();
     
     /// <summary>
-    /// 执行失败，发送此项会向用户发送指令执行失败的消息
+    /// 插件卸载
     /// </summary>
-    Failed,
-    
-    /// <summary>
-    /// 未知的指令，返回此项会向用户发送当前指令的帮助文档
-    /// </summary>
-    Unknown,
-    
-    /// <summary>
-    /// 权限不足，发送此项将会在日志频道记录消息
-    /// </summary>
-    Unauthorized,
+    /// <returns></returns>
+    public abstract Task OnDestroy();
 }

@@ -14,10 +14,8 @@ using MongoDB.Bson;
 
 namespace DodoHosted.Lib.Plugin;
 
-public sealed class BuiltinInstance : DodoHostedPlugin
+public sealed class BuiltinInstance : DodoHostedPluginConfiguration
 {
-    public override Task OnLoad() => Task.CompletedTask;
-    public override Task OnDestroy() => Task.CompletedTask;
     public override int ConfigurationVersion() => 1;
 
     public override Dictionary<Type, string> RegisterMongoDbCollection()

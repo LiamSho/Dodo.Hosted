@@ -14,9 +14,11 @@ using System.Diagnostics;
 using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.Members;
 using DoDo.Open.Sdk.Models.Messages;
+using DodoHosted.Base.App.Context;
 using DodoHosted.Base.Card;
 using DodoHosted.Base.Context;
 using DodoHosted.Base.Events;
+using DodoHosted.Lib.Plugin.Extensions;
 
 namespace DodoHosted.Lib.Plugin.Services;
 
@@ -113,22 +115,16 @@ public class CommandManager : ICommandManager
         {
             parsed.Arguments.Add("-path", string.Join("," , originalPath));
         }
-        
-        // 寻找指令
-        var cmdInfo = _pluginManager.GetCommandManifest(parsed.CommandName);
-        var pluginManifest = _pluginManager
-            .GetPlugins(x => x.Worker.CommandExecutors.Any(y => y.RootNode.Value == parsed.CommandName))
-            .FirstOrDefault();
 
-        // 指令不存在
-        if (cmdInfo is null)
+        var cmd = _pluginManager.GetCommandExecutorModule(parsed.CommandName);
+        if (cmd is null)
         {
             _logger.LogInformation("指令 {Command} 执行结果 {CommandExecutionResult}，发送者 {CommandSender}，频道 {CommandSendChannel}，消息 {CommandMessage}",
                 message, CommandExecutionResult.Unknown, $"{userInfo.NickName} ({userInfo.DodoId})", eventInfo.ChannelId, eventInfo.MessageId);
             await _channelLogger.LogWarning(eventInfo.IslandId, $"指令不存在：`{message}`，" +
-                                      $"发送者：<@!{userInfo.DodoId}>，" +
-                                      $"频道：<#{eventInfo.ChannelId}>，" +
-                                      $"消息 ID：`{eventInfo.MessageId}`");
+                                                                $"发送者：<@!{userInfo.DodoId}>，" +
+                                                                $"频道：<#{eventInfo.ChannelId}>，" +
+                                                                $"消息 ID：`{eventInfo.MessageId}`");
             await reply.Invoke($"指令 `{message}` 不存在，执行 `{HostEnvs.CommandPrefix}help` 查看所有可用指令");
             return;
         }
@@ -167,11 +163,11 @@ public class CommandManager : ICommandManager
             await permissionManager.CheckPermission(node, senderRoles, eventInfo.IslandId, eventInfo.ChannelId);
 
         // 指令执行上下文
-        var context = new CommandContext(reply, ReplyCard, PermissionCheck, userInfo, eventInfo, messageEvent);
+        var context = new CommandContext(reply, ReplyCard, PermissionCheck, parsed, userInfo, eventInfo);
         
         try
         {
-            result = await cmdInfo.Invoke(pluginManifest!, parsed, scope.ServiceProvider, context);
+            result = await cmd.Invoke(context, scope.ServiceProvider);
         }
         catch (Exception ex)
         {
@@ -193,15 +189,22 @@ public class CommandManager : ICommandManager
             case CommandExecutionResult.Success:
             // 失败
             case CommandExecutionResult.Failed:
+                break;
             // 未知的指令
             case CommandExecutionResult.Unknown:
+                await _channelLogger.LogWarning(eventInfo.IslandId, 
+                    $"未知的指令：`{message}`，" +
+                    $"发送者：<@!{userInfo.DodoId}>，" +
+                    $"频道：<#{eventInfo.ChannelId}>，" +
+                    $"消息 ID：`{eventInfo.MessageId}`");
                 break;
             // 无权访问
             case CommandExecutionResult.Unauthorized:
-                await _channelLogger.LogWarning(eventInfo.IslandId, $"无权访问：`{message}`，" +
-                                          $"发送者：<@!{userInfo.DodoId}>，" +
-                                          $"频道：<#{eventInfo.ChannelId}>，" +
-                                          $"消息 ID：`{eventInfo.MessageId}`");
+                await _channelLogger.LogWarning(eventInfo.IslandId, 
+                    $"无权访问：`{message}`，" +
+                    $"发送者：<@!{userInfo.DodoId}>，" +
+                    $"频道：<#{eventInfo.ChannelId}>，" +
+                    $"消息 ID：`{eventInfo.MessageId}`");
                 break;
             // 未知执行结果
             default:

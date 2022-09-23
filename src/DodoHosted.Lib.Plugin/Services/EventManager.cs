@@ -13,6 +13,7 @@
 using System.Diagnostics;
 using DoDo.Open.Sdk.Models.Messages;
 using DodoHosted.Base.Events;
+using DodoHosted.Lib.Plugin.Models.Module;
 using DodoHosted.Lib.SdkWrapper;
 
 namespace DodoHosted.Lib.Plugin.Services;
@@ -23,7 +24,6 @@ public class EventManager : IEventManager
     private readonly IServiceProvider _provider;
     private readonly IChannelLogger _channelLogger;
     private readonly ICommandManager _commandManager;
-    private readonly IParameterResolver _parameterResolver;
     private readonly IPluginManager _pluginManager;
 
     public EventManager(
@@ -31,14 +31,12 @@ public class EventManager : IEventManager
         IServiceProvider provider,
         IChannelLogger channelLogger,
         ICommandManager commandManager,
-        IParameterResolver parameterResolver,
         IPluginManager pluginManager)
     {
         _logger = logger;
         _provider = provider;
         _channelLogger = channelLogger;
         _commandManager = commandManager;
-        _parameterResolver = parameterResolver;
         _pluginManager = pluginManager;
     }
 
@@ -50,39 +48,40 @@ public class EventManager : IEventManager
         
         // 若 PluginIdentifier 为 null，运行所有事件处理器
         // 若 PluginIdentifier 为 其他值，运行指定插件的事件处理器
-        var eventHandlers = pluginIdentifier switch
+        var eventHandlerModules = pluginIdentifier switch
         {
-            null => _pluginManager.GetEventHandlerManifests(),
-            _ => _pluginManager.GetEventHandlerManifests(pluginIdentifier)
+            null => _pluginManager.GetEventHandlerModules(),
+            _ => _pluginManager.GetEventHandlerModule(pluginIdentifier) is null
+                ? Enumerable.Empty<EventHandlerModule>()
+                : new [] { _pluginManager.GetEventHandlerModule(pluginIdentifier)! }
         };
 
-        foreach (var eventHandler in eventHandlers)
+        foreach (var ehm in eventHandlerModules)
         {
-            if (eventHandler.EventTypeString != typeString)
-            {
-                continue;
-            }
-
             try
             {
                 var scope = _provider.CreateScope();
-                var plugin = _pluginManager.GetPlugin(eventHandler.PluginIdentifier);
-                var constructorParameters = _parameterResolver.GetHandlerConstructorInvokeParameter
-                    (eventHandler.EventHandlerConstructor, plugin!, scope.ServiceProvider);
-
-                var ins = eventHandler.EventHandlerConstructor.Invoke(constructorParameters);
-                
-                await (Task)eventHandler.HandlerMethod.Invoke(ins, new object?[] { @event })!;
-
+                count += await ehm.Invoke(typeString, @event);
                 scope.Dispose();
             }
-            catch (Exception ex)
+            catch (EventHandlerExecutionException e)
+            {
+                foreach (var (ts, ex) in e.ExecutionExceptions)
+                {
+                    await _channelLogger.LogError(HostEnvs.DodoHostedAdminIsland,
+                        "事件处理器出现异常，" +
+                        $"Type：`{ts}`" +
+                        $"Exception：{ex.GetType().FullName}，" +
+                        $"Message：{ex.Message}");
+                }
+            }
+            catch (Exception e)
             {
                 await _channelLogger.LogError(HostEnvs.DodoHostedAdminIsland,
                     "事件处理器出现异常，" +
-                    $"Type：`{eventHandler.EventHandlerType.FullName}`" +
-                    $"Exception：{ex.GetType().FullName}，" +
-                    $"Message：{ex.Message}");
+                    $"Exception：{e.GetType().FullName}，" +
+                    $"Message：{e.Message}，" +
+                    $"\n{e.StackTrace}");
             }
             count++;
         }

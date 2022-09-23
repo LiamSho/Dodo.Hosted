@@ -10,17 +10,16 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Open.Plugin;
+using DodoHosted.Base.App.Models;
+using DodoHosted.Base.Context;
+using DodoHosted.Base.Context.Model;
 
-public abstract class DodoHostedPlugin
-{
-    public abstract Task OnLoad();
-    public abstract Task OnDestroy();
+namespace DodoHosted.Base.App.Context;
 
-    public abstract int ConfigurationVersion();
-
-    public virtual Dictionary<Type, string> RegisterMongoDbCollection()
-    {
-        return new Dictionary<Type, string>();
-    }
-}
+public record CommandContext(
+    ContextBase.Reply Reply,
+    ContextBase.ReplyCard ReplyCard,
+    ContextBase.PermissionCheck PermissionCheck,
+    CommandParsed CommandParsed,
+    UserInfo UserInfo,
+    EventInfo EventInfo);

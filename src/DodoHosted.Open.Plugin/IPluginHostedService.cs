@@ -22,11 +22,9 @@ public interface IPluginHostedService
     /// <summary>
     /// 开始运行
     /// </summary>
-    /// <param name="serviceProvider">ServiceProvider，该 Scope 有别于插件全局 Provider</param>
-    /// <param name="logger">日志记录器</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    Task StartAsync(IServiceProvider serviceProvider, ILogger logger, CancellationToken cancellationToken);
+    Task StartAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// 后台服务名称

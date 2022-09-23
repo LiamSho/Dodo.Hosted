@@ -14,6 +14,8 @@ using DodoHosted.Base.Card;
 using DodoHosted.Base.Card.BaseComponent;
 using DodoHosted.Base.Card.CardComponent;
 using DodoHosted.Base.Card.Enums;
+using DodoHosted.Lib.Plugin.Models.Module;
+
 // ReSharper disable InvertIf
 
 namespace DodoHosted.Lib.Plugin.Cards;
@@ -29,45 +31,23 @@ public static class SystemMessageCard
         return new CardMessage(new Card { Title = title, Theme = theme, Components = componentGroup.ToList() });
     }
 
-    public static CardMessage GetPluginsInfoCard(string title, CardTheme theme, params PluginManifest[] pluginManifest)
+    public static CardMessage GetPluginsInfoCard(string title, CardTheme theme, params PluginModule[] pluginModules)
     {
-        var componentGroup = pluginManifest
+        var componentGroup = pluginModules
             .Select(x => x.GetPluginInfoComponents())
             .Aggregate((x, y) => x.Append(new Divider()).Concat(y));
         
         return new CardMessage(new Card { Title = title, Theme = theme, Components = componentGroup.ToList() });
     }
 
-    public static CardMessage GetPluginInfoDetailCard(string title, CardTheme theme, PluginManifest pluginManifest)
+    public static CardMessage GetPluginInfoDetailCard(string title, CardTheme theme, PluginModule pluginModule)
     {
         var card = new CardMessage(new Card { Title = title, Theme = theme, Components = new List<ICardComponent>
         {
             new Header("Plugin Info")
         }});
         
-        card.AddComponents(pluginManifest.GetPluginInfoComponents());
-
-        if (pluginManifest.Worker.EventHandlers.Length != 0)
-        {
-            card.AddComponent(new Divider());
-            card.AddComponent(new Header("Event Handlers"));
-            card.AddComponents(pluginManifest.Worker.EventHandlers
-                .Select(x => (ICardComponent)new TextFiled(x.EventHandlerType.FullName!)));
-        }
-        if (pluginManifest.Worker.CommandExecutors.Length != 0)
-        {
-            card.AddComponent(new Divider());
-            card.AddComponent(new Header("Command Executors"));
-            card.AddComponents(pluginManifest.Worker.CommandExecutors
-                .Select(x => (ICardComponent)new TextFiled(x.RootNode.Value)));
-        }
-        if (pluginManifest.Worker.HostedServices.Length != 0)
-        {
-            card.AddComponent(new Divider());
-            card.AddComponent(new Header("Hosted Services"));
-            card.AddComponents(pluginManifest.Worker.HostedServices
-                .Select(x => (ICardComponent)new TextFiled(x.Name)));
-        }
+        card.AddComponents(pluginModule.GetPluginInfoComponents());
 
         return card;
     }
@@ -77,19 +57,20 @@ public static class SystemMessageCard
         return info.Select(x => (ICardComponent)new MultilineText(new Text(x.Key), new Text(x.Value)));
     }
 
-    private static IEnumerable<ICardComponent> GetPluginInfoComponents(this PluginManifest manifest)
+    private static IEnumerable<ICardComponent> GetPluginInfoComponents(this PluginModule module)
     {
         return GetInfoListComponents(new Dictionary<string, string>
         {
-            { "Identifier", manifest.PluginInfo.Identifier },
-            { "Name", manifest.PluginInfo.Name },
-            { "Author", manifest.PluginInfo.Author },
-            { "Description", manifest.PluginInfo.Description },
-            { "Plugin Version", manifest.PluginInfo.Version },
-            { "API Version", manifest.PluginInfo.ApiVersion.ToString() },
-            { "Event Handler Count", manifest.Worker.EventHandlers.Length.ToString() },
-            { "Command Executor Count", manifest.Worker.CommandExecutors.Length.ToString() },
-            { "Hosted Service Count", manifest.Worker.HostedServices.Length.ToString() }
+            { "Identifier", module.PluginInfo.Identifier },
+            { "Name", module.PluginInfo.Name },
+            { "Author", module.PluginInfo.Author },
+            { "Description", module.PluginInfo.Description },
+            { "Plugin Version", module.PluginInfo.Version },
+            { "API Version", module.PluginInfo.ApiVersion.ToString() },
+            { "Event Handler Count", module.EventHandlerModule.Count().ToString() },
+            { "Command Executor Count", module.CommandExecutorModule.Count().ToString() },
+            { "Hosted Service Count", module.HostedServiceModule.Count().ToString() },
+            { "Web Handler Count", module.WebHandlerModule.Count().ToString() }
         });
     }
 }

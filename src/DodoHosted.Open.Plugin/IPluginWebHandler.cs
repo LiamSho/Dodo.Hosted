@@ -17,5 +17,10 @@ namespace DodoHosted.Open.Plugin;
 
 public interface IPluginWebHandler
 {
-    Task<OkObjectResult> Handle(HttpRequest request, string? islandId);
+    /// <summary>
+    /// 处理 Web 请求
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    Task<OkObjectResult> Handle(HttpRequest request);
 }

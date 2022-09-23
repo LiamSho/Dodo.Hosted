@@ -17,5 +17,5 @@ namespace DodoHosted.Base.App.Interfaces;
 
 public interface IWebRequestManager
 {
-    Task<IActionResult> HandleRequestAsync(string identifier, string island, string name, HttpRequest body);
+    Task<IActionResult> HandleRequestAsync(string identifier, string name, HttpRequest body);
 }

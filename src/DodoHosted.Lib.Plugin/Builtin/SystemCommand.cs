@@ -13,6 +13,7 @@
 using System.Runtime.InteropServices;
 using DoDo.Open.Sdk.Models.Islands;
 using DodoHosted.Base.App.Attributes;
+using DodoHosted.Base.App.Context;
 using DodoHosted.Base.Card.Enums;
 using DodoHosted.Base.Context;
 using DodoHosted.Lib.Plugin.Cards;
@@ -177,9 +178,9 @@ public sealed class SystemCommand : ICommandExecutor
     public async Task<bool> LoadPlugin(
         CommandContext context,
         [CmdOption("package", "p", "插件包文件名（不含扩展名）")] string packageName,
-        [Inject] IPluginLifetimeManager pluginLifetimeManager)
+        [Inject] IPluginLoadingManager pluginLoadingManager)
     {
-        await pluginLifetimeManager.LoadPlugin($"{packageName}.zip");
+        await pluginLoadingManager.LoadPlugin($"{packageName}.zip");
         await context.Reply.Invoke("已执行插件加载任务");
         
         return true;
@@ -188,9 +189,9 @@ public sealed class SystemCommand : ICommandExecutor
     public async Task<bool> UnloadPlugin(
         CommandContext context,
         [CmdOption("identifier", "i", "插件标识符")] string identifier,
-        [Inject] IPluginLifetimeManager pluginLifetimeManager)
+        [Inject] IPluginLoadingManager pluginLoadingManager)
     {
-        var result = pluginLifetimeManager.UnloadPlugin(identifier);
+        var result = pluginLoadingManager.UnloadPlugin(identifier);
         if (result)
         {
             await context.Reply.Invoke("插件卸载成功");
@@ -203,10 +204,10 @@ public sealed class SystemCommand : ICommandExecutor
     }
     
     public async Task<bool> ReloadPlugin(CommandContext context,
-        [Inject] IPluginLifetimeManager pluginLifetimeManager)
+        [Inject] IPluginLoadingManager pluginLoadingManager)
     {
-        pluginLifetimeManager.UnloadPlugins();
-        await pluginLifetimeManager.LoadPlugins();
+        pluginLoadingManager.UnloadPlugins();
+        await pluginLoadingManager.LoadPlugins();
 
         await context.Reply.Invoke("已执行重载任务");
         

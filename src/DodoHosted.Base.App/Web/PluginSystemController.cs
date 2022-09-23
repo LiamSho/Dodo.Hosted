@@ -45,7 +45,6 @@ public class PluginSystemController : ControllerBase
 
         var collection = mongoDatabase.GetCollection<IslandSettings>(HostConstants.MONGO_COLLECTION_ISLAND_SETTINGS);
         var island = await collection.Find(x => x.IslandId == islandId).FirstOrDefaultAsync();
-        string realIslandId;
 
         if (island?.AllowUseWebApi is not true)
         {
@@ -61,18 +60,13 @@ public class PluginSystemController : ControllerBase
 
             var islandInfo = await openApiService.GetIslandInfoAsync(new GetIslandInfoInput { IslandId = island.IslandId });
             
-            realIslandId = "*";
             await channelLogger.LogWarning(HostEnvs.DodoHostedAdminIsland,
                 $"源自 `{httpContextAccessor.HttpContext.Connection.RemoteIpAddress}` 的请求使用了 Master Token，" +
                 $"群组: `{islandInfo.IslandName}({islandId})`， 插件 Identifier: `{pluginIdentifier}`");
         }
-        else
-        {
-            realIslandId = island.IslandId;
-        }
 
         var response = await webRequestManager.HandleRequestAsync
-            (pluginIdentifier, realIslandId, name, httpContextAccessor.HttpContext.Request);
+            (pluginIdentifier, name, httpContextAccessor.HttpContext.Request);
 
         return response;
     }

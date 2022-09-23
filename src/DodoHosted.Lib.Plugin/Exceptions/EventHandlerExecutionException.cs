@@ -10,15 +10,14 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-namespace DodoHosted.Lib.Plugin.Interfaces;
+namespace DodoHosted.Lib.Plugin.Exceptions;
 
-public interface IPluginLifetimeManager
+public class EventHandlerExecutionException : Exception
 {
-    Task LoadPlugin(FileInfo bundle);
-    Task LoadPlugin(string bundle);
-    Task LoadPlugins();
-    bool UnloadPlugin(string pluginIdentifier);
-    void UnloadPlugins();
-    Task LoadNativeTypes();
-    void UnloadNativeTypes();
+    public IEnumerable<KeyValuePair<string, Exception>> ExecutionExceptions { get; }
+
+    public EventHandlerExecutionException(IEnumerable<KeyValuePair<string, Exception>> exceptions)
+    {
+        ExecutionExceptions = exceptions;
+    }
 }

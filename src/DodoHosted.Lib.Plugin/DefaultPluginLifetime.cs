@@ -10,15 +10,17 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Command;
+namespace DodoHosted.Lib.Plugin;
 
-namespace DodoHosted.Open.Plugin;
-
-public interface ICommandExecutor
+public class DefaultPluginLifetime : DodoHostedPluginLifetime
 {
-    /// <summary>
-    /// 获取命令树构造器
-    /// </summary>
-    /// <returns></returns>
-    CommandTreeBuilder GetBuilder();
+    public override Task OnLoad()
+    {
+        return Task.CompletedTask;
+    }
+
+    public override Task OnDestroy()
+    {
+        return Task.CompletedTask;
+    }
 }

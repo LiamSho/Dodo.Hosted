@@ -24,7 +24,6 @@ global using DodoHosted.Base.App.Web;
 global using DodoHosted.Lib.Plugin.Helper;
 global using DodoHosted.Lib.Plugin.Interfaces;
 global using DodoHosted.Lib.Plugin.Models;
-global using DodoHosted.Lib.Plugin.Models.Manifest;
 global using DodoHosted.Lib.Plugin.Exceptions;
 global using DodoHosted.Open.Plugin;
 global using Microsoft.Extensions.DependencyInjection;

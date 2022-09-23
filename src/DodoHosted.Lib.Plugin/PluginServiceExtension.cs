@@ -19,10 +19,9 @@ public static class PluginServiceExtension
     public static IServiceCollection AddPluginManager(this IServiceCollection serviceCollection)
     {
         serviceCollection.AddSingleton<IPluginManager, PluginManager>();
-        serviceCollection.AddSingleton<IPluginLifetimeManager, PluginLifetimeManager>();
+        serviceCollection.AddSingleton<IPluginLoadingManager, PluginLoadingManager>();
         serviceCollection.AddSingleton<ICommandManager, CommandManager>();
         serviceCollection.AddSingleton<IEventManager, EventManager>();
-        serviceCollection.AddSingleton<IParameterResolver, ParameterResolver>();
 
         serviceCollection.AddSingleton<IWebRequestManager, WebRequestManager>();
         

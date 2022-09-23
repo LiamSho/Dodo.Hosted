@@ -11,24 +11,25 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Collections.Concurrent;
+using DodoHosted.Lib.Plugin.Models.Module;
 
 namespace DodoHosted.Lib.Plugin.Services;
 
 public class PluginManager : IPluginManager
 {
-    private readonly ConcurrentDictionary<string, PluginManifest> _plugins = new();
+    private readonly ConcurrentDictionary<string, PluginModule> _plugins = new();
 
-    public bool AddPlugin(PluginManifest manifest)
+    public bool AddPlugin(PluginModule manifest)
     {
-        return _plugins.TryAdd(manifest.PluginInfo.Identifier, manifest);
+        return _plugins.TryAdd(manifest.PluginConfigurationModule.PluginInfo.Identifier, manifest);
     }
-    public PluginManifest? RemovePlugin(string id)
+    public PluginModule? RemovePlugin(string id)
     {
         var _ = _plugins.TryRemove(id, out var manifest);
         return manifest;
     }
 
-    public IEnumerable<PluginManifest> RemovePlugins()
+    public IEnumerable<PluginModule> RemovePlugins()
     {
         var plugins = GetPlugins().ToArray();
         _plugins.Clear();
@@ -39,52 +40,74 @@ public class PluginManager : IPluginManager
         return _plugins.ContainsKey(id);
     }
     
-    public PluginManifest? GetPlugin(string id)
+    public PluginModule? GetPlugin(string id)
     {
         return _plugins.TryGetValue(id, out var manifest) ? manifest : null;
     }
-    public IEnumerable<PluginManifest> GetPlugins()
+    public IEnumerable<PluginModule> GetPlugins()
     {
         return _plugins.Values;
     }
-    public IEnumerable<PluginManifest> GetPlugins(Func<PluginManifest, bool> predicate)
+    public IEnumerable<PluginModule> GetPlugins(Func<PluginModule, bool> predicate)
     {
         return _plugins.Values.Where(predicate);
     }
 
-    public IEnumerable<PluginManifest> GetPlugins(bool native)
+    public IEnumerable<PluginModule> GetPlugins(bool native)
     {
         return GetPlugins(x => x.IsNative == native);
     }
 
-    public CommandManifest? GetCommandManifest(string command)
+    public CommandNode? GetCommandNode(string command)
     {
-        return GetCommandManifests(x => x.RootNode.Value == command).FirstOrDefault();
+        return _plugins.Values
+            .Select(x => x.CommandExecutorModule)
+            .Select(x => x.GetCommandNode(command))
+            .FirstOrDefault(x => x is not null);
     }
-    public IEnumerable<CommandManifest> GetCommandManifests()
+
+    public IEnumerable<CommandNode> GetCommandNodes()
     {
-        return _plugins.Values.Select(x => x.Worker).SelectMany(x => x.CommandExecutors);
+        return _plugins.Values
+            .Select(x => x.CommandExecutorModule)
+            .SelectMany(x => x.GetCommandNodes());
     }
-    public IEnumerable<CommandManifest> GetCommandManifests(string id)
+
+    public IEnumerable<CommandNode> GetCommandNodes(string id)
     {
-        var manifest = GetPlugin(id);
-        return manifest?.Worker.CommandExecutors ?? Enumerable.Empty<CommandManifest>();
+        var plugin = GetPlugin(id);
+        return plugin is null ? Enumerable.Empty<CommandNode>() : plugin.CommandExecutorModule.GetCommandNodes();
     }
-    public IEnumerable<CommandManifest> GetCommandManifests(Func<CommandManifest, bool> predicate)
+
+    public IEnumerable<CommandNode> GetCommandNodes(Func<CommandNode, bool> predicate)
     {
-        return GetCommandManifests().Where(predicate);
+        return GetCommandNodes().Where(predicate);
     }
-    public IEnumerable<EventHandlerManifest> GetEventHandlerManifests()
+
+    public CommandExecutorModule? GetCommandExecutorModule(string command)
     {
-        return _plugins.Values.Select(x => x.Worker).SelectMany(x => x.EventHandlers);
+        return _plugins.Values.FirstOrDefault(x => x.CommandExecutorModule.GetCommandNode(command) is not null)?
+            .CommandExecutorModule;
     }
-    public IEnumerable<EventHandlerManifest> GetEventHandlerManifests(string id)
+
+    public IEnumerable<CommandExecutorModule> GetCommandExecutorModules()
     {
-        var manifest = GetPlugin(id);
-        return manifest?.Worker.EventHandlers ?? Enumerable.Empty<EventHandlerManifest>();
+        return _plugins.Values.Select(x => x.CommandExecutorModule);
     }
-    public IEnumerable<EventHandlerManifest> GetEventHandlerManifests(Func<EventHandlerManifest, bool> predicate)
+
+    public EventHandlerModule? GetEventHandlerModule(string id)
     {
-        return GetEventHandlerManifests().Where(predicate);
+        var plugin = GetPlugin(id);
+        return plugin?.EventHandlerModule;
+    }
+    
+    public IEnumerable<EventHandlerModule> GetEventHandlerModules()
+    {
+        return _plugins.Values.Select(x => x.EventHandlerModule);
+    }
+
+    public IEnumerable<EventHandlerModule> GetEventHandlerModules(Func<EventHandlerModule, bool> predicate)
+    {
+        return GetEventHandlerModules().Where(predicate);
     }
 }

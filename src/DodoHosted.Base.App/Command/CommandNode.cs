@@ -11,7 +11,9 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Reflection;
+using DodoHosted.Base.App.Context;
 using DodoHosted.Base.App.Exceptions;
+using DodoHosted.Base.App.Interfaces;
 
 namespace DodoHosted.Base.App.Command;
 
@@ -25,6 +27,8 @@ public class CommandNode
     public int? ContextParamOrder { get; init; }
     public Dictionary<int, Type> ServiceOptions { get; init; }
     public Dictionary<int, (Type, CmdOptionAttribute)> Options { get; init; }
+
+    private readonly IDynamicDependencyResolver _dependencyResolver;
 
     public int MaxDepth
     {
@@ -89,12 +93,15 @@ public class CommandNode
 
     public CommandNode(
         string value, string description,
+        IDynamicDependencyResolver dependencyResolver,
         MethodInfo? method = null,
         string? permNode = null,
         int? contentParamOrder = null,
         Dictionary<int, Type>? serviceOptions = null,
         Dictionary<int, (Type, CmdOptionAttribute)>? options = null)
     {
+        _dependencyResolver = dependencyResolver;
+        
         Value = value;
         Description = description;
         Parent = null;
@@ -172,6 +179,36 @@ public class CommandNode
         }
 
         return node;
+    }
+
+    public async Task<CommandExecutionResult> Invoke(object obj, CommandContext context, IServiceProvider serviceProvider)
+    {
+        var allowed = await context.PermissionCheck(PermissionNode);
+        if (allowed is false)
+        {
+            return CommandExecutionResult.Unauthorized;
+        }
+        
+        if (Method is null)
+        {
+            var fullPath = context.CommandParsed.CommandName + " " + string.Join(" ", context.CommandParsed.Path);
+            await context.Reply.Invoke($"未知的指令路径，请输入 `{HostEnvs.CommandPrefix}{fullPath} -?` 查看帮助");
+            return CommandExecutionResult.Unknown;
+        }
+        
+        var parameterInfos = Method.GetParameters();
+        var parameters = new object?[parameterInfos.Length];
+        _dependencyResolver.SetInjectableParameterValues(parameterInfos, serviceProvider, ref parameters);
+        _dependencyResolver.SetCommandOptionParameterValues(this, context.CommandParsed, ref parameters);
+
+        if (ContextParamOrder is not null)
+        {
+            parameters[ContextParamOrder.Value] = context;
+        }
+
+        var result = await (Task<bool>)Method.Invoke(obj, parameters)!;
+
+        return result ? CommandExecutionResult.Success : CommandExecutionResult.Failed;
     }
     
     private void UpdateChildren()

@@ -10,15 +10,25 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DodoHosted.Base.App.Command;
-
 namespace DodoHosted.Open.Plugin;
 
-public interface ICommandExecutor
+/// <summary>
+/// 插件实例
+/// </summary>
+public abstract class DodoHostedPluginConfiguration
 {
     /// <summary>
-    /// 获取命令树构造器
+    /// 配置版本
     /// </summary>
     /// <returns></returns>
-    CommandTreeBuilder GetBuilder();
+    public abstract int ConfigurationVersion();
+
+    /// <summary>
+    /// 注册 MongoDb Collection
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<Type, string> RegisterMongoDbCollection()
+    {
+        return new Dictionary<Type, string>();
+    }
 }

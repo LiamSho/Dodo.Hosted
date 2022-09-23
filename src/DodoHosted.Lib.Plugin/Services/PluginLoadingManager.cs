@@ -10,11 +10,13 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Lib.Plugin.Models.Module;
+
 namespace DodoHosted.Lib.Plugin.Services;
 
-public class PluginLifetimeManager : IPluginLifetimeManager
+public class PluginLoadingManager : IPluginLoadingManager
 {
-    private readonly ILogger<PluginLifetimeManager> _logger;
+    private readonly ILogger<PluginLoadingManager> _logger;
     private readonly IServiceProvider _provider;
     private readonly IPluginManager _pluginManager;
 
@@ -24,8 +26,8 @@ public class PluginLifetimeManager : IPluginLifetimeManager
     // ReSharper disable once MemberCanBePrivate.Global
     public static readonly List<Assembly> NativeAssemblies = new();
 
-    public PluginLifetimeManager(
-        ILogger<PluginLifetimeManager> logger,
+    public PluginLoadingManager(
+        ILogger<PluginLoadingManager> logger,
         IServiceProvider provider,
         IPluginManager pluginManager)
     {
@@ -69,42 +71,25 @@ public class PluginLifetimeManager : IPluginLifetimeManager
             var (context, assemblies) = pluginCacheDirectory.LoadPluginAssembly(pluginInfo);
 
             // 插件程序集类型
-            var pluginAssemblyTypes = assemblies.SelectMany(x => x.GetTypes()).ToArray();
+            var module = new PluginModule(context, assemblies, pluginInfo, _provider);
 
-            // 载入插件实例
-            var pluginInstance = pluginAssemblyTypes.FetchPluginInstance();
-            if (pluginInstance is null)
-            {
-                throw new PluginAssemblyLoadException($"标识符为 {pluginInfo.Identifier} 的插件实例为空");
-            }
-
-            await pluginInstance.OnLoad();
-            
-            // 载入插件工作类型
-            var worker = pluginAssemblyTypes.LoadPluginWorkers(_provider, pluginInfo.Identifier);
-
-            // 添加插件
-            var pluginManifest = new PluginManifest
-            {
-                PluginAssemblies = assemblies,
-                Context = context,
-                PluginInfo = pluginInfo,
-                IsNative = false,
-                PluginScope = _provider.CreateScope(),
-                DodoHostedPlugin = pluginInstance,
-                Worker = worker
-            };
-
-            var success = _pluginManager.AddPlugin(pluginManifest);
+            var success = _pluginManager.AddPlugin(module);
 
             if (success is false)
             {
-                pluginManifest.UnloadPlugin(_logger, true);
                 throw new PluginAssemblyLoadException($"插件 {pluginInfo.Identifier} 添加失败");
             }
             
-            _logger.LogInformation("已载入插件 {PluginInfo}，事件处理器 {EventHandlerCount} 个，Web 事件处理器 {WebEventHandler} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个",
-                pluginInfo, worker.EventHandlers.Length, worker.WebHandlers.Length, worker.CommandExecutors.Length, worker.HostedServices.Length);
+            _logger.LogInformation("已载入插件 {PluginInfo}，" +
+                                   "事件处理器 {EventHandlerCount} 个，" +
+                                   "Web 事件处理器 {WebEventHandler} 个，" +
+                                   "指令执行器 {CommandCount} 个，" +
+                                   "后台任务 {HostedServiceCount} 个",
+                pluginInfo,
+                module.EventHandlerModule.Count(),
+                module.WebHandlerModule.Count(),
+                module.CommandExecutorModule.Count(),
+                module.HostedServiceModule.Count());
         }
         catch (Exception ex)
         {
@@ -142,10 +127,10 @@ public class PluginLifetimeManager : IPluginLifetimeManager
     {
         _logger.LogInformation("执行卸载插件 {PluginUnloadIdentifier} 任务", pluginIdentifier);
 
-        var manifest = _pluginManager.RemovePlugin(pluginIdentifier);
-        var status = manifest is not null;
+        var module = _pluginManager.RemovePlugin(pluginIdentifier);
+        var status = module is not null;
         
-        manifest?.UnloadPlugin(_logger);
+        module?.Unload();
         
         _logger.Log(status ? LogLevel.Information : LogLevel.Warning,
             "插件 {PluginUnloadIdentifier} 卸载任务完成，{PluginUnloadStatus}",
@@ -159,71 +144,62 @@ public class PluginLifetimeManager : IPluginLifetimeManager
     {
         _logger.LogInformation("执行卸载所有插件任务");
 
-        var manifests = _pluginManager.RemovePlugins();
-        manifests.AsParallel().ForAll(x => x.UnloadPlugin(_logger));
+        var modules = _pluginManager.RemovePlugins();
+        modules.AsParallel().ForAll(x => x.Unload());
         
         _logger.LogInformation("卸载所有插件任务已完成");
     }
     
     /// <inheritdoc />
-    public async Task LoadNativeTypes()
+    public void LoadNativeTypes()
     {
         foreach (var assembly in NativeAssemblies)
         {
             _logger.LogDebug("载入 Native 程序集 {DbgNativeAssemblyName}", assembly.FullName);
 
-            var name = assembly.GetName().Name;
-            
-            var types = assembly.GetTypes();
+            var name = assembly.FullName ?? string.Empty;
 
-            var instance = types.FetchPluginInstance() ?? new DefaultPluginInstance();
-
-            await instance.OnLoad();
-            
-            var worker = types.LoadPluginWorkers(_provider, $"native-{name}", true);
-
-            var scope = _provider.CreateScope();
-
-            var manifest = new PluginManifest
+            var pluginInfo = new PluginInfo
             {
-                PluginInfo = new PluginInfo
-                {
-                    Name = $"native-{name}",
-                    Author = "Native",
-                    Description = "Native Assembly",
-                    EntryAssembly = assembly.FullName!,
-                    Identifier = $"native-{name}",
-                    Version = "native",
-                    ApiVersion = PluginApiLevel.CurrentApiLevel
-                },
-                Context = null,
-                IsNative = true,
-                DodoHostedPlugin = instance,
-                PluginAssemblies = new []{ assembly },
-                PluginScope = scope,
-                Worker = worker
+                Name = $"native-{name}",
+                Author = "Native",
+                Description = "Native Assembly",
+                EntryAssembly = assembly.FullName!,
+                Identifier = $"native-{name}",
+                Version = "native",
+                ApiVersion = PluginApiLevel.CurrentApiLevel
             };
+            
+            var module = new PluginModule(null, new[] { assembly }, pluginInfo, _provider, true);
 
-            var success = _pluginManager.AddPlugin(manifest);
+            var success = _pluginManager.AddPlugin(module);
 
             if (success is false)
             {
                 throw new PluginAssemblyLoadException($"Native 类型 {name} 添加失败");
             }
             
-            _logger.LogInformation("已载入 Native Assembly: {NativeAssemblyName}，事件处理器 {EventHandlerCount} 个，Web 事件处理器 {WebEventHandler} 个，指令 {CommandCount} 个，后台任务 {HostedServiceCount} 个", 
-                assembly.FullName, worker.EventHandlers.Length, worker.WebHandlers.Length, worker.CommandExecutors.Length, worker.HostedServices.Length);
+            _logger.LogInformation("已载入Native Assembly {PluginIdentifier}，" +
+                                   "事件处理器 {EventHandlerCount} 个，" +
+                                   "Web 事件处理器 {WebEventHandler} 个，" +
+                                   "指令执行器 {CommandCount} 个，" +
+                                   "后台任务 {HostedServiceCount} 个",
+                pluginInfo,
+                module.EventHandlerModule.Count(),
+                module.WebHandlerModule.Count(),
+                module.CommandExecutorModule.Count(),
+                module.HostedServiceModule.Count());
         }
     }
 
     /// <inheritdoc />
     public void UnloadNativeTypes()
     {
-        var nativeManifests = _pluginManager.GetPlugins(true);
+        var nativeModules = _pluginManager.GetPlugins(true);
 
-        foreach (var nativeManifest in nativeManifests)
+        foreach (var nativeModule in nativeModules)
         {
-            nativeManifest.UnloadPlugin(_logger);
+            nativeModule.Unload();
         }
     }
 }

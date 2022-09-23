@@ -10,12 +10,9 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
-using DoDo.Open.Sdk.Models.Messages;
-using DodoHosted.Base.Context.Model;
-using DodoHosted.Base.Events;
+namespace DodoHosted.Lib.Plugin;
 
-namespace DodoHosted.Base.Context;
-
-public record CommandContext(
-    ContextBase.Reply Reply, ContextBase.ReplyCard ReplyCard, ContextBase.PermissionCheck PermissionCheck,
-    UserInfo UserInfo, EventInfo EventInfo, DodoChannelMessageEvent<MessageBodyText> EventData);
+public sealed class DefaultPluginConfiguration : DodoHostedPluginConfiguration
+{
+    public override int ConfigurationVersion() => 0;
+}

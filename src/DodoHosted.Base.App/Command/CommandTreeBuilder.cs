@@ -12,8 +12,9 @@
 
 using System.Reflection;
 using DodoHosted.Base.App.Attributes;
+using DodoHosted.Base.App.Context;
 using DodoHosted.Base.App.Exceptions;
-using DodoHosted.Base.Context;
+using DodoHosted.Base.App.Interfaces;
 
 namespace DodoHosted.Base.App.Command;
 
@@ -63,13 +64,13 @@ public class CommandTreeBuilder
         return this;
     }
 
-    public CommandNode Build()
+    public CommandNode Build(IDynamicDependencyResolver dependencyResolver)
     {
         BuildMethodMetadata(_method, out var contextParamOrder, out var serviceOptions, out var paramOptions);
 
-        var current = new CommandNode(_nodeName, _description, _method, _permission, contextParamOrder, serviceOptions, paramOptions);
+        var current = new CommandNode(_nodeName, _description, dependencyResolver, _method, _permission, contextParamOrder, serviceOptions, paramOptions);
 
-        var children = _children.Select(x => x.Build()).ToArray();
+        var children = _children.Select(x => x.Build(dependencyResolver)).ToArray();
         
         foreach (var child in children)
         {
