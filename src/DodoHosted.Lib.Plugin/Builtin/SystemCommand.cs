@@ -25,6 +25,7 @@ using MongoDB.Driver;
 
 namespace DodoHosted.Lib.Plugin.Builtin;
 
+[AdminIslandOnly]
 public sealed class SystemCommand : ICommandExecutor
 {
     public async Task<bool> GetGcInfo(CommandContext context)

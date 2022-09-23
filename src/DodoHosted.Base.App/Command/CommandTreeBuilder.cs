@@ -64,13 +64,13 @@ public class CommandTreeBuilder
         return this;
     }
 
-    public CommandNode Build(IDynamicDependencyResolver dependencyResolver)
+    public CommandNode Build(IDynamicDependencyResolver dependencyResolver, bool adminIslandOnly)
     {
         BuildMethodMetadata(_method, out var contextParamOrder, out var serviceOptions, out var paramOptions);
 
-        var current = new CommandNode(_nodeName, _description, dependencyResolver, _method, _permission, contextParamOrder, serviceOptions, paramOptions);
+        var current = new CommandNode(_nodeName, _description, dependencyResolver, adminIslandOnly, _method, _permission, contextParamOrder, serviceOptions, paramOptions);
 
-        var children = _children.Select(x => x.Build(dependencyResolver)).ToArray();
+        var children = _children.Select(x => x.Build(dependencyResolver, adminIslandOnly)).ToArray();
         
         foreach (var child in children)
         {

@@ -10,6 +10,7 @@
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY
 
+using DodoHosted.Base.App.Attributes;
 using DodoHosted.Base.App.Context;
 
 namespace DodoHosted.Lib.Plugin.Models.Module;
@@ -28,6 +29,8 @@ public class CommandExecutorModule : IDisposable
 
         foreach (var type in commandExecutorTypes)
         {
+            var adminIslandOnly = type.GetCustomAttribute<AdminIslandOnlyAttribute>() is not null;
+            
             var instance = Activator.CreateInstance(type);
             
             if (instance is not ICommandExecutor executor)
@@ -35,7 +38,7 @@ public class CommandExecutorModule : IDisposable
                 throw new PluginAssemblyLoadException($"无法创建指令处理器 {type.FullName} 的实例");
             }
 
-            var node = executor.GetBuilder().Build(dependencyResolver);
+            var node = executor.GetBuilder().Build(dependencyResolver, adminIslandOnly);
 
             _rootNodes.Add(node.Value, (executor, node));
         }

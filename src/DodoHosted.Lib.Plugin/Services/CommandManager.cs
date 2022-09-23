@@ -94,6 +94,17 @@ public class CommandManager : ICommandManager
             $"[{string.Join(", ", parsed.Path)}]",
             $"[{string.Join(",", parsed.Arguments.Select(x => $"{{{x.Key}:{x.Value}}}"))}]");
 
+        // 检查是否为 Admin Island Only
+        var adminIslandOnly = _pluginManager.GetCommandNode(parsed.CommandName)?.AdminIslandOnly ?? false;
+        if (adminIslandOnly && eventInfo.IslandId != HostEnvs.DodoHostedAdminIsland)
+        {
+            await _channelLogger.LogWarning(HostEnvs.DodoHostedAdminIsland,
+                $"群组 {eventInfo.IslandId} 的用户 {userInfo.NickName} ({userInfo.DodoId}) 尝试" +
+                $"执行管理群组限定指令 `{parsed.CommandName}`，原始指令字符串为 `{messageEvent.Message.Data.EventBody.MessageBody.Content}`");
+            await reply.Invoke("该指令仅限管理群组使用");
+            return;
+        }
+        
         // 检查是否是帮助请求
         var hasHelpRequest = parsed.Arguments.TryGetValueByMultipleKey(new[] { "-help", "?" }, out var value);
 

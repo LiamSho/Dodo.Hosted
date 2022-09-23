@@ -27,6 +27,7 @@ public class CommandNode
     public int? ContextParamOrder { get; init; }
     public Dictionary<int, Type> ServiceOptions { get; init; }
     public Dictionary<int, (Type, CmdOptionAttribute)> Options { get; init; }
+    public bool AdminIslandOnly { get; init; }
 
     private readonly IDynamicDependencyResolver _dependencyResolver;
 
@@ -94,6 +95,7 @@ public class CommandNode
     public CommandNode(
         string value, string description,
         IDynamicDependencyResolver dependencyResolver,
+        bool adminIslandOnly = false,
         MethodInfo? method = null,
         string? permNode = null,
         int? contentParamOrder = null,
@@ -101,6 +103,8 @@ public class CommandNode
         Dictionary<int, (Type, CmdOptionAttribute)>? options = null)
     {
         _dependencyResolver = dependencyResolver;
+        
+        AdminIslandOnly = adminIslandOnly;
         
         Value = value;
         Description = description;
