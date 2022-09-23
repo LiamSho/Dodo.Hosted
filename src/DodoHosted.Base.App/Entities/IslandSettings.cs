@@ -20,8 +20,7 @@ namespace DodoHosted.Base.App.Entities;
 /// <param name="IslandId"></param>
 /// <param name="EnableChannelLogger"></param>
 /// <param name="LoggerChannelId"></param>
-/// <param name="WebApiToken"></param>
-public record IslandSettings(string IslandId, bool EnableChannelLogger, string LoggerChannelId, string WebApiToken)
+public record IslandSettings(string IslandId, bool EnableChannelLogger, string LoggerChannelId)
 {
     [BsonId]
     public Guid Id { get; init; } = Guid.NewGuid();
@@ -44,7 +43,12 @@ public record IslandSettings(string IslandId, bool EnableChannelLogger, string L
     /// <summary>
     /// Web API Token
     /// </summary>
-    public string WebApiToken { get; set; } = WebApiToken;
+    public List<WebApiToken> WebApiToken { get; init; } = new();
+
+    /// <summary>
+    /// Max Web API Token Count
+    /// </summary>
+    public int MaxWebApiTokenCount { get; set; } = 5;
     
     /// <summary>
     /// 是否允许该群组使用 Web API

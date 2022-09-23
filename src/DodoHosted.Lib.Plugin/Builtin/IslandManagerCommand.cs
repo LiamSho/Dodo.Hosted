@@ -16,7 +16,7 @@ using DoDo.Open.Sdk.Models.Resources;
 using DoDo.Open.Sdk.Models.Roles;
 using DodoHosted.Base.App.Attributes;
 using DodoHosted.Base.App.Context;
-using DodoHosted.Base.Context;
+using DodoHosted.Base.Card.Enums;
 using DodoHosted.Lib.Plugin.Cards;
 using MongoDB.Driver;
 
@@ -97,10 +97,47 @@ public sealed class IslandManagerCommand : ICommandExecutor
         await context.Reply.Invoke("修改成功");
         return true;
     }
+    
+    public async Task<bool> AddWebApiToken(
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection,
+        [CmdOption("name", "n", "Token 名称")] string name)
+    {
+        var settings = await collection
+            .Find(x => x.IslandId == context.EventInfo.IslandId)
+            .FirstOrDefaultAsync();
+        
+        if (settings is null)
+        {
+            throw new InternalProcessException(
+                nameof(IslandManagerCommand),
+                nameof(AddWebApiToken),
+                $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
+        }
+
+        if (settings.WebApiToken.Any(x => x.Name == name))
+        {
+            await context.Reply.Invoke("该 Token 已存在", true);
+            return false;
+        }
+
+        if (settings.WebApiToken.Count >= settings.MaxWebApiTokenCount)
+        {
+            await context.Reply.Invoke("Token 数量已达上限", true);
+            return false;
+        }
+        
+        settings.WebApiToken.Add(new WebApiToken(name));
+        await collection.FindOneAndReplaceAsync(x => x.IslandId == context.EventInfo.IslandId, settings);
+        
+        await context.Reply.Invoke("添加成功", true);
+        return true;
+    }
 
     public async Task<bool> RenewWebApiToken(
         CommandContext context,
-        [Inject] IMongoCollection<IslandSettings> collection)
+        [Inject] IMongoCollection<IslandSettings> collection,
+        [CmdOption("name", "n", "Token 名称")] string name)
     {
         var settings = await collection
             .Find(x => x.IslandId == context.EventInfo.IslandId)
@@ -114,10 +151,47 @@ public sealed class IslandManagerCommand : ICommandExecutor
                 $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
         }
 
-        settings.WebApiToken = TokenHelper.GenerateToken();
+        if (settings.WebApiToken.Any(x => x.Name == name) is false)
+        {
+            await context.Reply.Invoke("找不到该 Token", true);
+            return false;
+        }
+        
+        settings.WebApiToken.RemoveAll(x => x.Name == name);
+        settings.WebApiToken.Add(new WebApiToken(name));
         await collection.FindOneAndReplaceAsync(x => x.IslandId == context.EventInfo.IslandId, settings);
         
-        await context.Reply.Invoke("修改成功");
+        await context.Reply.Invoke("修改成功", true);
+        return true;
+    }
+    
+    public async Task<bool> RevokeWebApiToken(
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection,
+        [CmdOption("name", "n", "Token 名称")] string name)
+    {
+        var settings = await collection
+            .Find(x => x.IslandId == context.EventInfo.IslandId)
+            .FirstOrDefaultAsync();
+        
+        if (settings is null)
+        {
+            throw new InternalProcessException(
+                nameof(IslandManagerCommand),
+                nameof(RevokeWebApiToken),
+                $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
+        }
+
+        if (settings.WebApiToken.Any(x => x.Name == name) is false)
+        {
+            await context.Reply.Invoke("找不到该 Token", true);
+            return false;
+        }
+        
+        settings.WebApiToken.RemoveAll(x => x.Name == name);
+        await collection.FindOneAndReplaceAsync(x => x.IslandId == context.EventInfo.IslandId, settings);
+        
+        await context.Reply.Invoke("移除成功", true);
         return true;
     }
 
@@ -163,18 +237,38 @@ public sealed class IslandManagerCommand : ICommandExecutor
 
     public async Task<bool> GetWebApiToken(
         CommandContext context,
-        [Inject] IMongoCollection<IslandSettings> collection)
+        [Inject] IMongoCollection<IslandSettings> collection,
+        [CmdOption("name", "n", "Token 名称", false)] string? name)
     {
-        var token = collection.AsQueryable()
-            .FirstOrDefault(x => x.IslandId == context.EventInfo.IslandId)?.WebApiToken;
-
-        if (token is null)
-        {
-            await context.Reply.Invoke("找不到记录");
-            return false;
-        }
+        var settings = await collection
+            .Find(x => x.IslandId == context.EventInfo.IslandId)
+            .FirstOrDefaultAsync();
         
-        await context.Reply.Invoke($"Web API Token: `{token}`", true);
+        if (settings is null)
+        {
+            throw new InternalProcessException(
+                nameof(IslandManagerCommand),
+                nameof(GetWebApiToken),
+                $"找不到频道 {context.EventInfo.IslandId} 的配置记录");
+        }
+
+        var tokenInfos = new Dictionary<string, string>();
+        if (name is null)
+        {
+            tokenInfos = settings.WebApiToken.ToDictionary(x => x.Name, y => $"`{y.Token}`");
+        }
+        else
+        {
+            var token = settings.WebApiToken.FirstOrDefault(x => x.Name == name);
+            if (token is not null)
+            {
+                tokenInfos.Add(token.Name, $"`{token.Token}`");
+            }
+        }
+
+        var card = SystemMessageCard.GetInfoListCard("Web API Token", CardTheme.Red, tokenInfos);
+
+        await context.ReplyCard.Invoke(card, true);
         return true;
     }
 
@@ -303,7 +397,9 @@ public sealed class IslandManagerCommand : ICommandExecutor
                 .Then("enable", "设置日志频道", "modify", EnableLoggerChannel)
                 .Then("disable", "设置日志频道", "modify", DisableLoggerChannel))
             .Then("web", "群组 WebAPI 配置", "web", builder: x => x
-                .Then("renew", "更新 WebAPI Token", string.Empty, RenewWebApiToken))
+                .Then("renew", "更新 WebAPI Token", string.Empty, RenewWebApiToken)
+                .Then("add", "新增 WebAPI Token", string.Empty, AddWebApiToken)
+                .Then("revoke", "撤销 WebAPI Token", string.Empty, RevokeWebApiToken))
             .Then("get", "获取群组信息", "settings.read", builder: x => x
                 .Then("settings", "获取群组信息", "config", GetSettings)
                 .Then("roles", "获取群组角色信息", "roles", GetRoles)

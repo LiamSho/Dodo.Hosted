@@ -51,7 +51,7 @@ public class PluginSystemController : ControllerBase
             return Forbid();
         }
         
-        if (token != island.WebApiToken)
+        if (island.WebApiToken.Any(x => x.Token == token) is false)
         {
             if (token != HostEnvs.DodoHostedWebMasterToken)
             {

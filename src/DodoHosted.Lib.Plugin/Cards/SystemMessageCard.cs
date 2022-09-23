@@ -26,8 +26,14 @@ public static class SystemMessageCard
     {
         var componentGroup = infos
             .Select(x => x.GetInfoListComponents())
-            .Aggregate((x, y) => x.Append(new Divider()).Concat(y));
+            .Aggregate((x, y) => x.Append(new Divider()).Concat(y))
+            .ToList();
 
+        if (componentGroup.Count == 0)
+        {
+            componentGroup.Add(new TextFiled("No information found"));
+        }
+        
         return new CardMessage(new Card { Title = title, Theme = theme, Components = componentGroup.ToList() });
     }
 

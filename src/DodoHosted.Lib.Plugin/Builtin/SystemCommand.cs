@@ -84,14 +84,27 @@ public sealed class SystemCommand : ICommandExecutor
         foreach (var island in islands)
         {
             var config = await collection.Find(x => x.IslandId == island.IslandId).FirstOrDefaultAsync();
-            var allowWebApi = config is null ? "未配置" : config.AllowUseWebApi ? "✅" : "❌";
-            var enableChannelLogger = config is null ? "未配置" : config.EnableChannelLogger ? "✅" : "❌";
+
+            if (config is null)
+            {
+                infos.Add(new Dictionary<string, string>
+                {
+                    { "错误", "找不到群组配置" },
+                    { "Island Name", island.IslandName },
+                    { "Island Id", island.IslandId }
+                });
+                continue;
+            }
+            
+            var allowWebApi = config.AllowUseWebApi ? "✅" : "❌";
+            var enableChannelLogger = config.EnableChannelLogger ? "✅" : "❌";
 
             infos.Add(new Dictionary<string, string>
             {
                 { "Island Name", island.IslandName },
                 { "Island Id", island.IslandId },
                 { "Web API Status", allowWebApi },
+                { "Web API Token Count", config.WebApiToken.Count.ToString() },
                 { "Channel Logger", enableChannelLogger },
             });
         }
@@ -117,6 +130,34 @@ public sealed class SystemCommand : ICommandExecutor
         [CmdOption("island", "l", "群组 ID")] string islandId)
     {
         return await SetIslandWebApiStatus(collection, context.Reply, islandId, false);
+    }
+
+    public async Task<bool> SetOrGetIslandWebApiMaxTokenCount(
+        CommandContext context,
+        [Inject] IMongoCollection<IslandSettings> collection,
+        [CmdOption("island", "l", "群组 ID")] string islandId,
+        [CmdOption("count", "c", "最大数量，不传为获取最大数量值", false)] int? count)
+    {
+        var settings = await collection.Find(x => x.IslandId == islandId).FirstOrDefaultAsync();
+        if (settings is null)
+        {
+            await context.Reply.Invoke("群组不存在");
+            return false;
+        }
+        
+        if (count is null)
+        {
+            await context.Reply.Invoke($"群组 {islandId} 的最大 Token 数量为 {settings.MaxWebApiTokenCount}");
+            return true;
+        }
+
+        var originalValue = settings.MaxWebApiTokenCount;
+        settings.MaxWebApiTokenCount = count.Value;
+        await collection.ReplaceOneAsync(x => x.IslandId == islandId, settings);
+        
+        await context.Reply.Invoke($"群组 {islandId} 的最大 Token 数量已设置为 {settings.MaxWebApiTokenCount} (原先为 {originalValue})");
+
+        return true;
     }
 
     public async Task<bool> GetPluginList(
@@ -222,7 +263,8 @@ public sealed class SystemCommand : ICommandExecutor
             .Then("islands", "获取 Bot 加入的群组信息", string.Empty, GetIslandsInfo)
             .Then("web", "群组 WebAPI 使用控制", string.Empty, builder: x => x
                 .Then("enable", "允许群组使用 WebAPI", string.Empty, EnableIslandWebApi)
-                .Then("disable", "禁止群组使用 WebAPI", string.Empty, DisableIslandWebApi))
+                .Then("disable", "禁止群组使用 WebAPI", string.Empty, DisableIslandWebApi)
+                .Then("max", "设置或查看群组最大 WebAPI Token 数量", string.Empty, SetOrGetIslandWebApiMaxTokenCount))
             .Then("plugin", "插件管理指令", string.Empty, builder: x => x
                 .Then("list", "获取插件列表", string.Empty, GetPluginList)
                 .Then("info", "获取插件信息", string.Empty, GetPluginInfo)

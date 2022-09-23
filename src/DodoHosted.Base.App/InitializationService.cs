@@ -56,7 +56,7 @@ public class InitializationService : IHostedService
             .ToList();
         var added = ids
             .SkipWhile(x => stored.Contains(x))
-            .Select(x => new IslandSettings(x, false, string.Empty, TokenHelper.GenerateToken()))
+            .Select(x => new IslandSettings(x, false, string.Empty))
             .ToList();
 
         if (removed.Count > 0)
