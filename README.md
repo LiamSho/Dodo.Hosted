@@ -4,7 +4,24 @@
 
 请注意，本项目基于 `.NET 7.0` 进行开发，因此插件也仅支持使用 `.NET 7.0` 进行开发。
 
+## 文档
+
 [访问文档](https://github.com/LiamSho/Dodo.Hosted/tree/main/docs)
+
+## 计划
+
+***v3.x.x***
+
+- 使用卡片消息实现交互 UI
+
+***v4.x.x***
+
+- 支持分布式部署
+- 支持横向扩展与 Kubernetes 部署
+
+***v?.?.?***
+
+- 支持 Serverless 部署
 
 # 许可证
 
