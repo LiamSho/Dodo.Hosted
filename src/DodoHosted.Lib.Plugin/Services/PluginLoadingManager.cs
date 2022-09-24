@@ -159,7 +159,7 @@ public class PluginLoadingManager : IPluginLoadingManager
         {
             _logger.LogDebug("载入 Native 程序集 {DbgNativeAssemblyName}", assembly.FullName);
 
-            var name = assembly.FullName ?? string.Empty;
+            var name = assembly.GetName().Name ?? string.Empty;
 
             var pluginInfo = new PluginInfo
             {
