@@ -50,7 +50,7 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
 
         if (constructorInfo is null)
         {
-            throw new Exception();
+            throw new ParameterResolverException($"找不到 {type.FullName} 类型合法的构造函数");
         }
 
         var parameters = new object?[constructorInfo.GetParameters().Length];
@@ -59,7 +59,7 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
 
         if (instance is not T t)
         {
-            throw new Exception();
+            throw new ParameterResolverException($"无法将 {type.FullName} 转换为 {typeof(T).FullName}");
         }
 
         return t;

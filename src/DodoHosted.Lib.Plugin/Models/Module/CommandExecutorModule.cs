@@ -62,7 +62,7 @@ public class CommandExecutorModule : IDisposable
 
         if (_rootNodes.ContainsKey(name) is false)
         {
-            throw new Exception();
+            throw new CommandExecutorException($"在当前 Module 中找不到指令 {name}");
         }
         
         var executor = _rootNodes
