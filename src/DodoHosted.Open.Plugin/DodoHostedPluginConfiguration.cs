@@ -18,12 +18,6 @@ namespace DodoHosted.Open.Plugin;
 public abstract class DodoHostedPluginConfiguration
 {
     /// <summary>
-    /// 配置版本
-    /// </summary>
-    /// <returns></returns>
-    public abstract int ConfigurationVersion();
-
-    /// <summary>
     /// 注册 MongoDb Collection
     /// </summary>
     /// <returns></returns>

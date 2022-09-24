@@ -183,8 +183,7 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
             new(typeof(PluginConfigurationManager), (provider, plugin, _) =>
             {
                 var mongo = provider.GetRequiredService<IMongoDatabase>();
-                var configurationVersion = plugin.Instance.ConfigurationVersion();
-                return new PluginConfigurationManager(mongo, plugin.PluginInfo.Identifier, configurationVersion);
+                return new PluginConfigurationManager(mongo, plugin.PluginInfo.Identifier);
             }),
             
             new(typeof(IPluginLoadingManager), (provider, _, _) => provider.GetRequiredService<IPluginLoadingManager>(), true),

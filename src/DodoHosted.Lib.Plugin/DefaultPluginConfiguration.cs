@@ -12,7 +12,4 @@
 
 namespace DodoHosted.Lib.Plugin;
 
-public sealed class DefaultPluginConfiguration : DodoHostedPluginConfiguration
-{
-    public override int ConfigurationVersion() => 0;
-}
+public sealed class DefaultPluginConfiguration : DodoHostedPluginConfiguration { }

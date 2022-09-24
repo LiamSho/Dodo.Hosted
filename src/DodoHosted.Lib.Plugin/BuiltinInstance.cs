@@ -16,8 +16,6 @@ namespace DodoHosted.Lib.Plugin;
 
 public sealed class BuiltinInstance : DodoHostedPluginConfiguration
 {
-    public override int ConfigurationVersion() => 1;
-
     public override Dictionary<Type, string> RegisterMongoDbCollection()
     {
         return new Dictionary<Type, string>

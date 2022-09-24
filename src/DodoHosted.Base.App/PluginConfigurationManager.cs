@@ -20,16 +20,14 @@ namespace DodoHosted.Base.App;
 public class PluginConfigurationManager
 {
     private readonly string _pluginId;
-    private readonly int _version;
     private const string IdentifierField = "plugin-identifier";
 
     private readonly IMongoCollection<BsonDocument> _collection;
     private readonly FilterDefinition<BsonDocument> _filter;
 
-    public PluginConfigurationManager(IMongoDatabase mongoDatabase, string pluginId, int version)
+    public PluginConfigurationManager(IMongoDatabase mongoDatabase, string pluginId)
     {
         _pluginId = pluginId;
-        _version = version;
         _collection = mongoDatabase.GetCollection<BsonDocument>(HostConstants.MONGO_COLLECTION_PLUGIN_OPTIONS);
 
         _filter = Builders<BsonDocument>.Filter.Eq(IdentifierField, pluginId);
@@ -40,8 +38,6 @@ public class PluginConfigurationManager
         }
     }
 
-    public int GetVersion() => _version;
-    
     #region String
 
     public async Task SetStringValue(string key, string value)
