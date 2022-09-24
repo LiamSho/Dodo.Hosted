@@ -43,15 +43,16 @@ builder.ConfigureServices((_, services) =>
 
 ## DodoHosted.Base
 
-包含重新封装过的 Events 和 Event 接口 `IDodoHostedEvent`，其他所有项目都直接或间接引用了该项目，该项目直接依赖官方 SDK 项目。
+包含重新封装过的 Events 和 Event 接口 `IDodoHostedEvent`，卡片消息的模型，其他所有项目都直接或间接引用了该项目，该项目直接依赖官方 SDK 项目。
 
 ## DodoHosted.Base.App
 
 包含所有的基础服务接口和实现，引用了 `DodoHosted.Base` 项目以及 MongoDB。
 
-- `IChannelLogger` 与 `IPermissionManager` 服务的定于与实现
-- `DodoTextHelper` 帮助类，用于拆解消息中的频道 ID 与成员 ID
+- `IChannelLogger` 与 `IPermissionManager` 服务的定义与实现
 - `HostEnvs` 包含所有的配置项目，默认将从环境变量读取配置，可以通过为 `HostEnvs.Configuration` 静态属性赋值来覆盖默认从环境变量读取的配置
+- 自定义类型
+- Web 控制器
 
 ## DodoHosted.Lib.Plugin
 

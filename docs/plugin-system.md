@@ -2,7 +2,13 @@
 
 DodoHosted 可以通过插件系统来扩展自己的功能，插件是一个独立的 .NET 项目，需要使用 .NET 7.0 进行编写，并引用 [DodoHosted.Open.Plugin](https://www.nuget.org/packages/DodoHosted.Open.Plugin) 包。
 
-## 编写插件
+## 关于插件
+
+DodoHosted 的插件指引用了 DodoHosted.Open.Sdk 包，并包含 `plugin.json` 插件元数据的压缩文件包。
+
+插件是实际的业务逻辑执行器，DodoHosted 提供了 4 个接口用于功能拓展，1 个抽象类作为插件实例类。
+
+## 创建插件项目
 
 ### 项目创建
 
@@ -17,12 +23,12 @@ dotnet add package DodoHosted.Open.Plugin
 编辑 `MyPlugin.csproj` 文件，在 PackageReference 的末尾加上 `PrivateAssets="All"`，例如：
 
 ``` xml
-<PackageReference Include="DodoHosted.Open.Plugin" Version="1.2.0" PrivateAssets="All" />
+<PackageReference Include="DodoHosted.Open.Plugin" Version="3.0.0" PrivateAssets="All" />
 ```
 
 请注意，如果你还需要引入其他的 Nuget 包，请不要加上 `PrivateAssets="All"`
 
-> 在载入插件时，每个插件的程序集会在单独的 LoadContext 中加载，因此，若 A 插件以来 C 包的 1.0.0 版本，而 B 插件依赖 C 包的 2.0.0 版本，也不会产生冲突问题。
+> 在载入插件时，每个插件的程序集会在单独的 LoadContext 中加载，因此，若 A 插件依赖 C 包的 1.0.0 版本，而 B 插件依赖 C 包的 2.0.0 版本，也不会产生冲突问题。
 
 ### 插件元数据
 
@@ -36,7 +42,8 @@ dotnet add package DodoHosted.Open.Plugin
   "version": "1.0.0",
   "description": "示例插件",
   "author": "Liam Sho",
-  "entry_assembly": "MyPlugin"
+  "entry_assembly": "MyPlugin",
+  "api_version": 1
 }
 ```
 
@@ -52,62 +59,43 @@ dotnet add package DodoHosted.Open.Plugin
 </ItemGroup>
 ```
 
-### 插件生命周期
+## 接口实现
 
-创建一个类，继承 `DodoHosted.Open.Plugin.IPluginLifetime` 接口，并实现其中的方法。
+创建一个类，继承自各个来自于 `DodoHosted.Open.Plugin` 命名空间下的抽象类或接口，可以实现插件的各类功能。
 
-``` csharp
-using DodoHosted.Open.Plugin;
-using Microsoft.Extensions.Logging;
+⚠️ 请注意：实现类必须为公共类，且必须标记为 `sealed`
 
-namespace MyPlugin;
+### 插件配置 DodoHostedPluginConfiguration
 
-public class Plugin : IPluginLifetime
-{
-    public Task Load(ILogger logger)
-    {
-        return Task.CompletedTask;
-    }
+该抽象类的实现最多只能有 1 个。
 
-    public Task Unload(ILogger logger)
-    {
-        return Task.CompletedTask;
-    }
-}
-```
+用于部分行为配置，包含一个虚方法 `RegisterMongoDbCollection` 用于注册 MongoDB 集合，关于 MongoDB 集合，请参考 [可注入服务](./services.md) 文档
 
-此处，Load 将在插件载入时运行，Unload 将在插件卸载前运行。
+### 插件生命周期 DodoHostedPluginLifetime
 
-每个插件中必须要有且只能有一个实现了 `IPluginLifetime` 接口的类。
+该抽象类的实现最多只能有 1 个。
 
-### 添加事件处理器
+用于插件生命周期事件的处理，构造函数中可以使用 `[Inject]` 标签注入 [可注入服务](./services.md)。
 
-事件处理器是继承了 `IDodoHostedPluginEventHandler<T>` 接口的类，并实现其中的方法。
+### 指令处理器 ICommandExecutor
 
-每个插件中可以有任意个事件处理器。
+请参考 [指令系统](./command-system.md) 文档。
 
-``` csharp
-public class TextMessageListener : IDodoHostedPluginEventHandler<DodoChannelMessageEvent<MessageBodyText>>
-{
-    public Task Handle(DodoChannelMessageEvent<MessageBodyText> @event, IServiceProvider provider, ILogger logger)
-    {
-        logger.LogInformation("Received message: [{Channel}] {Sender}: {Message}",
-            @event.Message.Data.EventBody.ChannelId,
-            @event.Message.Data.EventBody.Member.NickName,
-            @event.Message.Data.EventBody.MessageBody.Content);
-        
-        return Task.CompletedTask;
-    }
-}
-```
+### 事件处理器 IEventHandler<T>
 
-### 添加命令处理器
+用于处理各类事件，类型 T 为 `DodoHosted.Base.Events` 命名空间下继承了 `IDodoHostedEvent` 接口的各个事件类。
 
-命令处理器是继承了 `ICommandExecutor` 接口的类，并实现其中的方法。
+在构造函数中，可以使用 `[Inject]` 标签注入 [可注入服务](./services.md)。
 
-DodoHosted 自身实现了 4 个命令处理器，你可以参考 [这些实现](https://github.com/LiamSho/Dodo.Hosted/tree/main/src/DodoHosted.Lib.Plugin/Builtin) 来编写你的命令处理器。
+### 后台服务 IPluginHostedService
 
-每个插件中可以有任意个事件处理器。
+用于插件后台服务的运行，类似于 `Microsoft.Extension.Hosting.IHostedService` 接口。
+
+在构造函数中，可以使用 `[Inject]` 标签注入 [可注入服务](./services.md)。
+
+### Web 事件 IPluginWebHandler
+
+请参考 [Web 事件](./web-event.md) 文档。
 
 ## 插件的编译和打包
 
