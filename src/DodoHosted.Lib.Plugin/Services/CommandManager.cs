@@ -174,10 +174,14 @@ public class CommandManager : ICommandManager
 
         // 指令执行上下文
         var context = new CommandContext(reply, ReplyCard, PermissionCheck, parsed, userInfo, eventInfo);
-        
+
         try
         {
             result = await cmd.Invoke(context, scope.ServiceProvider);
+        }
+        catch (ParameterResolverException ex)
+        {
+            await reply.Invoke($"指令参数解析出错：{ex.Message}");
         }
         catch (Exception ex)
         {

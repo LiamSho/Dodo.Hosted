@@ -50,7 +50,7 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
 
         if (constructorInfo is null)
         {
-            throw new ParameterResolverException($"找不到 {type.FullName} 类型合法的构造函数");
+            throw new ParameterResolverException($"找不到 `{type.FullName}` 类型合法的构造函数");
         }
 
         var parameters = new object?[constructorInfo.GetParameters().Length];
@@ -59,7 +59,7 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
 
         if (instance is not T t)
         {
-            throw new ParameterResolverException($"无法将 {type.FullName} 转换为 {typeof(T).FullName}");
+            throw new ParameterResolverException($"无法将 `{type.FullName}` 转换为 `{typeof(T).FullName}`");
         }
 
         return t;
@@ -80,7 +80,12 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
             {
                 if (attr.Required)
                 {
-                    throw new ParameterResolverException($"缺少必填参数 {attr.Name}");
+                    var msg = $"缺少必填参数 `{attr.Name}`";
+                    if (attr.Abbr is not null)
+                    {
+                        msg += $" (简称：`{attr.Abbr}`)";
+                    }
+                    throw new ParameterResolverException(msg);
                 }
                 
                 parameters[order] = null;
@@ -171,7 +176,7 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
                 var contains = registered.ContainsKey(collectionType);
                 if (contains is false)
                 {
-                    throw new ParameterResolverException("未注册的 MongoDb 集合");
+                    throw new ParameterResolverException($"插件 `{plugin.PluginInfo.Identifier}` 未注册类型为 `{collectionType.FullName}` 的 MongoDb 集合");
                 }
                 
                 var collectionName = registered[collectionType];
@@ -201,7 +206,7 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
         }
         catch (Exception)
         {
-            throw new ParameterResolverException($"无法将 {str} 转换为指定类型 {type.FullName}");
+            throw new ParameterResolverException($"无法将 `{str}` 转换为指定类型 `{type.FullName}`");
         }
     }
     
