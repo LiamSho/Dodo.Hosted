@@ -38,7 +38,7 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
                 $"未知类型 {type.FullName}");
         }
 
-        return optionType.TypeClassName;
+        return optionType.TypeName;
     }
 
     public T GetDynamicObject<T>(Type type, IServiceProvider serviceProvider)
