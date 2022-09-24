@@ -17,6 +17,7 @@ public struct DodoChannelIdWithWildcard
     public string Value { get; }
     public bool Valid { get; }
     public string Ref => Value == "*" ? "*" : $"<#{Value}>";
+    public bool IsWildcard => Value == "*";
 
     public DodoChannelIdWithWildcard(string value)
     {
