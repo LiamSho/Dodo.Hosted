@@ -42,10 +42,12 @@ public class PluginLoadingManager : IPluginLoadingManager
         {
             _pluginDirectory.Create();
         }
-        if (_pluginCacheDirectory.Exists is false)
+
+        if (_pluginCacheDirectory.Exists)
         {
-            _pluginCacheDirectory.Create();
+            _pluginCacheDirectory.Delete(true);
         }
+        _pluginCacheDirectory.Create();
         
         NativeAssemblies.Add(this.GetType().Assembly);
     }
