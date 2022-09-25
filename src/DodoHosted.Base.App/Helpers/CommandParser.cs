@@ -75,7 +75,7 @@ public static class CommandParser
             {
                 // 取出引号内的内容，并消除转义
                 var str = command[(startPointer + 1)..^1].ToString();
-                args.Add(Regex.Unescape(str));
+                args.Add($"@$%{Regex.Unescape(str)}");
             }
             else
             {
@@ -91,7 +91,7 @@ public static class CommandParser
         if (command[^1] == '\"')
         {
             var str = command[(startPointer + 1)..^1].ToString();
-            args.Add(Regex.Unescape(str));
+            args.Add($"@$%{Regex.Unescape(str)}");
         }
         else
         {
@@ -131,7 +131,8 @@ public static class CommandParser
 
             if (j + 1 < args.Count && args[j + 1].StartsWith("-") is false)
             {
-                arguments.Add(args[j][1..], args[j + 1]);
+                var v = args[j + 1].StartsWith("@$%") ? args[j + 1][3..] : args[j + 1];
+                arguments.Add(args[j][1..], v);
                 j++;
             }
             else
