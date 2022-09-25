@@ -15,7 +15,7 @@ namespace DodoHosted.Lib.Plugin;
 
 public static class PluginApiLevel
 {
-    private const int CURRENT_API_LEVEL = 1;
+    private const int CURRENT_API_LEVEL = 2;
     private const int MINIMUM_COMPATIBLE_API_LEVEL = 1;
 
     public static int CurrentApiLevel => CURRENT_API_LEVEL;

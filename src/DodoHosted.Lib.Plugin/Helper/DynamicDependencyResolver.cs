@@ -145,7 +145,45 @@ public class DynamicDependencyResolver : IDynamicDependencyResolver
             new(typeof(DodoChannelId), "Dodo 频道", x => new DodoChannelId(x).EnsureValid()),
             new(typeof(DodoChannelIdWithWildcard), "Dodo 频道 (包含通配符)", x => new DodoChannelIdWithWildcard(x).EnsureValid()),
             new(typeof(DodoMemberId), "Dodo 用户", x => new DodoMemberId(x).EnsureValid()),
-            new(typeof(DodoEmoji), "Emoji", x => new DodoEmoji(x))
+            new(typeof(DodoEmoji), "Emoji", x => new DodoEmoji(x)),
+            new(typeof(Guid), "Guid", x =>
+            {
+                var parsed = Guid.TryParse(x, out var guid);
+                if (parsed is false)
+                {
+                    throw new ParameterResolverException($"无法将字符串 `{x}` 转换为 Guid");
+                }
+                return guid;
+            }),
+            new(typeof(DateTimeOffset), "日期与时间", x =>
+            {
+                var parsed = DateTimeOffset.TryParse(x, out var dateTimeOffset);
+                if (parsed is false)
+                {
+                    throw new ParameterResolverException($"无法将字符串 `{x}` 转换为 DateTimeOffset");
+                }
+                return dateTimeOffset;
+            }),
+            new(typeof(DateOnly), "日期", x =>
+            {
+                var parsed = DateOnly.TryParse(x, out var date);
+                if (parsed is false)
+                {
+                    throw new ParameterResolverException($"无法将字符串 `{x}` 转换为 DateOnly");
+                }
+                
+                return date;
+            }),
+            new(typeof(TimeOnly), "时间", x =>
+            {
+                var parsed = TimeOnly.TryParse(x, out var time);
+                if (parsed is false)
+                {
+                    throw new ParameterResolverException($"无法将字符串 `{x}` 转换为 TimeOnly");
+                }
+                
+                return time;
+            })
         };
 
     private static readonly IReadOnlyCollection<CommandServiceTypeDescriptor> s_serviceTypes =
