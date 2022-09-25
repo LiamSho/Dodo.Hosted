@@ -116,6 +116,10 @@ CmdOption 引入的参数类型可以为以下类型：
 - `DodoChannelIdWithWildcard` Dodo 频道 ID，与 `DodoChannelId` 相比，允许 `*` 通配符
 - `DodoMemberId` Dodo 用户 ID，在传入时，可以是用户的数字 ID，也可以使用 `@` 进行用户的引用
 - `DodoEmoji` Emoji 表情，仅限单个表情
+- `Guid` GUID
+- `DateTimeOffset` 日期与时间，例如 `2022-9-25T15:05:05+8:00` 表示 2022 年 9 月 25 日 15 时 5 分 5 秒，时区为东八区
+- `DateOnly` 日期
+- `TimeOnly` 时间
 
 ```csharp
 public async Task<bool> CustomTypes(
