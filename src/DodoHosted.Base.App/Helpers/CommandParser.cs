@@ -74,7 +74,7 @@ public static class CommandParser
             if (command[movePointer - 1] == '"')
             {
                 // 取出引号内的内容，并消除转义
-                var str = command[(startPointer + 1)..^1].ToString();
+                var str = command[(startPointer + 1)..(movePointer - 1)].ToString();
                 args.Add($"@$%{Regex.Unescape(str)}");
             }
             else
