@@ -90,5 +90,7 @@ public class CommandExecutorModule : IDisposable
     public void Dispose()
     {
         _rootNodes.Clear();
+        
+        GC.SuppressFinalize(this);
     }
 }

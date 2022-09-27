@@ -67,6 +67,8 @@ public class HostedServiceModule : IDisposable
             
             service.Scope.Dispose();
         }
+        
+        GC.SuppressFinalize(this);
     }
     
     private record HostedService(string Name, CancellationTokenSource CancellationTokenSource, IServiceScope Scope, Task Task);

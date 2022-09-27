@@ -120,5 +120,7 @@ public class EventHandlerModule : IDisposable
     public void Dispose()
     {
         _invokers.Clear();
+    
+        GC.SuppressFinalize(this);
     }
 }

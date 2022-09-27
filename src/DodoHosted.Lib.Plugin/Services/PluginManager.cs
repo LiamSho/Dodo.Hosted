@@ -11,6 +11,7 @@
 // but WITHOUT ANY WARRANTY
 
 using System.Collections.Concurrent;
+using System.Xml.Linq;
 using DodoHosted.Lib.Plugin.Models.Module;
 
 namespace DodoHosted.Lib.Plugin.Services;
@@ -25,13 +26,24 @@ public class PluginManager : IPluginManager
     }
     public PluginModule? RemovePlugin(string id)
     {
+        if (_plugins.ContainsKey(id))
+        {
+            if (_plugins[id].IsNative)
+            {
+                return null;
+            }
+        }
+        
         var _ = _plugins.TryRemove(id, out var manifest);
         return manifest;
     }
     public IEnumerable<PluginModule> RemovePlugins()
     {
-        var plugins = GetPlugins().ToArray();
-        _plugins.Clear();
+        var plugins = GetPlugins(x => x.IsNative is false).ToArray();
+        foreach (var plugin in plugins)
+        {
+            _plugins.Remove(plugin.PluginInfo.Identifier, out _);
+        }
         return plugins;
     }
     public bool Exist(string id)

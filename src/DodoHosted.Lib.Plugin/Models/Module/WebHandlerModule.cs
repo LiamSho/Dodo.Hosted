@@ -79,5 +79,7 @@ public class WebHandlerModule : IDisposable
     public void Dispose()
     {
         _handlers.Clear();
+    
+        GC.SuppressFinalize(this);
     }
 }

@@ -29,6 +29,7 @@ public class PluginModule
     public string BundlePath { get; }
     
     private readonly IServiceScope _pluginScope;
+    private readonly ILogger _logger;
     
     public PluginModule(
         PluginAssemblyLoadContext? assemblyLoadContext,
@@ -44,6 +45,7 @@ public class PluginModule
         
         var types = assemblies.SelectMany(x => x.GetTypes()).ToArray();
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+        _logger = loggerFactory.CreateLogger(pluginInfo.Identifier);
         
         IsNative = isNative;
         
@@ -72,6 +74,8 @@ public class PluginModule
         HostedServiceModule.Dispose();
         EventHandlerModule.Dispose();
         WebHandlerModule.Dispose();
+        
+        _logger.LogInformation("插件卸载：{PluginIdentifier}", PluginInfo.Identifier);
         
         _pluginScope.Dispose();
         
