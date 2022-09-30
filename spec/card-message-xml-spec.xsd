@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<xs:schema targetNamespace="https://dodo-hosted.alisaqaq.moe" 
+           xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+           xmlns="https://dodo-hosted.alisaqaq.moe"
+           elementFormDefault="qualified">
+    
+    <xs:element name="card-message">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="content" type="xs:string" minOccurs="0" />
+                <xs:element name="card" type="card" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:complexType name="card">
+        <xs:sequence>
+            <xs:element name="title" type="xs:string" />
+            <xs:element name="theme" type="enum-card-theme" />
+            <xs:element name="components" type="card-component" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="card-component">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:choice>
+                <xs:element name="title" type="com-title" />
+                <xs:element name="text-field" type="com-text-field" />
+                <xs:element name="multiline-text" type="com-multiline-text" />
+                <xs:element name="remark" type="com-remark" />
+                <xs:element name="image" type="com-image" />
+                <xs:element name="image-group" type="com-image-group" />
+                <xs:element name="video" type="com-video" />
+                <xs:element name="countdown" type="com-countdown" />
+                <xs:element name="divider" type="com-divider" />
+                <xs:element name="button-group" type="com-button-group" />
+            </xs:choice>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Card Components -->
+
+    <!-- 标题 -->
+    <xs:complexType name="com-title">
+        <xs:complexContent>
+            <xs:extension base="basic-text" />
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- 文本 -->
+    <xs:complexType name="com-text-field">
+        <xs:complexContent>
+            <xs:extension base="basic-text" />
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- 多栏文本 -->
+    <xs:complexType name="com-multiline-text">
+        <xs:complexContent>
+            <xs:extension base="basic-paragraph" />
+        </xs:complexContent>
+    </xs:complexType>
+    
+    <!-- 备注 -->
+    <xs:complexType name="com-remark">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:choice>
+                <xs:element name="content" type="basic-text" minOccurs="0" maxOccurs="unbounded" />
+                <xs:element name="image" type="basic-image" minOccurs="0" maxOccurs="unbounded" />
+            </xs:choice>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <!-- 图片 -->
+    <xs:complexType name="com-image">
+        <xs:complexContent>
+            <xs:extension base="basic-image" />
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- 多图 -->
+    <xs:complexType name="com-image-group">
+        <xs:sequence>
+            <xs:element name="image" type="basic-image" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+    
+    <!-- 视频 -->
+    <xs:complexType name="com-video">
+        <xs:sequence>
+            <xs:element name="title" type="xs:string" />
+            <xs:element name="cover" type="xs:anyURI" />
+            <xs:element name="source" type="xs:anyURI" />
+        </xs:sequence>
+    </xs:complexType>
+    
+    <!-- 倒计时 -->
+    <xs:complexType name="com-countdown">
+        <xs:sequence>
+            <xs:element name="title" type="xs:string" />
+            <xs:element name="style" type="enum-countdown-style" />
+            <xs:element name="end-time" type="xs:dateTime" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- 分割线 -->
+    <xs:complexType name="com-divider">
+    </xs:complexType>
+    
+    <!-- 按钮组 -->
+    <xs:complexType name="com-button-group">
+        <xs:sequence>
+            <xs:element name="button" type="basic-button" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+    
+    <!-- 列表选择器 -->
+    <xs:complexType name="com-list-selector">
+        <xs:sequence>
+            <xs:element name="interact-custom-id" minOccurs="0" />
+            <xs:element name="placeholder" type="xs:string" minOccurs="0" />
+            <xs:element name="elements" type="basic-selector-element" maxOccurs="unbounded" />
+        </xs:sequence>
+        <xs:attribute name="min" type="xs:positiveInteger" use="required" />
+        <xs:attribute name="max" type="xs:positiveInteger" use="required" />
+    </xs:complexType>
+    
+    <!-- 文字 + 模块 -->
+    <xs:complexType name="com-text-with-module">
+        <xs:sequence>
+            <xs:element name="align" type="enum-text-with-module-align" />
+            <xs:element name="text">
+                <xs:complexType>
+                    <xs:choice>
+                        <xs:element name="text-field" type="basic-text" />
+                        <xs:element name="multiline-text" type="basic-paragraph" />
+                    </xs:choice>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="accessory">
+                <xs:complexType>
+                    <xs:choice>
+                        <xs:element name="image" type="basic-image" />
+                        <xs:element name="button" type="basic-button" />
+                    </xs:choice>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <!-- ################ -->
+    <!-- Basic Components -->
+    <!-- ################ -->
+
+    <xs:complexType name="basic-text">
+        <xs:simpleContent>
+            <xs:extension base="string-required">
+                <xs:attribute name="type" type="enum-text-types" default="dodo-md" />
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    
+    <xs:complexType name="basic-paragraph">
+        <xs:sequence>
+            <xs:element name="content" type="basic-text" maxOccurs="unbounded" />
+        </xs:sequence>
+        <xs:attribute name="col" use="required">
+            <xs:simpleType>
+                <xs:restriction base="xs:positiveInteger">
+                    <xs:minInclusive value="2" />
+                    <xs:maxInclusive value="6" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+    
+    <xs:complexType name="basic-image">
+        <xs:attribute name="src" type="xs:anyURI" use="required" />
+    </xs:complexType>
+    
+    <xs:complexType name="basic-button">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="color" type="enum-button-color" />
+            <xs:element name="click" type="basic-button-action" />
+            <xs:element name="interact-custom-id" minOccurs="0" />
+            <xs:element name="form" type="basic-form" minOccurs="0" />
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="basic-button-action">
+        <xs:sequence>
+            <xs:element name="action" type="enum-button-action" />
+            <xs:element name="value" type="xs:string" minOccurs="0" />
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="basic-form">
+        <xs:sequence>
+            <xs:element name="title" type="xs:string" />
+            <xs:element name="elements">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="input" type="basic-input" maxOccurs="unbounded" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="basic-input">
+        <xs:sequence>
+            <xs:element name="key" type="xs:string" />
+            <xs:element name="title" type="xs:string" />
+            <xs:element name="rows">
+                <xs:simpleType>
+                    <xs:restriction base="xs:positiveInteger">
+                        <xs:minInclusive value="1" />
+                        <xs:maxInclusive value="4" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:element>
+            <xs:element name="placeholder" type="xs:string" minOccurs="0" />
+            <xs:element name="min-chars">
+                <xs:simpleType>
+                    <xs:restriction base="xs:positiveInteger">
+                        <xs:minInclusive value="0" />
+                        <xs:maxInclusive value="4000" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:element>
+            <xs:element name="max-chars">
+                <xs:simpleType>
+                    <xs:restriction base="xs:positiveInteger">
+                        <xs:minInclusive value="1" />
+                        <xs:maxInclusive value="4000" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:complexType name="basic-selector-element">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="desc" type="xs:string" minOccurs="0" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- ##### -->
+    <!-- Enums -->
+    <!-- ##### -->
+
+    <xs:simpleType name="enum-text-types">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="dodo-md" />
+            <xs:enumeration value="plain-text" />
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:simpleType name="enum-card-theme">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="default" />
+            <xs:enumeration value="grey" />
+            <xs:enumeration value="red" />
+            <xs:enumeration value="orange" />
+            <xs:enumeration value="yellow" />
+            <xs:enumeration value="green" />
+            <xs:enumeration value="indigo" />
+            <xs:enumeration value="blue" />
+            <xs:enumeration value="purple" />
+            <xs:enumeration value="black" />
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:simpleType name="enum-countdown-style">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="day" />
+            <xs:enumeration value="hour" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="enum-button-action">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="link_url" />
+            <xs:enumeration value="call_back" />
+            <xs:enumeration value="copy_content" />
+            <xs:enumeration value="form" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="enum-button-color">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="default" />
+            <xs:enumeration value="grey" />
+            <xs:enumeration value="red" />
+            <xs:enumeration value="orange" />
+            <xs:enumeration value="green" />
+            <xs:enumeration value="blue" />
+            <xs:enumeration value="purple" />
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:simpleType name="enum-text-with-module-align">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="left" />
+            <xs:enumeration value="right" />
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <!-- XML Extension -->
+    
+    <xs:simpleType name="string-required">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1" />
+        </xs:restriction>
+    </xs:simpleType>
+    
+</xs:schema>

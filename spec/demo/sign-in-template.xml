@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<card-message xmlns="https://dodo-hosted.alisaqaq.moe"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="https://dodo-hosted.alisaqaq.moe ../card-message-xml-spec.xsd">
+    
+    <card>
+        <title>签到成功</title>
+        <theme>green</theme>
+        <components>
+            
+            <image-group>
+                <image src="https://img.imdodo.com/dodo/ITtJJhiQ7NtQteVq_1636102836669.png" />
+            </image-group>
+            <text-field>📢你是今天在群里第 ||87|| 个签到的人</text-field>
+            <multiline-text col="3">
+                <content>**⚡积分**\n+47</content>
+                <content>**🚀群贡献**\n+10</content>
+                <content>**⚡总积分**\n562</content>
+                <content>**🚀总贡献**\n100</content>
+                <content>**💖总好感度**\n1000</content>
+            </multiline-text>
+            <divider/>
+            <multiline-text col="2">
+                <content>**当前签到次数**\n5</content>
+                <content>**本月签到次数**\n12</content>
+                <content>**连续签到次数**\n5</content>
+                <content>**总签到次数**\n49</content>
+            </multiline-text>
+            <divider/>
+            <text-field>⏰ 签到时间：2022年8月8日  22:22:13</text-field>
+            <remark>
+                <image src="https://img.imdodo.com/upload/cdn/1C274FE42B6C98494A06D674559B2206_1658739484506.png"/>
+                <content>每日一句：疲惫的生活，总要一些温柔的梦</content>
+            </remark>
+            
+        </components>
+    </card>
+    
+</card-message>
